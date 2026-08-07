@@ -63,7 +63,7 @@ export async function generateMagicLinkToken(telegramChatId: bigint): Promise<{
     },
   });
 
-  const frontendUrl = process.env.NEXT_PUBLIC_WEB_URL || 'http://127.0.0.1:3001';
+  const frontendUrl = (process.env.APP_URL || process.env.NEXT_PUBLIC_WEB_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3011').replace(/\/$/, '');
   const magicLinkUrl = `${frontendUrl}/auth/callback?token=${token}`;
 
   return { token, magicLinkUrl, expiresAt: expiresAt.getTime(), userName };
