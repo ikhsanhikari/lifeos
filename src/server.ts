@@ -173,15 +173,11 @@ async function handleLoginCommand(ctx: any) {
     const chatId = BigInt(ctx.chat.id);
     const { magicLinkUrl, userName } = await generateMagicLinkToken(chatId);
 
-    const localhostUrl = magicLinkUrl.replace('127.0.0.1', 'localhost');
-
     const htmlMessage =
       `🔑 <b>Magic Login Link Web Dashboard</b>\n\n` +
-      `Halo <b>${userName}</b>! Klik atau tap tautan biru di bawah ini untuk langsung masuk ke Web Dashboard tanpa password:\n\n` +
+      `Halo <b>${userName}</b>! Klik atau tap tautan di bawah ini untuk langsung masuk ke Web Dashboard tanpa password:\n\n` +
       `🚀 <a href="${magicLinkUrl}"><b>👉 KLIK DI SINI UNTUK LOGIN INSTAN 👈</b></a>\n\n` +
-      `<i>Atau gunakan tautan alternatif:</i>\n` +
-      `• IP: ${magicLinkUrl}\n` +
-      `• Localhost: ${localhostUrl}\n\n` +
+      `🔗 <i>Direct URL:</i> ${magicLinkUrl}\n\n` +
       `⏳ <b>Catatan:</b> Link ini berlaku selama 15 menit. Begitu masuk, Anda akan tetap login permanen!`;
 
     await ctx.reply(htmlMessage, {
