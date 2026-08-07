@@ -71,19 +71,19 @@ async function calculateHabitStreak(habitId: string): Promise<number> {
   let checkDate = new Date(today);
 
   // Check if checked in today
-  const hasTodayLog = logs.some((l) => l.date.getTime() === checkDate.getTime());
+  const hasTodayLog = logs.some((l: any) => l.date.getTime() === checkDate.getTime());
 
   if (!hasTodayLog) {
     // If not checked in today, check if checked in yesterday to maintain streak
     checkDate.setUTCDate(checkDate.getUTCDate() - 1);
-    const hasYesterdayLog = logs.some((l) => l.date.getTime() === checkDate.getTime());
+    const hasYesterdayLog = logs.some((l: any) => l.date.getTime() === checkDate.getTime());
     if (!hasYesterdayLog) {
       return 0; // Streak broken
     }
   }
 
   // Count backwards consecutive days
-  const logDatesSet = new Set(logs.map((l) => l.date.getTime()));
+  const logDatesSet = new Set(logs.map((l: any) => l.date.getTime()));
   let d = new Date(checkDate);
 
   while (logDatesSet.has(d.getTime())) {
@@ -107,19 +107,19 @@ export async function getAnalyticsSummary(telegramChatId?: bigint | null): Promi
     orderBy: { sortOrder: 'asc' },
   });
 
-  const habitIds = habits.map((h) => h.id);
+  const habitIds = habits.map((h: any) => h.id);
   const todayHabitLogs = await prisma.habitLog.findMany({
     where: { habitId: { in: habitIds }, date: today, status: 'DONE' },
   });
 
-  const doneHabitSet = new Set(todayHabitLogs.map((l) => l.habitId));
+  const doneHabitSet = new Set(todayHabitLogs.map((l: any) => l.habitId));
   const habitsDoneToday = doneHabitSet.size;
   const totalHabitsToday = habits.length;
   const habitCompletionRate = totalHabitsToday > 0 ? Math.round((habitsDoneToday / totalHabitsToday) * 100) : 0;
 
   // Calculate streak for each habit
   const habitStreaks = await Promise.all(
-    habits.map(async (habit) => {
+    habits.map(async (habit: any) => {
       const streak = await calculateHabitStreak(habit.id);
       return {
         habitId: habit.id,
@@ -135,7 +135,7 @@ export async function getAnalyticsSummary(telegramChatId?: bigint | null): Promi
     where: { userId, status: { in: ['TODO', 'IN_PROGRESS', 'DONE'] } },
   });
 
-  const tasksDoneToday = tasks.filter((t) => t.status === 'DONE').length;
+  const tasksDoneToday = tasks.filter((t: any) => t.status === 'DONE').length;
   const totalTasksToday = tasks.length;
   const taskCompletionRate = totalTasksToday > 0 ? Math.round((tasksDoneToday / totalTasksToday) * 100) : 0;
 
@@ -153,7 +153,7 @@ export async function getAnalyticsSummary(telegramChatId?: bigint | null): Promi
     orderBy: { date: 'asc' },
   });
 
-  const recentMoodLogs = recentLogs.map((log) => ({
+  const recentMoodLogs = recentLogs.map((log: any) => ({
     date: log.date.toISOString().split('T')[0],
     mood: log.mood,
     energy: log.energy,

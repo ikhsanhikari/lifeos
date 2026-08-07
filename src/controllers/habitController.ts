@@ -83,7 +83,7 @@ export async function getUserDailyHabits(telegramChatId?: bigint | null): Promis
 
   // Get today's logs for these habits
   const today = getTodayDate();
-  const habitIds = habits.map((h) => h.id);
+  const habitIds = habits.map((h: any) => h.id);
 
   const todayLogs = await prisma.habitLog.findMany({
     where: {
@@ -92,10 +92,10 @@ export async function getUserDailyHabits(telegramChatId?: bigint | null): Promis
     },
   });
 
-  const logsMap = new Map(todayLogs.map((log) => [log.habitId, log]));
+  const logsMap = new Map(todayLogs.map((log: any) => [log.habitId, log]));
 
-  const habitsWithStatus: HabitWithStatus[] = habits.map((habit) => {
-    const log = logsMap.get(habit.id);
+  const habitsWithStatus: HabitWithStatus[] = habits.map((habit: any) => {
+    const log: any = logsMap.get(habit.id);
     const isDoneToday = log?.status === 'DONE';
     return {
       id: habit.id,
