@@ -1,0 +1,158 @@
+// Prisma schema for Life OS
+// Root alias pointing to packages/db/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum HabitFrequency {
+  DAILY
+  WEEKLY
+  CUSTOM
+}
+
+enum HabitLogStatus {
+  DONE
+  SKIPPED
+  MISSED
+}
+
+enum TaskPriority {
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+// ==========================================
+// MODELS
+// ==========================================
+
+/// User account core model
+model User {
+  id           String        @id @default(uuid()) @db.Uuid
+  email        String        @unique
+  name         String
+  avatarUrl    String?       @map("avatar_url")
+  timezone     String        @default("Asia/Jakarta")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  telegramLink TelegramLink?
+  habits       Habit[]
+  tasks        Task[]
+  dailyLogs    DailyLog[]
+
+  @@map("users")
+}
+
+/// Telegram account link for bot integration
+model TelegramLink {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @unique @map("user_id") @db.Uuid
+  telegramChatId   BigInt   @unique @map("telegram_chat_id")
+  telegramUsername String?  @map("telegram_username")
+  linkedAt         DateTime @default(now()) @map("linked_at")
+  isActive         Boolean  @default(true) @map("is_active")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([telegramChatId])
+  @@map("telegram_links")
+}
+
+/// Habit definition and tracking configuration
+model Habit {
+  id              String         @id @default(uuid()) @db.Uuid
+  userId          String         @map("user_id") @db.Uuid
+  name            String
+  description     String?
+  frequency       HabitFrequency @default(DAILY)
+  frequencyConfig Json?          @map("frequency_config")
+  reminderTime    DateTime?      @map("reminder_time") @db.Time
+  color           String?
+  isArchived      Boolean        @default(false) @map("is_archived")
+  sortOrder       Int            @default(0) @map("sort_order")
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habitLogs HabitLog[]
+
+  @@map("habits")
+}
+
+/// Daily check-in log per habit
+model HabitLog {
+  id          String         @id @default(uuid()) @db.Uuid
+  habitId     String         @map("habit_id") @db.Uuid
+  date        DateTime       @db.Date
+  status      HabitLogStatus
+  note        String?
+  completedAt DateTime?      @map("completed_at")
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
+  @@index([habitId, date])
+  @@index([date])
+  @@map("habit_logs")
+}
+
+/// Task management with hierarchical subtasks
+model Task {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  title       String
+  description String?
+  priority    TaskPriority @default(MEDIUM)
+  status      TaskStatus   @default(TODO)
+  dueDate     DateTime?    @map("due_date") @db.Date
+  dueTime     DateTime?    @map("due_time") @db.Time
+  tags        String[]
+  parentId    String?      @map("parent_id") @db.Uuid
+  sortOrder   Int          @default(0) @map("sort_order")
+  completedAt DateTime?    @map("completed_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   Task?  @relation("TaskSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
+  subtasks Task[] @relation("TaskSubtasks")
+
+  @@index([userId, status, dueDate])
+  @@map("tasks")
+}
+
+/// Daily mood, energy, and journal entry
+model DailyLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  date       DateTime @db.Date
+  mood       Int
+  energy     Int
+  journal    String?  @db.Text
+  highlights String[]
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("daily_logs")
+}
