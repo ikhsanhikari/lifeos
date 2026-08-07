@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
 import { CheckSquare, Check, Trash2, Plus, CornerDownLeft } from 'lucide-react';
-import { TaskData } from '../page';
+
+export interface TaskData {
+  id: string;
+  title: string;
+  description: string | null;
+  priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW';
+  status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
+  dueDate: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  goalId?: string | null;
+  goal?: { id: string; title: string } | null;
+}
 import { Card } from '../../components/ui/Card';
 import { Tabs } from '../../components/ui/Tabs';
 import { Badge } from '../../components/ui/Badge';
@@ -154,6 +166,11 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
+                {task.goal && (
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 max-w-[120px] truncate">
+                    🌟 {task.goal.title}
+                  </span>
+                )}
                 {renderPriorityBadge(task.priority)}
                 <button
                   type="button"

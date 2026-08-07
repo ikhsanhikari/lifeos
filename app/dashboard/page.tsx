@@ -9,6 +9,8 @@ import { TaskPanel } from './components/TaskPanel';
 import { DailyJournal } from './components/DailyJournal';
 import { StreakInsights } from './components/StreakInsights';
 import { LoadingSkeleton } from './components/LoadingSkeleton';
+import { GoalPanel, GoalData } from './components/GoalPanel';
+import { AddGoalModal } from './components/modals/AddGoalModal';
 import { AddHabitModal } from './components/modals/AddHabitModal';
 import { TelegramLinkModal } from './components/modals/TelegramLinkModal';
 
@@ -31,6 +33,8 @@ export interface TaskData {
   dueDate: string | null;
   completedAt: string | null;
   createdAt: string;
+  goalId?: string | null;
+  goal?: { id: string; title: string } | null;
 }
 
 export interface DailyLogData {
@@ -74,6 +78,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export default function DashboardPage() {
   const [currentUser, setCurrentUser] = useState<UserAuthData | null>(null);
+  const [goals, setGoals] = useState<GoalData[]>([]);
   const [habits, setHabits] = useState<HabitData[]>([]);
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [dailyLog, setDailyLog] = useState<DailyLogData | null>(null);
@@ -88,12 +93,14 @@ export default function DashboardPage() {
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
 
   // Modals state
+  const [isAddGoalModalOpen, setIsAddGoalModalOpen] = useState<boolean>(false);
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState<boolean>(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState<boolean>(false);
   const [linkTokenData, setLinkTokenData] = useState<{ token: string; telegramUrl: string; expiresAt: number } | null>(null);
   const [isGeneratingToken, setIsGeneratingToken] = useState<boolean>(false);
 
   // Section references for smooth scrolling
+  const goalsRef = useRef<HTMLDivElement>(null);
   const habitsRef = useRef<HTMLDivElement>(null);
   const tasksRef = useRef<HTMLDivElement>(null);
   const journalRef = useRef<HTMLDivElement>(null);
@@ -105,7 +112,7 @@ export default function DashboardPage() {
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
-  // Fetch habits, tasks, daily logs, analytics, and telegram status from Backend API
+  // Fetch goals, habits, tasks, daily logs, analytics, and telegram status from Backend API
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -126,7 +133,8 @@ export default function DashboardPage() {
         }
       }
 
-      const [habitsRes, tasksRes, logRes, analyticsRes, tgRes] = await Promise.all([
+      const [goalsRes, habitsRes, tasksRes, logRes, analyticsRes, tgRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/goals`, { headers }),
         fetch(`${API_BASE_URL}/api/habits`, { headers }),
         fetch(`${API_BASE_URL}/api/tasks`, { headers }),
         fetch(`${API_BASE_URL}/api/daily-logs/today`, { headers }),
@@ -138,13 +146,18 @@ export default function DashboardPage() {
         throw new Error('Gagal terhubung ke backend API server');
       }
 
-      const [habitsJson, tasksJson, logJson, analyticsJson, tgJson] = await Promise.all([
+      const [goalsJson, habitsJson, tasksJson, logJson, analyticsJson, tgJson] = await Promise.all([
+        goalsRes.json(),
         habitsRes.json(),
         tasksRes.json(),
         logRes.json(),
         analyticsRes.json(),
         tgRes.json(),
       ]);
+
+      if (goalsJson.success && Array.isArray(goalsJson.goals)) {
+        setGoals(goalsJson.goals);
+      }
 
       if (habitsJson.success && Array.isArray(habitsJson.habits)) {
         setHabits(habitsJson.habits);
@@ -183,7 +196,9 @@ export default function DashboardPage() {
   // Handle section scrolling on sidebar navigation click
   const handleSelectSection = (section: string) => {
     setActiveSection(section);
-    if (section === 'habits' && habitsRef.current) {
+    if (section === 'goals' && goalsRef.current) {
+      goalsRef.current.scrollIntoView({ behavior: 'smooth' });
+    } else if (section === 'habits' && habitsRef.current) {
       habitsRef.current.scrollIntoView({ behavior: 'smooth' });
     } else if (section === 'tasks' && tasksRef.current) {
       tasksRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -201,11 +216,68 @@ export default function DashboardPage() {
     localStorage.removeItem('lifeos_token');
     document.cookie = 'lifeos_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     setCurrentUser(null);
+    setGoals([]);
     setHabits([]);
     setTasks([]);
     setDailyLog(null);
     setAnalytics(null);
     setTelegramStatus({ isLinked: false, telegramLink: null });
+  };
+
+  // Create Goal
+  const handleCreateGoalSubmit = async (
+    title: string,
+    description: string,
+    deadline: string,
+    color: string
+  ) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/goals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ title, description, deadline: deadline || undefined, color }),
+      });
+      const json = await res.json();
+      if (json.success && json.goal) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Error creating goal:', err);
+    }
+  };
+
+  // Delete Goal
+  const handleDeleteGoal = async (goalId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Apakah Anda yakin ingin menghapus goal ini?')) return;
+
+    setGoals((prev) => prev.filter((g) => g.id !== goalId));
+    try {
+      await fetch(`${API_BASE_URL}/api/goals/${goalId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      fetchData();
+    } catch (err) {
+      console.error('Error deleting goal:', err);
+    }
+  };
+
+  // Add Task to Goal
+  const handleAddTaskToGoal = async (goalId: string, taskTitle: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ title: taskTitle, goalId }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Error adding task to goal:', err);
+    }
   };
 
   // Create Habit
@@ -435,6 +507,16 @@ export default function DashboardPage() {
                 analytics={analytics}
               />
 
+              {/* Goal Breakdown Section */}
+              <div ref={goalsRef}>
+                <GoalPanel
+                  goals={goals}
+                  onDeleteGoal={handleDeleteGoal}
+                  onOpenAddModal={() => setIsAddGoalModalOpen(true)}
+                  onAddTaskToGoal={handleAddTaskToGoal}
+                />
+              </div>
+
               {/* Habit Streaks Insight Section */}
               <div ref={streaksRef}>
                 <StreakInsights analytics={analytics} />
@@ -472,12 +554,18 @@ export default function DashboardPage() {
           )}
 
           <footer className="text-center text-[11px] text-zinc-400 py-4 border-t border-zinc-800/60 mt-8">
-            Life OS Platform — Full CRUD Habit, Task, Journaling & Persistent Telegram Bot Sync
+            Life OS Platform — Goal Breakdown, Habit Tracking & Persistent Telegram Bot Sync
           </footer>
         </main>
       </div>
 
       {/* Modals */}
+      <AddGoalModal
+        isOpen={isAddGoalModalOpen}
+        onClose={() => setIsAddGoalModalOpen(false)}
+        onSubmit={handleCreateGoalSubmit}
+      />
+
       <AddHabitModal
         isOpen={isAddHabitModalOpen}
         onClose={() => setIsAddHabitModalOpen(false)}
