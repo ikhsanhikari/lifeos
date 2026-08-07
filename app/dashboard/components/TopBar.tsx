@@ -5,11 +5,13 @@ import { Button } from '../../components/ui/Button';
 
 interface TopBarProps {
   currentUser: UserAuthData | null;
+  onOpenAddGoalModal: () => void;
   onOpenAddHabitModal: () => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
   currentUser,
+  onOpenAddGoalModal,
   onOpenAddHabitModal,
 }) => {
   const currentDateFormatted = new Date().toLocaleDateString('id-ID', {
@@ -43,11 +45,20 @@ export const TopBar: React.FC<TopBarProps> = ({
           )}
         </h1>
         <p className="text-xs text-zinc-400 mt-1">
-          Kelola kebiasaan harian, daftar tugas, dan refleksi jurnal secara terpadu.
+          Breakdown mimpi besar, kelola kebiasaan harian, dan refleksi jurnal secara terpadu.
         </p>
       </div>
 
-      <div className="flex items-center gap-3 self-start sm:self-auto">
+      <div className="flex items-center gap-2.5 self-start sm:self-auto">
+        <Button
+          variant="secondary"
+          size="md"
+          className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30"
+          leftIcon={<Sparkles className="w-4 h-4 text-emerald-400" />}
+          onClick={onOpenAddGoalModal}
+        >
+          Goal Baru
+        </Button>
         <Button
           variant="primary"
           size="md"
