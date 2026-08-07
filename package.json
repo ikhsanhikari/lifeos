@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "web:dev": "next dev -p 3011",
-    "build": "tsc && next build",
+    "build": "tsc -p tsconfig.server.json && next build",
     "start": "node dist/server.js",
     "web:start": "next start -p 3011",
     "db:generate": "prisma generate",
