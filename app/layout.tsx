@@ -1,9 +1,16 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
-  title: 'Life OS — Personal Habit & Task Manager',
-  description: 'Operating System harian untuk produktivitas, habits, dan jurnal terintegrasi Telegram.',
+  title: 'Life OS — Modern Habit, Task & Daily Journal System',
+  description: 'Operating System harian terpadu untuk kebiasaan, produktivitas, dan refleksi dengan integrasi Telegram.',
 };
 
 export default function RootLayout({
@@ -12,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className="dark">
-      <body className="bg-[#0b0f19] text-slate-100 min-h-screen">
+    <html lang="id" className={`dark ${inter.variable}`}>
+      <body className={`${inter.className} bg-[#09090b] text-zinc-100 min-h-screen antialiased selection:bg-indigo-500/30 selection:text-indigo-200`}>
         {children}
       </body>
     </html>
