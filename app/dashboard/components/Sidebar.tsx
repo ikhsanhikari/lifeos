@@ -147,14 +147,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Mobile Bottom Navigation Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 border-t border-zinc-800/80 backdrop-blur-xl px-2 py-2 flex items-center justify-around">
-        {navItems.slice(0, 4).map((item) => {
+        {navItems.slice(0, 5).map((item) => {
           const Icon = item.icon;
           const isActive = activeSection === item.id;
           return (
             <button
               key={item.id}
               onClick={() => setActiveSection(item.id)}
-              className={`flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-all ${
+              className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition-all ${
                 isActive ? 'text-indigo-400 font-semibold' : 'text-zinc-400'
               }`}
             >

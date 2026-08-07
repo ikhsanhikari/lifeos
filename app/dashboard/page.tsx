@@ -492,6 +492,7 @@ export default function DashboardPage() {
           {/* Top Header Bar */}
           <TopBar
             currentUser={currentUser}
+            onOpenAddGoalModal={() => setIsAddGoalModalOpen(true)}
             onOpenAddHabitModal={() => setIsAddHabitModalOpen(true)}
           />
 
