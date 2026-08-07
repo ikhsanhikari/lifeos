@@ -29,14 +29,14 @@ export async function sendMorningReminders(bot: Telegraf) {
 
       const todayLogs = await prisma.habitLog.findMany({
         where: {
-          habitId: { in: habits.map((h) => h.id) },
+          habitId: { in: habits.map((h: any) => h.id) },
           date: today,
           status: 'DONE',
         },
       });
 
-      const doneHabitSet = new Set(todayLogs.map((l) => l.habitId));
-      const pendingHabits = habits.filter((h) => !doneHabitSet.has(h.id));
+      const doneHabitSet = new Set(todayLogs.map((l: any) => l.habitId));
+      const pendingHabits = habits.filter((h: any) => !doneHabitSet.has(h.id));
 
       // Fetch pending tasks
       const pendingTasks = await prisma.task.findMany({
@@ -45,11 +45,11 @@ export async function sendMorningReminders(bot: Telegraf) {
       });
 
       let habitText = pendingHabits.length > 0
-        ? pendingHabits.map((h) => `• 🎯 ${h.name}`).join('\n')
+        ? pendingHabits.map((h: any) => `• 🎯 ${h.name}`).join('\n')
         : '• 🎉 Semua habit hari ini sudah selesai!';
 
       let taskText = pendingTasks.length > 0
-        ? pendingTasks.map((t) => `• 📋 ${t.title}`).join('\n')
+        ? pendingTasks.map((t: any) => `• 📋 ${t.title}`).join('\n')
         : '• 🎉 Tidak ada tugas tertunda!';
 
       const message =
