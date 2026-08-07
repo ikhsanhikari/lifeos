@@ -22,6 +22,25 @@ export async function sendMorningReminders(bot: Telegraf) {
       const chatId = Number(link.telegramChatId);
       const userId = link.userId;
 
+      // Fetch active goals
+      const activeGoal = await prisma.goal.findFirst({
+        where: { userId, status: 'ACTIVE' },
+        include: {
+          tasks: { select: { id: true, status: true } },
+        },
+        orderBy: [{ deadline: 'asc' }, { createdAt: 'desc' }],
+      });
+
+      let goalMessage = '';
+      if (activeGoal) {
+        const total = activeGoal.tasks.length;
+        const done = activeGoal.tasks.filter((t: any) => t.status === 'DONE').length;
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        goalMessage =
+          `🎯 *Fokus Goal Utama:* *${activeGoal.title}*\n` +
+          `   Progres: ${done}/${total} task (${pct}%)\n\n`;
+      }
+
       // Fetch pending habits for today
       const habits = await prisma.habit.findMany({
         where: { userId, isArchived: false },
@@ -54,10 +73,11 @@ export async function sendMorningReminders(bot: Telegraf) {
 
       const message =
         `☀️ *Selamat Pagi, ${link.user.name}!*\n` +
-        `Berikut pengingat produktivitas kamu hari ini:\n\n` +
+        `Berikut pengingat arah & produktivitas kamu hari ini:\n\n` +
+        `${goalMessage}` +
         `*Habits Hari Ini:* \n${habitText}\n\n` +
         `*Tasks Tertunda:* \n${taskText}\n\n` +
-        `_Ketik /habits untuk check-in habit, atau /tasks untuk kelola tugas!_`;
+        `_Ketik /focus untuk melihat fokus utama, atau /goals untuk melihat daftar mimpi kamu!_`;
 
       await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
     }

@@ -40,6 +40,13 @@ enum TaskStatus {
   CANCELLED
 }
 
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  ABANDONED
+}
+
 // ==========================================
 // MODELS
 // ==========================================
@@ -59,8 +66,30 @@ model User {
   tasks        Task[]
   dailyLogs    DailyLog[]
   magicTokens  MagicToken[]
+  goals        Goal[]
 
   @@map("users")
+}
+
+/// Goal entity for high-level objectives
+model Goal {
+  id          String     @id @default(uuid()) @db.Uuid
+  userId      String     @map("user_id") @db.Uuid
+  title       String
+  description String?
+  deadline    DateTime?  @db.Date
+  status      GoalStatus @default(ACTIVE)
+  color       String?
+  sortOrder   Int        @default(0) @map("sort_order")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks  Task[]
+  habits Habit[]
+
+  @@index([userId, status])
+  @@map("goals")
 }
 
 /// Magic login token for passwordless Telegram login
@@ -96,6 +125,7 @@ model TelegramLink {
 model Habit {
   id              String         @id @default(uuid()) @db.Uuid
   userId          String         @map("user_id") @db.Uuid
+  goalId          String?        @map("goal_id") @db.Uuid
   name            String
   description     String?
   frequency       HabitFrequency @default(DAILY)
@@ -107,6 +137,7 @@ model Habit {
   createdAt       DateTime       @default(now()) @map("created_at")
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal      Goal?      @relation(fields: [goalId], references: [id], onDelete: SetNull)
   habitLogs HabitLog[]
 
   @@map("habits")
@@ -133,6 +164,7 @@ model HabitLog {
 model Task {
   id          String       @id @default(uuid()) @db.Uuid
   userId      String       @map("user_id") @db.Uuid
+  goalId      String?      @map("goal_id") @db.Uuid
   title       String
   description String?
   priority    TaskPriority @default(MEDIUM)
@@ -146,6 +178,7 @@ model Task {
   createdAt   DateTime     @default(now()) @map("created_at")
 
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal     Goal?  @relation(fields: [goalId], references: [id], onDelete: SetNull)
   parent   Task?  @relation("TaskSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
   subtasks Task[] @relation("TaskSubtasks")
 

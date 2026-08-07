@@ -6,6 +6,8 @@ export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
 
 export interface TaskWithDetails {
   id: string;
+  userId: string;
+  goalId?: string | null;
   title: string;
   description: string | null;
   priority: TaskPriority;
@@ -17,6 +19,10 @@ export interface TaskWithDetails {
   sortOrder: number;
   completedAt: Date | null;
   createdAt: Date;
+  goal?: {
+    id: string;
+    title: string;
+  } | null;
 }
 
 /**
@@ -58,6 +64,11 @@ export async function getUserTasks(telegramChatId?: bigint | null): Promise<{ us
       userId,
       status: { in: ['TODO', 'IN_PROGRESS', 'DONE'] },
     },
+    include: {
+      goal: {
+        select: { id: true, title: true },
+      },
+    },
     orderBy: [
       { status: 'asc' },
       { priority: 'asc' },
@@ -76,6 +87,7 @@ export async function createTask(data: {
   description?: string;
   priority?: TaskPriority;
   dueDate?: Date;
+  goalId?: string;
   userId: string;
 }): Promise<TaskWithDetails> {
   const newTask = await prisma.task.create({
@@ -84,7 +96,13 @@ export async function createTask(data: {
       description: data.description,
       priority: data.priority || 'MEDIUM',
       dueDate: data.dueDate,
+      goalId: data.goalId || null,
       userId: data.userId,
+    },
+    include: {
+      goal: {
+        select: { id: true, title: true },
+      },
     },
   });
   return newTask as TaskWithDetails;
@@ -99,6 +117,11 @@ export async function updateTaskStatus(taskId: string, status: TaskStatus): Prom
     data: {
       status,
       completedAt: status === 'DONE' ? new Date() : null,
+    },
+    include: {
+      goal: {
+        select: { id: true, title: true },
+      },
     },
   });
   return updatedTask as TaskWithDetails;

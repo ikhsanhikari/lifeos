@@ -35,6 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'goals', label: 'Goals (Mimpi)', icon: Sparkles },
     { id: 'habits', label: 'Habit Tracker', icon: Target },
     { id: 'tasks', label: 'Tugas & Task', icon: CheckSquare },
     { id: 'journal', label: 'Jurnal Harian', icon: BookOpen },

@@ -50,6 +50,19 @@ import {
   verifyMagicLinkToken,
   verifyJwtSessionToken,
 } from './services/authService';
+import {
+  getUserGoals,
+  getGoalById,
+  createGoal,
+  updateGoal,
+  deleteGoal,
+  handleGoalsCommand,
+  handleCreateGoalCommand,
+  handleFocusCommand,
+  handleGoalDetailCallback,
+  goalWizardSessions,
+  renderProgressBar,
+} from './controllers/goalController';
 import { authMiddleware, AuthenticatedRequest } from './middleware/authMiddleware';
 
 // Load environment variables
@@ -193,6 +206,9 @@ async function handleLoginCommand(ctx: any) {
 // Telegram Bot Commands
 bot.command('menu', handleMainMenuCommand);
 bot.command('login', handleLoginCommand);
+bot.command('goals', handleGoalsCommand);
+bot.command('goal', handleCreateGoalCommand);
+bot.command('focus', handleFocusCommand);
 bot.command('habits', handleHabitsCommand);
 bot.command('tasks', handleTasksCommand);
 bot.command('task', handleCreateTaskCommand);
@@ -201,6 +217,8 @@ bot.command('today', handleTodaySummaryCommand);
 bot.command('streak', handleStreakCommand);
 
 // Telegram Keyboard Button Listeners (Tanpa perlu ketik /)
+bot.hears('🌟 Goals (Mimpi)', handleGoalsCommand);
+bot.hears('🔎 Focus Mode', handleFocusCommand);
 bot.hears('🎯 Habit Harian', handleHabitsCommand);
 bot.hears('📋 Task List', handleTasksCommand);
 bot.hears('📖 Jurnal & Mood', handleDailyLogCommand);
@@ -209,12 +227,47 @@ bot.hears('🔥 Habit Streaks', handleStreakCommand);
 bot.hears('⚙️ Menu Utama', handleMainMenuCommand);
 
 // Telegram Bot Callback Actions (Inline Keyboard Click)
+bot.action('nav_goals', handleGoalsCommand);
+bot.action('nav_focus', handleFocusCommand);
 bot.action('nav_habits', handleHabitsCommand);
 bot.action('nav_tasks', handleTasksCommand);
 bot.action('nav_log', handleDailyLogCommand);
 bot.action('nav_today', handleTodaySummaryCommand);
 bot.action('nav_streak', handleStreakCommand);
 bot.action('nav_web_info', handleWebInfoCallback);
+bot.action('prompt_add_goal', async (ctx) => {
+  await ctx.answerCbQuery();
+  await ctx.reply(
+    '🚀 *Ketik perintah berikut untuk membuat Goal baru:*\n\n' +
+      'Format: `/goal Judul Goal Kamu`\n' +
+      'Contoh: `/goal Launch LifeOS ke 100 User`',
+    { parse_mode: 'Markdown' }
+  );
+});
+
+bot.action(/^goal_detail:(.+)$/, handleGoalDetailCallback);
+bot.action(/^goal_add_task_wizard:(.+)$/, async (ctx) => {
+  if (!ctx.chat || !('data' in ctx.callbackQuery!)) return;
+  const chatId = ctx.chat.id;
+  const goalId = ctx.callbackQuery.data.replace('goal_add_task_wizard:', '');
+  const goal = await getGoalById(goalId);
+  if (!goal) return;
+
+  goalWizardSessions.set(chatId, {
+    goalId: goal.id,
+    goalTitle: goal.title,
+    taskCount: goal.totalTasks,
+  });
+
+  await ctx.answerCbQuery();
+  await ctx.reply(
+    `⚡ *Breakdown Mode Aktif untuk Goal "${goal.title}"*\n\n` +
+      `Ketikkan task baru langsung di chat (satu per satu):\n` +
+      `• Kirim teks biasa untuk tambah task\n` +
+      `• Ketik \`/done\` untuk selesai`,
+    { parse_mode: 'Markdown' }
+  );
+});
 
 bot.action(/^toggle_habit:(.+)$/, handleHabitToggleCallback);
 bot.action('refresh_habits', handleHabitToggleCallback);
@@ -222,6 +275,78 @@ bot.action(/^toggle_task:(.+)$/, handleTaskToggleCallback);
 bot.action('refresh_tasks', handleTaskToggleCallback);
 bot.action(/^log_mood:(.+)$/, handleLogMoodCallback);
 bot.action(/^log_energy:(.+)$/, handleLogEnergyCallback);
+
+// Text Message Middleware for Goal Breakdown Wizard
+bot.on('text', async (ctx, next) => {
+  if (!ctx.chat) return next();
+  const chatId = ctx.chat.id;
+  const session = goalWizardSessions.get(chatId);
+
+  if (!session) {
+    return next();
+  }
+
+  const text = ctx.message.text.trim();
+
+  if (text.startsWith('/')) {
+    if (text === '/done') {
+      goalWizardSessions.delete(chatId);
+      const goal = await getGoalById(session.goalId);
+      const progressText = goal ? renderProgressBar(goal.progress) : '';
+      await ctx.reply(
+        `🎉 *Breakdown Mode Selesai!*\n\n` +
+          `📌 Goal: *"${session.goalTitle}"*\n` +
+          `📊 Progres: ${progressText}\n\n` +
+          `Ketik /goals untuk melihat daftar mimpi kamu, atau /focus untuk melihat prioritas!`,
+        { parse_mode: 'Markdown' }
+      );
+      return;
+    } else if (text === '/skip') {
+      goalWizardSessions.delete(chatId);
+      await ctx.reply('⏩ Breakdown dilewati. Kamu bisa me-breakdown task kapan saja!');
+      return;
+    } else {
+      // If user runs another command like /menu or /goals, cancel wizard & proceed
+      goalWizardSessions.delete(chatId);
+      return next();
+    }
+  }
+
+  // Create task for active breakdown wizard session
+  try {
+    const telegramChatId = BigInt(chatId);
+    const telegramLink = await prisma.telegramLink.findUnique({
+      where: { telegramChatId },
+      select: { userId: true },
+    });
+    const firstUser = await prisma.user.findFirst();
+    const userId = telegramLink?.userId || firstUser?.id;
+
+    if (!userId) {
+      await ctx.reply('❌ User tidak ditemukan.');
+      return;
+    }
+
+    const newTask = await createTask({
+      title: text,
+      goalId: session.goalId,
+      userId,
+    });
+
+    session.taskCount += 1;
+    goalWizardSessions.set(chatId, session);
+
+    await ctx.reply(
+      `✅ *Task #${session.taskCount} ditambahkan!*\n` +
+        `📋 *"${newTask.title}"*\n\n` +
+        `Kirim task berikutnya, atau ketik \`/done\` jika sudah selesai.`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (err) {
+    console.error('Error creating task in breakdown wizard:', err);
+    await ctx.reply('❌ Gagal menambahkan task.');
+  }
+});
 
 // Express API Routes & Auth Middleware Registration
 app.use(authMiddleware);
@@ -426,6 +551,102 @@ app.post('/api/habits/check-in', async (req: AuthenticatedRequest, res: Response
   }
 });
 
+// GOAL REST API ENDPOINTS
+app.get('/api/goals', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.json({ success: true, goals: [] });
+      return;
+    }
+
+    const chatId = req.user.telegramChatId ? BigInt(req.user.telegramChatId) : null;
+    const goals = await getUserGoals(chatId);
+    res.json({ success: true, goals });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/goals', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const { title, description, deadline, color } = req.body;
+    if (!title) {
+      res.status(400).json({ success: false, message: 'title is required' });
+      return;
+    }
+
+    const goal = await createGoal({
+      title,
+      description,
+      deadline: deadline ? new Date(deadline) : undefined,
+      color,
+      userId: req.user.id,
+    });
+
+    res.json({ success: true, goal });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/goals/:id', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const goalId = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
+    const goal = await getGoalById(goalId);
+    if (!goal) {
+      res.status(404).json({ success: false, message: 'Goal not found' });
+      return;
+    }
+    res.json({ success: true, goal });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.patch('/api/goals/:id', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const goalId = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
+    const { title, description, deadline, status, color } = req.body;
+
+    const updated = await updateGoal(goalId, {
+      title,
+      description,
+      deadline: deadline !== undefined ? (deadline ? new Date(deadline) : null) : undefined,
+      status,
+      color,
+    });
+
+    res.json({ success: true, goal: updated });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.delete('/api/goals/:id', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const goalId = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
+    const deleted = await deleteGoal(goalId);
+    res.json({ success: true, goal: deleted });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // TASK REST API ENDPOINTS
 app.get('/api/tasks', async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -449,13 +670,19 @@ app.post('/api/tasks', async (req: AuthenticatedRequest, res: Response) => {
       return;
     }
 
-    const { title, priority, dueDate } = req.body;
+    const { title, priority, dueDate, goalId } = req.body;
     if (!title) {
       res.status(400).json({ success: false, message: 'title is required' });
       return;
     }
 
-    const newTask = await createTask({ title, priority, dueDate: dueDate ? new Date(dueDate) : undefined, userId: req.user.id });
+    const newTask = await createTask({
+      title,
+      priority,
+      dueDate: dueDate ? new Date(dueDate) : undefined,
+      goalId,
+      userId: req.user.id,
+    });
     res.json({ success: true, task: newTask });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

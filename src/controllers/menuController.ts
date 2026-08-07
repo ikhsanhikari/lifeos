@@ -7,6 +7,9 @@ export async function registerTelegramCommands(bot: Telegraf) {
   try {
     await bot.telegram.setMyCommands([
       { command: 'menu', description: '📱 Buka Menu Utama Interaktif' },
+      { command: 'goals', description: '🌟 Daftar Goal & Progress Mimpi Besar' },
+      { command: 'goal', description: '🚀 Buat Goal Baru & Breakdown Task' },
+      { command: 'focus', description: '🔎 Focus Mode — Goal & Task Prioritas' },
       { command: 'habits', description: '🎯 Daftar Habit Harian & Check-in' },
       { command: 'tasks', description: '📋 Daftar Tugas Harian & Status' },
       { command: 'log', description: '📖 Catat Mood & Jurnal Hari Ini' },
@@ -25,6 +28,7 @@ export async function registerTelegramCommands(bot: Telegraf) {
  */
 export function getPersistentMenuKeyboard() {
   return Markup.keyboard([
+    ['🌟 Goals (Mimpi)', '🔎 Focus Mode'],
     ['🎯 Habit Harian', '📋 Task List'],
     ['📖 Jurnal & Mood', '📊 Today Summary'],
     ['🔥 Habit Streaks', '⚙️ Menu Utama'],
@@ -37,6 +41,10 @@ export function getPersistentMenuKeyboard() {
 export async function handleMainMenuCommand(ctx: Context) {
   try {
     const inlineMenu = Markup.inlineKeyboard([
+      [
+        Markup.button.callback('🌟 Goals (Mimpi)', 'nav_goals'),
+        Markup.button.callback('🔎 Focus Mode', 'nav_focus'),
+      ],
       [
         Markup.button.callback('🎯 Habit Harian', 'nav_habits'),
         Markup.button.callback('📋 Task List', 'nav_tasks'),
@@ -54,11 +62,12 @@ export async function handleMainMenuCommand(ctx: Context) {
     const messageText =
       `📱 *Menu Utama Life OS Platform*\n\n` +
       `Silakan pilih menu di bawah ini tanpa perlu menghafal perintah slash commands:\n\n` +
+      `• *Goals (Mimpi):* Kelola mimpi besar & pantau progress\n` +
+      `• *Focus Mode:* Prioritas utama yang harus diselesaikan\n` +
       `• *Habit Harian:* Lakukan check-in kebiasaan harian\n` +
       `• *Task List:* Kelola tugas harian kamu\n` +
       `• *Jurnal & Mood:* Catat refleksi hari ini\n` +
       `• *Ringkasan Hari Ini:* Lihat laporan progres harian\n` +
-      `• *Habit Streaks:* Cek rekor konsistensi kamu\n` +
       `• *Web Dashboard:* http://localhost:3001/dashboard`;
 
     await ctx.reply(messageText, {
