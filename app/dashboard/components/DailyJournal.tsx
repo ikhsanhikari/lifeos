@@ -1,0 +1,163 @@
+import React, { useState, useEffect } from 'react';
+import { BookOpen, Save, CheckCircle, Sparkles } from 'lucide-react';
+import { DailyLogData } from '../page';
+import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+
+interface DailyJournalProps {
+  dailyLog: DailyLogData | null;
+  onSaveDailyLog: (mood: number, energy: number, journal: string) => Promise<void>;
+}
+
+export const DailyJournal: React.FC<DailyJournalProps> = ({
+  dailyLog,
+  onSaveDailyLog,
+}) => {
+  const [mood, setMood] = useState<number>(4);
+  const [energy, setEnergy] = useState<number>(4);
+  const [journal, setJournal] = useState<string>('');
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (dailyLog) {
+      setMood(dailyLog.mood || 4);
+      setEnergy(dailyLog.energy || 4);
+      setJournal(dailyLog.journal || '');
+    }
+  }, [dailyLog]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setSaveSuccess(false);
+
+    try {
+      await onSaveDailyLog(mood, energy, journal);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const moodOptions = [
+    { value: 1, label: 'Sangat Buruk', emoji: '😭' },
+    { value: 2, label: 'Buruk', emoji: '🙁' },
+    { value: 3, label: 'Biasa', emoji: '😐' },
+    { value: 4, label: 'Baik', emoji: '🙂' },
+    { value: 5, label: 'Sangat Baik', emoji: '😊' },
+  ];
+
+  const energyOptions = [
+    { value: 1, label: 'Low Energy', icon: '🪫' },
+    { value: 2, label: 'Moderate', icon: '🔋' },
+    { value: 3, label: 'Good', icon: '⚡' },
+    { value: 4, label: 'High', icon: '⚡⚡' },
+    { value: 5, label: 'Peak Performance', icon: '⚡⚡⚡' },
+  ];
+
+  return (
+    <Card className="relative overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800/80 mb-5">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+            <BookOpen className="w-4 h-4" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-zinc-100 tracking-tight">Jurnal Harian & Refleksi</h2>
+            <p className="text-[11px] text-zinc-400">Catat mood, energi fisik, dan jurnal singkat harian</p>
+          </div>
+        </div>
+
+        {saveSuccess && (
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold animate-in fade-in slide-in-from-top-1">
+            <CheckCircle className="w-3.5 h-3.5" />
+            <span>Jurnal Berhasil Disimpan</span>
+          </div>
+        )}
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Mood Selector */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center justify-between">
+              <span>Suasana Hati (Mood)</span>
+              <span className="text-indigo-400 font-bold">
+                {moodOptions.find((m) => m.value === mood)?.label}
+              </span>
+            </label>
+            <div className="grid grid-cols-5 gap-2 bg-zinc-900/90 p-1.5 rounded-xl border border-zinc-800">
+              {moodOptions.map((m) => (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => setMood(m.value)}
+                  className={`py-2 rounded-lg text-lg transition-all duration-200 flex items-center justify-center ${
+                    mood === m.value
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 scale-105 font-bold'
+                      : 'hover:bg-zinc-800 text-zinc-400'
+                  }`}
+                >
+                  {m.emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Energy Level Selector */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center justify-between">
+              <span>Tingkat Energi Fisik</span>
+              <span className="text-amber-400 font-bold">{energy} / 5</span>
+            </label>
+            <div className="grid grid-cols-5 gap-2 bg-zinc-900/90 p-1.5 rounded-xl border border-zinc-800">
+              {energyOptions.map((e) => (
+                <button
+                  key={e.value}
+                  type="button"
+                  onClick={() => setEnergy(e.value)}
+                  className={`py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                    energy === e.value
+                      ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300 scale-105'
+                      : 'hover:bg-zinc-800 text-zinc-400'
+                  }`}
+                >
+                  {e.icon}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Reflection Textarea */}
+        <div className="space-y-2">
+          <label className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
+            Catatan Jurnal & Refleksi
+          </label>
+          <textarea
+            rows={3}
+            placeholder="Apa pencapaian terbaik atau ide penting yang kamu dapatkan hari ini? Tulis di sini..."
+            value={journal}
+            onChange={(e) => setJournal(e.target.value)}
+            className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl p-3.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors resize-none leading-relaxed"
+          />
+        </div>
+
+        {/* Submit Action */}
+        <div className="flex justify-end">
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            isLoading={isSaving}
+            leftIcon={<Save className="w-3.5 h-3.5" />}
+          >
+            Simpan Jurnal
+          </Button>
+        </div>
+      </form>
+    </Card>
+  );
+};
