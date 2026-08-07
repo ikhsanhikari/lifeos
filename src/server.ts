@@ -45,6 +45,12 @@ import {
   handleMainMenuCommand,
   handleWebInfoCallback,
 } from './controllers/menuController';
+import {
+  generateMagicLinkToken,
+  verifyMagicLinkToken,
+  verifyJwtSessionToken,
+} from './services/authService';
+import { authMiddleware, AuthenticatedRequest } from './middleware/authMiddleware';
 
 // Load environment variables
 dotenv.config();
@@ -160,8 +166,37 @@ bot.command('start', async (ctx) => {
   }
 });
 
+// Handler untuk Telegram Magic Login Link (/login)
+async function handleLoginCommand(ctx: any) {
+  try {
+    if (!ctx.chat) return;
+    const chatId = BigInt(ctx.chat.id);
+    const { magicLinkUrl, userName } = await generateMagicLinkToken(chatId);
+
+    const localhostUrl = magicLinkUrl.replace('127.0.0.1', 'localhost');
+
+    const htmlMessage =
+      `🔑 <b>Magic Login Link Web Dashboard</b>\n\n` +
+      `Halo <b>${userName}</b>! Klik atau tap tautan biru di bawah ini untuk langsung masuk ke Web Dashboard tanpa password:\n\n` +
+      `🚀 <a href="${magicLinkUrl}"><b>👉 KLIK DI SINI UNTUK LOGIN INSTAN 👈</b></a>\n\n` +
+      `<i>Atau gunakan tautan alternatif:</i>\n` +
+      `• IP: ${magicLinkUrl}\n` +
+      `• Localhost: ${localhostUrl}\n\n` +
+      `⏳ <b>Catatan:</b> Link ini berlaku selama 15 menit. Begitu masuk, Anda akan tetap login permanen!`;
+
+    await ctx.reply(htmlMessage, {
+      parse_mode: 'HTML',
+      link_preview_options: { is_disabled: true },
+    });
+  } catch (error) {
+    console.error('Error handling /login command:', error);
+    await ctx.reply('❌ Gagal membuat magic login link.');
+  }
+}
+
 // Telegram Bot Commands
 bot.command('menu', handleMainMenuCommand);
+bot.command('login', handleLoginCommand);
 bot.command('habits', handleHabitsCommand);
 bot.command('tasks', handleTasksCommand);
 bot.command('task', handleCreateTaskCommand);
@@ -192,7 +227,9 @@ bot.action('refresh_tasks', handleTaskToggleCallback);
 bot.action(/^log_mood:(.+)$/, handleLogMoodCallback);
 bot.action(/^log_energy:(.+)$/, handleLogEnergyCallback);
 
-// Express API Routes
+// Express API Routes & Auth Middleware Registration
+app.use(authMiddleware);
+
 app.get('/health', (req: Request, res: Response) => {
   res.json({
     status: 'ok',
@@ -201,10 +238,75 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
-// ANALYTICS REST API ENDPOINTS
-app.get('/api/analytics/summary', async (req: Request, res: Response) => {
+// AUTH REST API ENDPOINTS
+app.post('/api/auth/verify-magic-link', async (req: Request, res: Response) => {
   try {
-    const chatId = req.query.chatId ? BigInt(req.query.chatId as string) : null;
+    const { token } = req.body;
+    if (!token) {
+      res.status(400).json({ success: false, message: 'Magic link token is required' });
+      return;
+    }
+
+    const result = await verifyMagicLinkToken(token);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+
+    res.json({
+      success: true,
+      token: result.jwtToken,
+      user: result.user,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/auth/me', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { telegramLink: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ success: false, message: 'User not found' });
+      return;
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+        telegramLink: user.telegramLink,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ANALYTICS REST API ENDPOINTS
+app.get('/api/analytics/summary', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.json({
+        success: true,
+        summary: { focusScore: 0, habitStreaks: [], recentMoodLogs: [] },
+      });
+      return;
+    }
+
+    const chatId = req.user.telegramChatId ? BigInt(req.user.telegramChatId) : null;
     const summary = await getAnalyticsSummary(chatId);
     res.json({ success: true, summary });
   } catch (error: any) {
@@ -213,9 +315,14 @@ app.get('/api/analytics/summary', async (req: Request, res: Response) => {
 });
 
 // DAILY LOG REST API ENDPOINTS
-app.get('/api/daily-logs/today', async (req: Request, res: Response) => {
+app.get('/api/daily-logs/today', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const chatId = req.query.chatId ? BigInt(req.query.chatId as string) : null;
+    if (!req.user) {
+      res.json({ success: true, dailyLog: null });
+      return;
+    }
+
+    const chatId = req.user.telegramChatId ? BigInt(req.user.telegramChatId) : null;
     const result = await getTodayDailyLog(chatId);
     res.json({ success: true, ...result });
   } catch (error: any) {
@@ -223,16 +330,21 @@ app.get('/api/daily-logs/today', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/daily-logs', async (req: Request, res: Response) => {
+app.post('/api/daily-logs', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { mood, energy, journal, highlights, userId } = req.body;
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const { mood, energy, journal, highlights } = req.body;
     if (mood === undefined || energy === undefined) {
       res.status(400).json({ success: false, message: 'mood and energy are required' });
       return;
     }
 
     const savedLog = await upsertDailyLog({
-      userId,
+      userId: req.user.id,
       mood: parseInt(mood, 10),
       energy: parseInt(energy, 10),
       journal,
@@ -245,9 +357,14 @@ app.post('/api/daily-logs', async (req: Request, res: Response) => {
 });
 
 // Route to get daily habits via REST API
-app.get('/api/habits', async (req: Request, res: Response) => {
+app.get('/api/habits', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const chatId = req.query.chatId ? BigInt(req.query.chatId as string) : null;
+    if (!req.user) {
+      res.json({ success: true, habits: [] });
+      return;
+    }
+
+    const chatId = req.user.telegramChatId ? BigInt(req.user.telegramChatId) : null;
     const result = await getUserDailyHabits(chatId);
     res.json({ success: true, ...result });
   } catch (error: any) {
@@ -256,15 +373,20 @@ app.get('/api/habits', async (req: Request, res: Response) => {
 });
 
 // Route to create new habit via REST API
-app.post('/api/habits', async (req: Request, res: Response) => {
+app.post('/api/habits', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { name, description, frequency, color, userId } = req.body;
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const { name, description, frequency, color } = req.body;
     if (!name) {
       res.status(400).json({ success: false, message: 'name is required' });
       return;
     }
 
-    const newHabit = await createHabit({ name, description, frequency, color, userId });
+    const newHabit = await createHabit({ name, description, frequency, color, userId: req.user.id });
     res.json({ success: true, habit: newHabit });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
@@ -272,8 +394,13 @@ app.post('/api/habits', async (req: Request, res: Response) => {
 });
 
 // Route to archive/delete habit via REST API
-app.delete('/api/habits/:id', async (req: Request, res: Response) => {
+app.delete('/api/habits/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
     const habitId = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
     const archivedHabit = await deleteHabit(habitId);
     res.json({ success: true, habit: archivedHabit });
@@ -283,8 +410,13 @@ app.delete('/api/habits/:id', async (req: Request, res: Response) => {
 });
 
 // Route to toggle habit check-in status via REST API
-app.post('/api/habits/check-in', async (req: Request, res: Response) => {
+app.post('/api/habits/check-in', async (req: AuthenticatedRequest, res: Response) => {
   try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
     const { habitId } = req.body;
     if (!habitId) {
       res.status(400).json({ success: false, message: 'habitId is required' });
@@ -299,9 +431,14 @@ app.post('/api/habits/check-in', async (req: Request, res: Response) => {
 });
 
 // TASK REST API ENDPOINTS
-app.get('/api/tasks', async (req: Request, res: Response) => {
+app.get('/api/tasks', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const chatId = req.query.chatId ? BigInt(req.query.chatId as string) : null;
+    if (!req.user) {
+      res.json({ success: true, tasks: [] });
+      return;
+    }
+
+    const chatId = req.user.telegramChatId ? BigInt(req.user.telegramChatId) : null;
     const result = await getUserTasks(chatId);
     res.json({ success: true, ...result });
   } catch (error: any) {
@@ -309,23 +446,33 @@ app.get('/api/tasks', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/tasks', async (req: Request, res: Response) => {
+app.post('/api/tasks', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { title, priority, dueDate, userId } = req.body;
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const { title, priority, dueDate } = req.body;
     if (!title) {
       res.status(400).json({ success: false, message: 'title is required' });
       return;
     }
 
-    const newTask = await createTask({ title, priority, dueDate: dueDate ? new Date(dueDate) : undefined, userId });
+    const newTask = await createTask({ title, priority, dueDate: dueDate ? new Date(dueDate) : undefined, userId: req.user.id });
     res.json({ success: true, task: newTask });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-app.patch('/api/tasks/:id', async (req: Request, res: Response) => {
+app.patch('/api/tasks/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
     const taskId = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
     const { status } = req.body;
     const updatedTask = await updateTaskStatus(taskId, status);
@@ -335,8 +482,13 @@ app.patch('/api/tasks/:id', async (req: Request, res: Response) => {
   }
 });
 
-app.delete('/api/tasks/:id', async (req: Request, res: Response) => {
+app.delete('/api/tasks/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
     const taskId = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
     const deletedTask = await deleteTask(taskId);
     res.json({ success: true, task: deletedTask });
@@ -346,22 +498,14 @@ app.delete('/api/tasks/:id', async (req: Request, res: Response) => {
 });
 
 // TELEGRAM LINKING REST API ENDPOINTS
-app.post('/api/telegram/link-token', async (req: Request, res: Response) => {
+app.post('/api/telegram/link-token', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    let userId = req.body.userId;
-    if (!userId) {
-      const firstUser = await prisma.user.findFirst();
-      if (!firstUser) {
-        const newUser = await prisma.user.create({
-          data: { email: 'default_user@lifeos.internal', name: 'Alex (Default User)' },
-        });
-        userId = newUser.id;
-      } else {
-        userId = firstUser.id;
-      }
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
     }
 
-    const { token, expiresAt, botUsername } = await generateLinkToken(userId);
+    const { token, expiresAt, botUsername } = await generateLinkToken(req.user.id);
     const telegramUrl = `https://t.me/${botUsername}?start=${token}`;
 
     res.json({
@@ -375,21 +519,15 @@ app.post('/api/telegram/link-token', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/telegram/status', async (req: Request, res: Response) => {
+app.get('/api/telegram/status', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    let userId = req.query.userId as string;
-    if (!userId) {
-      const firstUser = await prisma.user.findFirst();
-      if (firstUser) userId = firstUser.id;
-    }
-
-    if (!userId) {
-      res.json({ isLinked: false, telegramLink: null });
+    if (!req.user) {
+      res.json({ success: true, isLinked: false, telegramLink: null });
       return;
     }
 
     const telegramLink = await prisma.telegramLink.findUnique({
-      where: { userId },
+      where: { userId: req.user.id },
       include: { user: true },
     });
 

@@ -54,9 +54,16 @@ export interface TelegramStatusData {
   } | null;
 }
 
+export interface UserAuthData {
+  id: string;
+  name: string;
+  email: string;
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export default function DashboardPage() {
+  const [currentUser, setCurrentUser] = useState<UserAuthData | null>(null);
   const [habits, setHabits] = useState<HabitData[]>([]);
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [dailyLog, setDailyLog] = useState<DailyLogData | null>(null);
@@ -89,16 +96,36 @@ export default function DashboardPage() {
   const [linkTokenData, setLinkTokenData] = useState<{ token: string; telegramUrl: string; expiresAt: number } | null>(null);
   const [isGeneratingToken, setIsGeneratingToken] = useState<boolean>(false);
 
+  const getAuthHeaders = (): Record<string, string> => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('lifeos_token') : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
+      const headers = getAuthHeaders();
+
+      const token = typeof window !== 'undefined' ? localStorage.getItem('lifeos_token') : null;
+      if (token) {
+        try {
+          const meRes = await fetch(`${API_BASE_URL}/api/auth/me`, { headers });
+          const meJson = await meRes.json();
+          if (meJson.success && meJson.user) {
+            setCurrentUser(meJson.user);
+          }
+        } catch (e) {
+          // ignore auth check failure
+        }
+      }
+
       const [habitsRes, tasksRes, logRes, analyticsRes, tgRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/habits`),
-        fetch(`${API_BASE_URL}/api/tasks`),
-        fetch(`${API_BASE_URL}/api/daily-logs/today`),
-        fetch(`${API_BASE_URL}/api/analytics/summary`),
-        fetch(`${API_BASE_URL}/api/telegram/status`),
+        fetch(`${API_BASE_URL}/api/habits`, { headers }),
+        fetch(`${API_BASE_URL}/api/tasks`, { headers }),
+        fetch(`${API_BASE_URL}/api/daily-logs/today`, { headers }),
+        fetch(`${API_BASE_URL}/api/analytics/summary`, { headers }),
+        fetch(`${API_BASE_URL}/api/telegram/status`, { headers }),
       ]);
 
       if (!habitsRes.ok || !tasksRes.ok) {
@@ -150,6 +177,17 @@ export default function DashboardPage() {
     fetchData();
   }, [fetchData]);
 
+  const handleLogout = () => {
+    localStorage.removeItem('lifeos_token');
+    document.cookie = 'lifeos_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    setCurrentUser(null);
+    setHabits([]);
+    setTasks([]);
+    setDailyLog(null);
+    setAnalytics(null);
+    setTelegramStatus({ isLinked: false, telegramLink: null });
+  };
+
   const handleCreateHabitSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newHabitName.trim()) return;
@@ -158,7 +196,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/habits`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
           name: newHabitName.trim(),
           frequency: newHabitFrequency,
@@ -185,7 +223,7 @@ export default function DashboardPage() {
 
     setHabits((prev) => prev.filter((h) => h.id !== habitId));
     try {
-      await fetch(`${API_BASE_URL}/api/habits/${habitId}`, { method: 'DELETE' });
+      await fetch(`${API_BASE_URL}/api/habits/${habitId}`, { method: 'DELETE', headers: getAuthHeaders() });
       fetchData();
     } catch (err) {
       console.error('Error deleting habit:', err);
@@ -198,7 +236,7 @@ export default function DashboardPage() {
 
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
     try {
-      await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, { method: 'DELETE' });
+      await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, { method: 'DELETE', headers: getAuthHeaders() });
       fetchData();
     } catch (err) {
       console.error('Error deleting task:', err);
@@ -213,7 +251,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/daily-logs`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
           mood: selectedMood,
           energy: selectedEnergy,
@@ -240,7 +278,7 @@ export default function DashboardPage() {
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/telegram/status`);
+        const res = await fetch(`${API_BASE_URL}/api/telegram/status`, { headers: getAuthHeaders() });
         const json = await res.json();
         if (json.success && json.isLinked) {
           setTelegramStatus({ isLinked: true, telegramLink: json.telegramLink });
@@ -261,7 +299,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/telegram/link-token`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({}),
       });
       const json = await res.json();
@@ -287,7 +325,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/habits/check-in`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ habitId: id }),
       });
       const json = await res.json();
@@ -311,7 +349,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ status: nextStatus }),
       });
       const json = await res.json();
@@ -334,7 +372,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/tasks`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
           title: newTaskTitle.trim(),
           priority: newTaskPriority,
@@ -408,11 +446,15 @@ export default function DashboardPage() {
 
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-indigo-400 mb-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Life OS Platform · Full CRUD & Management System
+              <span className={`w-2 h-2 rounded-full ${currentUser ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+              {currentUser ? `Sesi Aktif · ${currentUser.email}` : 'Mode Tamu · Silakan Login via Telegram'}
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Selamat Datang Kembali, <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-pink-400 bg-clip-text text-transparent">Alex</span> 👋
+              {currentUser ? (
+                <>Selamat Datang Kembali, <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-pink-400 bg-clip-text text-transparent">{currentUser.name}</span> 👋</>
+              ) : (
+                <>Status: <span className="text-amber-400">Mode Tamu (Guest)</span> 🔒</>
+              )}
             </h1>
             <p className="text-slate-400 text-sm mt-1">
               {new Date().toLocaleDateString('id-ID', {
@@ -421,7 +463,7 @@ export default function DashboardPage() {
                 month: 'long',
                 year: 'numeric',
               })}{' '}
-              — Kelola habit, tugas, dan jurnal harian kamu secara terpadu.
+              — {currentUser ? 'Kelola habit, tugas, dan jurnal harian kamu secara terpadu.' : 'Gunakan perintah /login di bot Telegram untuk masuk ke akun Anda.'}
             </p>
           </div>
 
@@ -433,16 +475,24 @@ export default function DashboardPage() {
               <span>🎯 + Habit Baru</span>
             </button>
 
-            <button
-              onClick={fetchData}
-              disabled={isLoading}
-              className="px-3 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 text-xs font-medium text-slate-300 flex items-center gap-1.5 transition-all"
-            >
-              <svg className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              <span>Sync API</span>
-            </button>
+            {currentUser ? (
+              <button
+                onClick={handleLogout}
+                title="Keluar dari Sesi"
+                className="px-3 py-1.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-xs font-medium text-rose-400 transition-all flex items-center gap-1"
+              >
+                <span>🚪 Logout ({currentUser.name})</span>
+              </button>
+            ) : (
+              <a
+                href="https://t.me/LifeOSBot"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-1.5 animate-bounce"
+              >
+                <span>🔑 Magic Login (/login)</span>
+              </a>
+            )}
 
             {telegramStatus.isLinked ? (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-xs font-medium text-emerald-400">
@@ -1054,7 +1104,7 @@ export default function DashboardPage() {
         )}
 
         <footer className="text-center text-xs text-slate-500 py-4">
-          Life OS Platform — Full CRUD Habit, Task, Journaling & Telegram Integration Live
+          Life OS Platform — Full CRUD Habit, Task, Journaling & Persistent Telegram Magic Login Live
         </footer>
       </div>
     </div>
