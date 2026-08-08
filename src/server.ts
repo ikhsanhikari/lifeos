@@ -38,6 +38,7 @@ import {
   sendMorningReminders,
   sendEveningRecapReminders,
   sendStreakAlertReminders,
+  sendTimeSpecificReminders,
 } from './services/cronService';
 import {
   registerTelegramCommands,
@@ -852,8 +853,11 @@ app.post('/api/cron/trigger', async (req: Request, res: Response) => {
     } else if (job === 'streak') {
       await sendStreakAlertReminders(bot);
       res.json({ success: true, message: 'Streak alert push sent to Telegram' });
+    } else if (job === 'time-specific') {
+      await sendTimeSpecificReminders(bot);
+      res.json({ success: true, message: 'Hourly time-specific reminder push sent to Telegram' });
     } else {
-      res.status(400).json({ success: false, message: 'Invalid job type. Use "morning", "evening", or "streak"' });
+      res.status(400).json({ success: false, message: 'Invalid job type. Use "morning", "evening", "streak", or "time-specific"' });
     }
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

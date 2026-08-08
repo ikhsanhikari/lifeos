@@ -144,7 +144,8 @@ function buildTasksInlineKeyboard(tasks: TaskWithDetails[]) {
   const buttons = tasks.slice(0, 8).map((task) => {
     const statusIcon = task.status === 'DONE' ? '✅' : '⬜';
     const priorityBadge = task.priority === 'URGENT' ? '🔴' : task.priority === 'HIGH' ? '🟠' : task.priority === 'MEDIUM' ? '🟡' : '⚪';
-    const label = `${statusIcon} ${priorityBadge} ${task.title}`;
+    const goalTag = task.goal ? `[${task.goal.title}] ` : '';
+    const label = `${statusIcon} ${priorityBadge} ${goalTag}${task.title}`;
     return [Markup.button.callback(label, `toggle_task:${task.id}`)];
   });
 
