@@ -140,7 +140,7 @@ export default function DashboardPage() {
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
-  // Pre-fetch share card data & pre-warm ALL card formats and themes in background
+  // Lightweight pre-fetch share card data in background (0 impact on dashboard load speed)
   const fetchShareCardData = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/share/daily-card`, {
@@ -151,24 +151,12 @@ export default function DashboardPage() {
         setShareCardData(json.data);
         setIsShareLoading(false);
 
-        // Pre-load ALL card formats (Square, Story, Carousel 1-4) across all themes into browser cache!
+        // Pre-load ONLY 1 default square preview image lazily in background
         if (typeof window !== 'undefined') {
           const encData = encodeURIComponent(JSON.stringify(json.data));
-          const themes = ['strava', 'cyber', 'purple', 'ocean', 'dark'];
-          themes.forEach((theme) => {
-            const urls = [
-              `/og/daily-card?format=square&theme=${theme}&data=${encData}`,
-              `/og/daily-card?format=story&theme=${theme}&data=${encData}`,
-              `/og/daily-card?format=carousel&slide=0&theme=${theme}&data=${encData}`,
-              `/og/daily-card?format=carousel&slide=1&theme=${theme}&data=${encData}`,
-              `/og/daily-card?format=carousel&slide=2&theme=${theme}&data=${encData}`,
-              `/og/daily-card?format=carousel&slide=3&theme=${theme}&data=${encData}`,
-            ];
-            urls.forEach((url) => {
-              const img = new window.Image();
-              img.src = url;
-            });
-          });
+          const defaultUrl = `/og/daily-card?format=square&theme=strava&data=${encData}`;
+          const img = new window.Image();
+          img.src = defaultUrl;
         }
       }
     } catch (err) {
@@ -251,14 +239,15 @@ export default function DashboardPage() {
       if (aiJson.success) {
         setAiStatus(aiJson);
       }
-
-      // Pre-fetch share card data & all image versions in background
-      fetchShareCardData();
     } catch (err: any) {
       console.error('Error fetching dashboard data:', err);
       setError(err.message || 'Koneksi ke backend API (http://localhost:3000) gagal.');
     } finally {
       setIsLoading(false);
+      // Trigger share data fetch lazily 2.5s AFTER dashboard has loaded
+      setTimeout(() => {
+        fetchShareCardData();
+      }, 2500);
     }
   }, [fetchShareCardData]);
 
