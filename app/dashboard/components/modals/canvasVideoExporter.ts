@@ -64,6 +64,11 @@ function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
 
+function truncateText(str: string, maxLen: number): string {
+  if (!str) return '';
+  return str.length > maxLen ? str.substring(0, maxLen - 3) + '...' : str;
+}
+
 export async function generateAnimatedShareVideo(
   cardData: ShareCardData,
   themeKey: string = 'strava',
@@ -290,7 +295,7 @@ export async function generateAnimatedShareVideo(
         const focusTarget = cardData.focusScore || 0;
         const currentFocus = Math.floor(Math.min(focusTarget, smoothProgress * focusTarget));
         const heroBoxY = format === 'story' ? 240 : 200;
-        const heroBoxHeight = format === 'story' ? 270 : 210;
+        const heroBoxHeight = format === 'story' ? 260 : 210;
 
         ctx.fillStyle = theme.cardBg;
         ctx.strokeStyle = theme.cardBorder;
@@ -331,16 +336,17 @@ export async function generateAnimatedShareVideo(
         ctx.fillStyle = theme.textPrimary;
         ctx.fillText(`🎯 Habits Finished (${cardData.habitsCompleted}/${cardData.habitsTotal})`, 95, habitsY + 48);
 
-        // Habit Pills
+        // Habit Pills (with text truncation)
         let chipX = 95;
-        let chipY = habitsY + 80;
-        habitList.slice(0, format === 'story' ? 6 : 4).forEach((hName) => {
+        let chipY = habitsY + 76;
+        habitList.slice(0, format === 'story' ? 6 : 4).forEach((rawName) => {
+          const hName = truncateText(rawName, 18);
           ctx.fillStyle = 'rgba(255,255,255,0.06)';
           ctx.strokeStyle = theme.cardBorder;
           const textWidth = ctx.measureText(`✓ ${hName}`).width + 30;
           if (chipX + textWidth > width - 100) {
             chipX = 95;
-            chipY += 48;
+            chipY += 46;
           }
           roundRect(ctx, chipX, chipY, textWidth, 38, 12, true, true);
 
@@ -352,9 +358,10 @@ export async function generateAnimatedShareVideo(
           chipX += textWidth + 12;
         });
 
-        // 11. Rich Finished Tasks List Card
+        // 11. Rich Finished Tasks List Card (Sleek Vertical Checklist for Story format)
         const tasksY = habitsY + habitsHeight + 25;
-        const tasksHeight = format === 'story' ? 200 : 180;
+        const displayTasks = taskList.slice(0, format === 'story' ? 3 : 2);
+        const tasksHeight = format === 'story' ? 220 : 180;
         ctx.fillStyle = theme.cardBg;
         ctx.strokeStyle = theme.cardBorder;
         roundRect(ctx, 65, tasksY, width - 130, tasksHeight, 26, true, true);
@@ -363,25 +370,23 @@ export async function generateAnimatedShareVideo(
         ctx.fillStyle = theme.textPrimary;
         ctx.fillText(`✅ Tasks Accomplished (${cardData.tasksCompleted}/${cardData.tasksTotal})`, 95, tasksY + 48);
 
-        // Task Pills
-        let tChipX = 95;
-        let tChipY = tasksY + 80;
-        taskList.slice(0, format === 'story' ? 4 : 3).forEach((tTitle) => {
-          ctx.fillStyle = 'rgba(255,255,255,0.06)';
-          ctx.strokeStyle = theme.cardBorder;
-          const textWidth = ctx.measureText(`✓ ${tTitle}`).width + 30;
-          if (tChipX + textWidth > width - 100) {
-            tChipX = 95;
-            tChipY += 46;
-          }
-          roundRect(ctx, tChipX, tChipY, textWidth, 38, 12, true, true);
+        // Render Tasks as Clean Vertical Items to prevent horizontal overflow
+        displayTasks.forEach((rawTitle, i) => {
+          const tTitle = truncateText(rawTitle, format === 'story' ? 36 : 28);
+          const rowY = tasksY + 90 + (i * 44);
 
-          ctx.font = '700 16px Inter, sans-serif';
+          // Checkmark pill
+          ctx.fillStyle = theme.badgeBg;
+          ctx.strokeStyle = theme.cardBorder;
+          roundRect(ctx, 95, rowY - 20, 32, 32, 10, true, true);
+          ctx.font = '800 16px Inter, sans-serif';
           ctx.fillStyle = theme.secondary;
-          ctx.fillText('✓', tChipX + 12, tChipY + 25);
+          ctx.fillText('✓', 105, rowY + 2);
+
+          // Task text
+          ctx.font = '700 18px Inter, sans-serif';
           ctx.fillStyle = theme.textSecondary;
-          ctx.fillText(tTitle, tChipX + 28, tChipY + 25);
-          tChipX += textWidth + 12;
+          ctx.fillText(tTitle, 140, rowY + 2);
         });
 
         // Additional Cards for Story format (1080x1920)
@@ -397,7 +402,7 @@ export async function generateAnimatedShareVideo(
 
           ctx.font = '900 28px Inter, sans-serif';
           ctx.fillStyle = theme.textPrimary;
-          ctx.fillText(cardData.topStreak ? cardData.topStreak.name : 'Daily Streak', 150, streakY + 55);
+          ctx.fillText(truncateText(cardData.topStreak ? cardData.topStreak.name : 'Daily Streak', 22), 150, streakY + 55);
 
           ctx.font = '600 18px Inter, sans-serif';
           ctx.fillStyle = theme.textSecondary;
@@ -419,7 +424,7 @@ export async function generateAnimatedShareVideo(
             ? cardData.achievements
             : ['🎯 Perfect Habits', '🔥 14-Day Warrior', '⭐ Focus Master'];
 
-          badges.slice(0, 4).forEach((badge) => {
+          badges.slice(0, 3).forEach((badge) => {
             const bWidth = ctx.measureText(badge).width + 36;
             ctx.fillStyle = theme.badgeBg;
             ctx.strokeStyle = theme.cardBorder;
@@ -443,9 +448,8 @@ export async function generateAnimatedShareVideo(
 
           ctx.font = 'italic 500 22px Inter, sans-serif';
           ctx.fillStyle = theme.textPrimary;
-          const snippetText = cardData.journalSnippet
-            ? `"${cardData.journalSnippet}"`
-            : `"${cardData.quote}"`;
+          const rawSnippet = cardData.journalSnippet || cardData.quote;
+          const snippetText = `"${truncateText(rawSnippet, 65)}"`;
           ctx.fillText(snippetText, 95, journalY + 95);
         }
 

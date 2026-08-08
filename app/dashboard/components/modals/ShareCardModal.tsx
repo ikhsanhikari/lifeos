@@ -123,8 +123,10 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
       link.href = blobUrl;
       const ext = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
       link.download = `lifeos-animated-story.${ext}`;
+      document.body.appendChild(link);
       link.click();
-      URL.revokeObjectURL(blobUrl);
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
     } catch (err) {
       console.error('Video recording failed:', err);
     } finally {
@@ -139,27 +141,34 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
       if (selectedFormat === 'carousel') {
         // Download all 4 slides
         for (let i = 0; i < 4; i++) {
-          const url = buildOgUrl(cardData!, 'square', selectedTheme, i);
+          const url = buildOgUrl(cardData!, 'carousel', selectedTheme, i);
           const response = await fetch(url);
+          if (!response.ok) continue;
           const blob = await response.blob();
           const blobUrl = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = blobUrl;
           link.download = `lifeos-card-slide-${i + 1}.png`;
+          document.body.appendChild(link);
           link.click();
-          URL.revokeObjectURL(blobUrl);
-          // Small delay between downloads
-          await new Promise(r => setTimeout(r, 300));
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
+          await new Promise(r => setTimeout(r, 400));
         }
       } else {
         const response = await fetch(previewUrl);
+        if (!response.ok) {
+          throw new Error(`HTTP Error ${response.status}`);
+        }
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = blobUrl;
         link.download = `lifeos-${selectedFormat}-card.png`;
+        document.body.appendChild(link);
         link.click();
-        URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
       }
     } catch (err) {
       console.error('Download failed:', err);
