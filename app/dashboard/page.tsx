@@ -15,6 +15,7 @@ import { AddHabitModal } from './components/modals/AddHabitModal';
 import { TelegramLinkModal } from './components/modals/TelegramLinkModal';
 import { AiGoalBreakdownModal } from './components/modals/AiGoalBreakdownModal';
 import { AiSummaryModal, WeeklySummaryData } from './components/modals/AiSummaryModal';
+import { ShareCardModal } from './components/modals/ShareCardModal';
 
 export interface AiStatusData {
   aiAvailable: boolean;
@@ -120,6 +121,11 @@ export default function DashboardPage() {
   const [isAiBreakdownModalOpen, setIsAiBreakdownModalOpen] = useState<boolean>(false);
   const [selectedAiGoal, setSelectedAiGoal] = useState<GoalData | null>(null);
   const [isAiSummaryModalOpen, setIsAiSummaryModalOpen] = useState<boolean>(false);
+
+  // Share modal state
+  const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
+  const [shareCardData, setShareCardData] = useState<any>(null);
+  const [isShareLoading, setIsShareLoading] = useState<boolean>(false);
 
   // Section references for smooth scrolling
   const goalsRef = useRef<HTMLDivElement>(null);
@@ -311,6 +317,26 @@ export default function DashboardPage() {
     } catch (err: any) {
       console.error('Error fetching daily coach insight:', err);
       throw err;
+    }
+  };
+
+  // Fetch share card data
+  const handleOpenShareModal = async () => {
+    setIsShareModalOpen(true);
+    setIsShareLoading(true);
+    setShareCardData(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/share/daily-card`, {
+        headers: getAuthHeaders(),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setShareCardData(json.data);
+      }
+    } catch (err) {
+      console.error('Error fetching share card data:', err);
+    } finally {
+      setIsShareLoading(false);
     }
   };
 
@@ -620,6 +646,7 @@ export default function DashboardPage() {
             onOpenAddGoalModal={() => setIsAddGoalModalOpen(true)}
             onOpenAddHabitModal={() => setIsAddHabitModalOpen(true)}
             onOpenAiSummaryModal={() => setIsAiSummaryModalOpen(true)}
+            onOpenShareModal={handleOpenShareModal}
             aiAvailable={aiStatus?.features?.smartSummary ?? aiStatus?.aiAvailable}
           />
 
@@ -730,6 +757,13 @@ export default function DashboardPage() {
         isOpen={isAiSummaryModalOpen}
         onClose={() => setIsAiSummaryModalOpen(false)}
         onFetchSummary={handleFetchWeeklySummary}
+      />
+
+      <ShareCardModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        cardData={shareCardData}
+        isLoading={isShareLoading}
       />
     </div>
   );

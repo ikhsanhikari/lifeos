@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Calendar, ShieldCheck, Sparkles, Send } from 'lucide-react';
+import { Plus, Calendar, ShieldCheck, Sparkles, Send, Share2 } from 'lucide-react';
 import { UserAuthData } from '../page';
 import { Button } from '../../components/ui/Button';
 
@@ -8,6 +8,7 @@ interface TopBarProps {
   onOpenAddGoalModal: () => void;
   onOpenAddHabitModal: () => void;
   onOpenAiSummaryModal?: () => void;
+  onOpenShareModal?: () => void;
   aiAvailable?: boolean;
 }
 
@@ -16,6 +17,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenAddGoalModal,
   onOpenAddHabitModal,
   onOpenAiSummaryModal,
+  onOpenShareModal,
   aiAvailable = true,
 }) => {
   const currentDateFormatted = new Date().toLocaleDateString('id-ID', {
@@ -54,6 +56,17 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+        {onOpenShareModal && (
+          <Button
+            variant="secondary"
+            size="md"
+            className="bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 border border-violet-500/30"
+            leftIcon={<Share2 className="w-4 h-4 text-violet-400" />}
+            onClick={onOpenShareModal}
+          >
+            Share
+          </Button>
+        )}
         {aiAvailable && onOpenAiSummaryModal && (
           <Button
             variant="secondary"

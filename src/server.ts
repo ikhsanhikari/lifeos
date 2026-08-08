@@ -76,6 +76,7 @@ import {
   handleAiDailyCoach,
   handleAiWeeklySummary,
 } from './controllers/aiController';
+import { getShareCardData } from './controllers/shareController';
 import { generateWeeklySummary, isAiGloballyEnabled } from './services/aiService';
 import { authMiddleware, AuthenticatedRequest } from './middleware/authMiddleware';
 
@@ -742,6 +743,9 @@ app.get('/api/ai/status', handleAiStatus);
 app.post('/api/ai/goal-breakdown', handleAiGoalBreakdown);
 app.post('/api/ai/daily-coach', handleAiDailyCoach);
 app.get('/api/ai/weekly-summary', handleAiWeeklySummary);
+
+// SHARE CARD REST API ENDPOINTS
+app.get('/api/share/daily-card', getShareCardData);
 
 // TASK REST API ENDPOINTS
 app.get('/api/tasks', async (req: AuthenticatedRequest, res: Response) => {
