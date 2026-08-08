@@ -137,8 +137,15 @@ export async function sendTimeSpecificReminders(bot: Telegraf) {
       include: { user: true },
     });
 
-    const now = new Date();
-    const currentHour = now.getHours(); // Local server hour
+    // Get current hour in Asia/Jakarta (WIB) timezone
+    const currentHour = parseInt(
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Jakarta',
+        hour: 'numeric',
+        hour12: false,
+      }).format(new Date()),
+      10
+    );
     const today = getTodayDate();
 
     for (const link of activeLinks) {
@@ -161,7 +168,8 @@ export async function sendTimeSpecificReminders(bot: Telegraf) {
 
       const dueHabits = habitsWithReminder.filter((h) => {
         if (!h.reminderTime || doneHabitIds.has(h.id)) return false;
-        const rHour = new Date(h.reminderTime).getHours();
+        const rDate = new Date(h.reminderTime);
+        const rHour = rDate.getUTCHours();
         return rHour === currentHour;
       });
 
@@ -177,7 +185,8 @@ export async function sendTimeSpecificReminders(bot: Telegraf) {
 
       const dueTasks = tasksWithDueTime.filter((t) => {
         if (!t.dueTime) return false;
-        const tHour = new Date(t.dueTime).getHours();
+        const tDate = new Date(t.dueTime);
+        const tHour = tDate.getUTCHours();
         return tHour === currentHour;
       });
 
@@ -292,27 +301,28 @@ export async function sendStreakAlertReminders(bot: Telegraf) {
  * Initialize all Cron Job schedules
  */
 export function initCronScheduler(bot: Telegraf) {
-  console.log('⚙️ Initializing Cron Scheduler Service...');
+  console.log('⚙️ Initializing Cron Scheduler Service (Timezone: Asia/Jakarta)...');
+  const cronOptions = { timezone: 'Asia/Jakarta' };
 
-  // Morning Reminder at 07:00 AM every day
+  // Morning Reminder at 07:00 AM WIB every day
   cron.schedule('0 7 * * *', () => {
     sendMorningReminders(bot);
-  });
+  }, cronOptions);
 
   // Hourly Time-Specific Reminder at top of every hour (:00)
   cron.schedule('0 * * * *', () => {
     sendTimeSpecificReminders(bot);
-  });
+  }, cronOptions);
 
-  // Evening Recap at 21:00 PM (9:00 PM) every day
+  // Evening Recap at 21:00 PM (9:00 PM) WIB every day
   cron.schedule('0 21 * * *', () => {
     sendEveningRecapReminders(bot);
-  });
+  }, cronOptions);
 
-  // Streak Alert at 22:00 PM (10:00 PM) every day
+  // Streak Alert at 22:00 PM (10:00 PM) WIB every day
   cron.schedule('0 22 * * *', () => {
     sendStreakAlertReminders(bot);
-  });
+  }, cronOptions);
 
-  console.log('✅ Cron Jobs scheduled: Morning (07:00), Hourly Time-Specific (:00), Evening (21:00), Streak Alert (22:00)');
+  console.log('✅ Cron Jobs scheduled: Morning (07:00 WIB), Hourly Time-Specific (:00 WIB), Evening (21:00 WIB), Streak Alert (22:00 WIB)');
 }

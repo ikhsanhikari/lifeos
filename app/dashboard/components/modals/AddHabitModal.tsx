@@ -5,7 +5,7 @@ import { Button } from '../../../components/ui/Button';
 interface AddHabitModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (name: string, frequency: 'DAILY' | 'WEEKLY', color: string) => Promise<void>;
+  onSubmit: (name: string, frequency: 'DAILY' | 'WEEKLY', color: string, reminderTime?: string) => Promise<void>;
 }
 
 export const AddHabitModal: React.FC<AddHabitModalProps> = ({
@@ -16,6 +16,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
   const [name, setName] = useState<string>('');
   const [frequency, setFrequency] = useState<'DAILY' | 'WEEKLY'>('DAILY');
   const [color, setColor] = useState<string>('indigo');
+  const [reminderTime, setReminderTime] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   if (!isOpen) return null;
@@ -26,8 +27,9 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      await onSubmit(name.trim(), frequency, color);
+      await onSubmit(name.trim(), frequency, color, reminderTime || undefined);
       setName('');
+      setReminderTime('');
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -101,6 +103,21 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
                 <option value="cyan">🔵 Cyan</option>
               </select>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
+              ⏰ Jam Pengingat Telegram (Opsional)
+            </label>
+            <input
+              type="time"
+              value={reminderTime}
+              onChange={(e) => setReminderTime(e.target.value)}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+            <p className="text-[10px] text-zinc-500">
+              Pilih jam (WIB) jika ingin menerima notifikasi Telegram otomatis setiap hari di jam tersebut.
+            </p>
           </div>
 
           <div className="pt-2">

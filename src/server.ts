@@ -592,14 +592,52 @@ app.post('/api/habits', async (req: AuthenticatedRequest, res: Response) => {
       return;
     }
 
-    const { name, description, frequency, color } = req.body;
+    const { name, description, frequency, color, reminderTime } = req.body;
     if (!name) {
       res.status(400).json({ success: false, message: 'name is required' });
       return;
     }
 
-    const newHabit = await createHabit({ name, description, frequency, color, userId: req.user.id });
+    const newHabit = await createHabit({ name, description, frequency, color, reminderTime, userId: req.user.id });
     res.json({ success: true, habit: newHabit });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Route to update habit (e.g. reminderTime, name, color) via REST API
+app.put('/api/habits/:id', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const habitId = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
+    const { name, description, frequency, color, reminderTime } = req.body;
+
+    let reminderDate: Date | null | undefined = undefined;
+    if (reminderTime !== undefined) {
+      if (reminderTime === null || reminderTime === '') {
+        reminderDate = null;
+      } else if (typeof reminderTime === 'string') {
+        const [h, m] = reminderTime.split(':').map(Number);
+        reminderDate = new Date(Date.UTC(1970, 0, 1, h || 0, m || 0, 0));
+      }
+    }
+
+    const updatedHabit = await prisma.habit.update({
+      where: { id: habitId },
+      data: {
+        ...(name && { name }),
+        ...(description !== undefined && { description }),
+        ...(frequency && { frequency }),
+        ...(color && { color }),
+        ...(reminderDate !== undefined && { reminderTime: reminderDate }),
+      },
+    });
+
+    res.json({ success: true, habit: updatedHabit });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -971,16 +1009,22 @@ async function main() {
       console.log(`🚀 Express server running on http://localhost:${port}`);
     });
 
-    // Launch Telegram Bot & Cron Scheduler
+    // Initialize Cron Scheduler (runs independently of Telegram Bot polling state)
     if (botToken && botToken !== 'DUMMY_TOKEN') {
+      // Register slash command menu in Telegram
+      registerTelegramCommands(bot);
+
+      // Start Cron Scheduler for background Telegram push reminders
+      initCronScheduler(bot);
+
+      // Launch Telegram Bot (Polling mode for receiving commands)
       bot.launch()
         .then(() => {
           console.log('🤖 Telegram Bot launched successfully (Polling mode)');
-          registerTelegramCommands(bot);
-          initCronScheduler(bot);
         })
         .catch((err) => {
-          console.error('❌ Failed to launch Telegram Bot:', err.message);
+          console.error('❌ Failed to launch Telegram Bot polling:', err.message);
+          console.log('💡 Note: Scheduled push reminders will still send, but incoming /bot commands won\'t respond until polling reconnects.');
         });
 
       // Enable graceful stop for bot

@@ -83,6 +83,7 @@ export default function DashboardPage() {
   const [newHabitName, setNewHabitName] = useState<string>('');
   const [newHabitFrequency, setNewHabitFrequency] = useState<'DAILY' | 'WEEKLY'>('DAILY');
   const [newHabitColor, setNewHabitColor] = useState<string>('indigo');
+  const [newHabitReminderTime, setNewHabitReminderTime] = useState<string>('');
   const [isCreatingHabit, setIsCreatingHabit] = useState<boolean>(false);
 
   const [habitTab, setHabitTab] = useState<'all' | 'pending' | 'completed'>('all');
@@ -1037,6 +1038,21 @@ export default function DashboardPage() {
                       <option value="cyan">🔵 Cyan</option>
                     </select>
                   </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+                    ⏰ Jam Pengingat Telegram (Opsional)
+                  </label>
+                  <input
+                    type="time"
+                    value={newHabitReminderTime}
+                    onChange={(e) => setNewHabitReminderTime(e.target.value)}
+                    className="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all"
+                  />
+                  <p className="text-[10px] text-slate-400">
+                    Pilih jam (WIB) jika ingin menerima pengingat Telegram otomatis setiap hari.
+                  </p>
                 </div>
 
                 <button

@@ -452,13 +452,14 @@ export default function DashboardPage() {
   const handleCreateHabitSubmit = async (
     name: string,
     frequency: 'DAILY' | 'WEEKLY',
-    color: string
+    color: string,
+    reminderTime?: string
   ) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/habits`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-        body: JSON.stringify({ name, frequency, color }),
+        body: JSON.stringify({ name, frequency, color, reminderTime }),
       });
 
       const json = await res.json();

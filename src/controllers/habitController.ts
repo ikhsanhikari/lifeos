@@ -249,6 +249,7 @@ export async function createHabit(data: {
   description?: string;
   frequency?: 'DAILY' | 'WEEKLY' | 'CUSTOM';
   color?: string;
+  reminderTime?: string | Date | null;
 }) {
   let userId = data.userId;
   if (!userId && data.telegramChatId) {
@@ -271,6 +272,16 @@ export async function createHabit(data: {
     }
   }
 
+  let reminderDate: Date | null = null;
+  if (data.reminderTime) {
+    if (typeof data.reminderTime === 'string') {
+      const [h, m] = data.reminderTime.split(':').map(Number);
+      reminderDate = new Date(Date.UTC(1970, 0, 1, h || 0, m || 0, 0));
+    } else if (data.reminderTime instanceof Date) {
+      reminderDate = data.reminderTime;
+    }
+  }
+
   const habit = await prisma.habit.create({
     data: {
       userId,
@@ -278,6 +289,7 @@ export async function createHabit(data: {
       description: data.description || null,
       frequency: (data.frequency as any) || 'DAILY',
       color: data.color || 'indigo',
+      reminderTime: reminderDate,
     },
   });
 
