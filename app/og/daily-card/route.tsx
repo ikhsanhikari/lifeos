@@ -394,6 +394,32 @@ export async function GET(request: NextRequest) {
                 gap: '8px',
               }}
             >
+              {/* Floating 3D Metallic Glass Orb Graphic */}
+              <svg
+                width="110"
+                height="110"
+                viewBox="0 0 110 110"
+                style={{
+                  position: 'absolute',
+                  right: '40px',
+                  top: '35px',
+                  filter: `drop-shadow(0 14px 28px ${theme.glow}40)`,
+                }}
+              >
+                <defs>
+                  <radialGradient id={`orbGrad_${themeKey}`} cx="35%" cy="35%" r="65%">
+                    <stop offset="0%" stopColor="#FFFFFF" />
+                    <stop offset="25%" stopColor={theme.primary} />
+                    <stop offset="80%" stopColor={theme.secondary} />
+                    <stop offset="100%" stopColor="#08080C" />
+                  </radialGradient>
+                </defs>
+                <ellipse cx="55" cy="98" rx="42" ry="10" fill="rgba(0,0,0,0.4)" />
+                <ellipse cx="55" cy="55" rx="52" ry="18" fill="none" stroke={theme.secondary} strokeWidth="4" opacity="0.6" transform="rotate(-15 55 55)" />
+                <circle cx="55" cy="55" r="38" fill={`url(#orbGrad_${themeKey})`} />
+                <path d="M 12 62 A 52 18 0 0 0 98 48" fill="none" stroke={theme.primary} strokeWidth="5" transform="rotate(-15 55 55)" />
+              </svg>
+
               <span style={{ fontSize: '20px', fontWeight: 800, color: theme.textMuted, letterSpacing: '4px', textTransform: 'uppercase' }}>
                 DAILY FOCUS SCORE
               </span>

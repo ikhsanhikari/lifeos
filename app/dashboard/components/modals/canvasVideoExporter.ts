@@ -1,6 +1,6 @@
 /**
  * Client-Side Canvas Video Exporter for LifeOS Share Cards
- * Renders a butter-smooth 60fps Google Maps Dark Mode animated video story directly in browser
+ * Renders a butter-smooth 60fps Google Maps Dark Mode animated video story with 3D objects directly in browser
  */
 
 import { ShareCardData } from './ShareCardModal';
@@ -69,6 +69,139 @@ function truncateText(str: string, maxLen: number): string {
   return str.length > maxLen ? str.substring(0, maxLen - 3) + '...' : str;
 }
 
+// 3D Glass Metallic Orb with Orbital Perspective Rings
+function draw3DGlassOrb(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  radius: number,
+  primaryColor: string,
+  secondaryColor: string,
+  rotAngle: number
+) {
+  ctx.save();
+
+  // 1. Soft 3D Floor Shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+  ctx.beginPath();
+  ctx.ellipse(x, y + radius + 14, radius * 0.8, radius * 0.25, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. 3D Orbital Perspective Ring (Back Half)
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rotAngle);
+  ctx.scale(1, 0.38);
+  ctx.beginPath();
+  ctx.arc(0, 0, radius * 1.55, Math.PI, Math.PI * 2);
+  ctx.strokeStyle = secondaryColor;
+  ctx.lineWidth = 4;
+  ctx.globalAlpha = 0.5;
+  ctx.stroke();
+  ctx.restore();
+
+  // 3. Main 3D Spherical Glass Core
+  const sphereGrad = ctx.createRadialGradient(
+    x - radius * 0.35,
+    y - radius * 0.35,
+    radius * 0.1,
+    x,
+    y,
+    radius
+  );
+  sphereGrad.addColorStop(0, '#FFFFFF');
+  sphereGrad.addColorStop(0.2, primaryColor);
+  sphereGrad.addColorStop(0.75, secondaryColor);
+  sphereGrad.addColorStop(1, '#050508');
+
+  ctx.fillStyle = sphereGrad;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 4. Specular Highlight Glare
+  const specGrad = ctx.createRadialGradient(
+    x - radius * 0.3,
+    y - radius * 0.3,
+    0,
+    x - radius * 0.3,
+    y - radius * 0.3,
+    radius * 0.4
+  );
+  specGrad.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
+  specGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = specGrad;
+  ctx.beginPath();
+  ctx.arc(x - radius * 0.3, y - radius * 0.3, radius * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 5. 3D Orbital Perspective Ring (Front Half)
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rotAngle);
+  ctx.scale(1, 0.38);
+  ctx.beginPath();
+  ctx.arc(0, 0, radius * 1.55, 0, Math.PI);
+  ctx.strokeStyle = primaryColor;
+  ctx.lineWidth = 6;
+  ctx.globalAlpha = 0.9;
+  ctx.stroke();
+
+  // Orbiting Satellite Bead
+  const satX = Math.cos(rotAngle * 1.5) * radius * 1.55;
+  const satY = Math.sin(rotAngle * 1.5) * radius * 1.55;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(satX, satY, 7, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+  ctx.restore();
+}
+
+// 3D Faceted Ruby Flame Gem
+function draw3DFacetedFlame(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  primaryColor: string,
+  secondaryColor: string
+) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  // Facet 1: Front Left
+  ctx.fillStyle = primaryColor;
+  ctx.beginPath();
+  ctx.moveTo(0, -size);
+  ctx.lineTo(-size * 0.6, 0);
+  ctx.lineTo(0, size * 0.8);
+  ctx.closePath();
+  ctx.fill();
+
+  // Facet 2: Front Right (brighter light source)
+  ctx.fillStyle = secondaryColor;
+  ctx.beginPath();
+  ctx.moveTo(0, -size);
+  ctx.lineTo(size * 0.6, 0);
+  ctx.lineTo(0, size * 0.8);
+  ctx.closePath();
+  ctx.fill();
+
+  // Facet 3: Top Specular Peak
+  ctx.fillStyle = '#FFFFFF';
+  ctx.globalAlpha = 0.7;
+  ctx.beginPath();
+  ctx.moveTo(0, -size);
+  ctx.lineTo(-size * 0.2, -size * 0.3);
+  ctx.lineTo(size * 0.2, -size * 0.3);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
 export async function generateAnimatedShareVideo(
   cardData: ShareCardData,
   themeKey: string = 'strava',
@@ -90,7 +223,6 @@ export async function generateAnimatedShareVideo(
         throw new Error('Canvas 2D context not supported');
       }
 
-      // Safe cross-browser MIME type check
       let mimeType = '';
       if (typeof MediaRecorder !== 'undefined') {
         if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
@@ -163,6 +295,7 @@ export async function generateAnimatedShareVideo(
         const rawProgress = Math.min(1, currentFrame / totalFrames);
         const animProgress = Math.min(1, rawProgress / 0.50);
         const smoothProgress = easeOutCubic(animProgress);
+        const floatBob = Math.sin(rawProgress * Math.PI * 4) * 12;
 
         // 1. Base Dark Background
         const grad = ctx.createLinearGradient(0, 0, 0, height);
@@ -172,9 +305,14 @@ export async function generateAnimatedShareVideo(
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, width, height);
 
-        // 2. Google Maps Parks (Greenery Bodies)
+        // 2. 3D Iso-Depth Map Layer (Greenery Parks with 3D Drop Shadows)
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+        ctx.shadowBlur = 24;
+        ctx.shadowOffsetY = 14;
+
         ctx.fillStyle = theme.mapPark;
-        ctx.globalAlpha = 0.8;
+        ctx.globalAlpha = 0.85;
         ctx.beginPath();
         ctx.ellipse(200, 300, 160, 120, 0.2, 0, Math.PI * 2);
         ctx.fill();
@@ -186,11 +324,16 @@ export async function generateAnimatedShareVideo(
           ctx.ellipse(300, 1400, 200, 150, 0.4, 0, Math.PI * 2);
           ctx.fill();
         }
-        ctx.globalAlpha = 1.0;
+        ctx.restore();
 
-        // 3. Google Maps Water Body (River / Bay)
+        // 3. 3D Layered Water Body (River / Bay with 3D Depth Shadow)
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+        ctx.shadowBlur = 30;
+        ctx.shadowOffsetY = 16;
+
         ctx.fillStyle = theme.mapWater;
-        ctx.globalAlpha = 0.85;
+        ctx.globalAlpha = 0.9;
         ctx.beginPath();
         ctx.moveTo(-100, 850);
         ctx.bezierCurveTo(250, 800, 450, 1000, 750, 900);
@@ -200,7 +343,7 @@ export async function generateAnimatedShareVideo(
         ctx.bezierCurveTo(-100, 1000, -100, 850, -100, 850);
         ctx.closePath();
         ctx.fill();
-        ctx.globalAlpha = 1.0;
+        ctx.restore();
 
         // 4. Google Maps Secondary Streets Grid
         ctx.strokeStyle = theme.mapRoadSub;
@@ -310,6 +453,17 @@ export async function generateAnimatedShareVideo(
         ctx.fillStyle = theme.primary;
         ctx.fillText(`${currentFocus}%`, 100, heroBoxY + 160);
 
+        // --- DYNAMIC 3D FLOATING GLASS ORB (Trophy Orb inside Hero Focus Box) ---
+        draw3DGlassOrb(
+          ctx,
+          width - 180,
+          heroBoxY + 110 + floatBob,
+          48,
+          theme.primary,
+          theme.secondary,
+          rawProgress * Math.PI * 2
+        );
+
         // Bar fill
         const barY = heroBoxY + heroBoxHeight - 40;
         const barWidth = width - 200;
@@ -358,7 +512,7 @@ export async function generateAnimatedShareVideo(
           chipX += textWidth + 12;
         });
 
-        // 11. Rich Finished Tasks List Card (Sleek Vertical Checklist for Story format)
+        // 11. Rich Finished Tasks List Card (Sleek Vertical Checklist)
         const tasksY = habitsY + habitsHeight + 25;
         const displayTasks = taskList.slice(0, format === 'story' ? 3 : 2);
         const tasksHeight = format === 'story' ? 220 : 180;
@@ -370,12 +524,10 @@ export async function generateAnimatedShareVideo(
         ctx.fillStyle = theme.textPrimary;
         ctx.fillText(`✅ Tasks Accomplished (${cardData.tasksCompleted}/${cardData.tasksTotal})`, 95, tasksY + 48);
 
-        // Render Tasks as Clean Vertical Items to prevent horizontal overflow
         displayTasks.forEach((rawTitle, i) => {
           const tTitle = truncateText(rawTitle, format === 'story' ? 36 : 28);
           const rowY = tasksY + 90 + (i * 44);
 
-          // Checkmark pill
           ctx.fillStyle = theme.badgeBg;
           ctx.strokeStyle = theme.cardBorder;
           roundRect(ctx, 95, rowY - 20, 32, 32, 10, true, true);
@@ -383,7 +535,6 @@ export async function generateAnimatedShareVideo(
           ctx.fillStyle = theme.secondary;
           ctx.fillText('✓', 105, rowY + 2);
 
-          // Task text
           ctx.font = '700 18px Inter, sans-serif';
           ctx.fillStyle = theme.textSecondary;
           ctx.fillText(tTitle, 140, rowY + 2);
@@ -391,14 +542,21 @@ export async function generateAnimatedShareVideo(
 
         // Additional Cards for Story format (1080x1920)
         if (format === 'story') {
-          // 12. Streak Banner
+          // 12. Streak Banner with 3D Faceted Flame Gem
           const streakY = tasksY + tasksHeight + 25;
           ctx.fillStyle = theme.cardBg;
           ctx.strokeStyle = theme.cardBorder;
           roundRect(ctx, 65, streakY, width - 130, 120, 24, true, true);
 
-          ctx.font = '36px sans-serif';
-          ctx.fillText('🔥', 95, streakY + 72);
+          // Render 3D Faceted Flame Gem
+          draw3DFacetedFlame(
+            ctx,
+            110,
+            streakY + 60 - (floatBob * 0.5),
+            22,
+            theme.primary,
+            theme.secondary
+          );
 
           ctx.font = '900 28px Inter, sans-serif';
           ctx.fillStyle = theme.textPrimary;
