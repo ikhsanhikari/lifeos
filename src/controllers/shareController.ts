@@ -262,7 +262,7 @@ export async function sendShareCardToTelegram(req: AuthenticatedRequest, res: Re
     }
 
     const userId = req.user.id;
-    const { format = 'square', theme = 'strava', slide = 0 } = req.body;
+    const { format = 'square', theme = 'strava', slide = 0, bgImage } = req.body;
 
     // Check if user has linked Telegram account
     const tgLink = await prisma.telegramLink.findUnique({
@@ -286,7 +286,10 @@ export async function sendShareCardToTelegram(req: AuthenticatedRequest, res: Re
 
     // Next.js OG endpoint URL
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3011';
-    const ogUrl = `${frontendUrl}/og/daily-card?format=${format}&slide=${slide}&theme=${theme}&data=${encodeURIComponent(JSON.stringify(cardData))}`;
+    let ogUrl = `${frontendUrl}/og/daily-card?format=${format}&slide=${slide}&theme=${theme}&data=${encodeURIComponent(JSON.stringify(cardData))}`;
+    if (bgImage) {
+      ogUrl += `&bgImage=${encodeURIComponent(bgImage)}`;
+    }
 
     // Fetch image as Buffer
     const imgRes = await fetch(ogUrl);

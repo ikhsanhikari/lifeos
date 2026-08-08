@@ -225,11 +225,24 @@ export async function generateAnimatedShareVideo(
   cardData: ShareCardData,
   themeKey: string = 'strava',
   format: 'square' | 'story' = 'story',
-  onProgress?: (percent: number) => void
+  onProgress?: (percent: number) => void,
+  bgImageUrl?: string | null
 ): Promise<Blob> {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
       const theme = THEMES[themeKey] || THEMES.strava;
+
+      // Preload custom background image if provided
+      let bgImgElement: HTMLImageElement | null = null;
+      if (bgImageUrl) {
+        bgImgElement = await new Promise<HTMLImageElement | null>((res) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => res(img);
+          img.onerror = () => res(null);
+          img.src = bgImageUrl;
+        });
+      }
 
       // Mobile device detection for RAM/GPU optimization
       const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
@@ -359,6 +372,30 @@ export async function generateAnimatedShareVideo(
         grad.addColorStop(1, theme.bg3);
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, baseWidth, baseHeight);
+
+        // 1a. Custom Background Photo Overlay if provided
+        if (bgImgElement) {
+          ctx.save();
+          const imgRatio = bgImgElement.width / bgImgElement.height;
+          const canvasRatio = baseWidth / baseHeight;
+          let dW = baseWidth;
+          let dH = baseHeight;
+          let dX = 0;
+          let dY = 0;
+          if (imgRatio > canvasRatio) {
+            dW = baseHeight * imgRatio;
+            dX = (baseWidth - dW) / 2;
+          } else {
+            dH = baseWidth / imgRatio;
+            dY = (baseHeight - dH) / 2;
+          }
+          ctx.drawImage(bgImgElement, dX, dY, dW, dH);
+
+          // Dark tint overlay for high text contrast
+          ctx.fillStyle = 'rgba(8, 8, 14, 0.65)';
+          ctx.fillRect(0, 0, baseWidth, baseHeight);
+          ctx.restore();
+        }
 
         // 1b. Floating Ambient Neon Particles
         ctx.save();

@@ -92,6 +92,7 @@ export async function GET(request: NextRequest) {
     const format = searchParams.get('format') || 'square';
     const slide = searchParams.get('slide') || '0';
     const themeKey = searchParams.get('theme') || 'strava';
+    const bgImage = searchParams.get('bgImage') || null;
     const dataParam = searchParams.get('data');
 
     let cardData: any = null;
@@ -304,6 +305,20 @@ export async function GET(request: NextRequest) {
               overflow: 'hidden',
             }}
           >
+            {bgImage && (
+              <img
+                src={bgImage}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  opacity: 0.45,
+                }}
+              />
+            )}
             {/* REALISTIC GOOGLE MAPS DARK MODE VECTOR BACKGROUND */}
             <svg
               width={width}

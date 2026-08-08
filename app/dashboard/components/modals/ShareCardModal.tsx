@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Download, Share2, Copy, MessageCircle, Send, X, Image, Smartphone, Layers, Check, Film, ChevronDown, Palette, Layout } from 'lucide-react';
+import { Download, Share2, Copy, MessageCircle, Send, X, Image, Smartphone, Layers, Check, Film, ChevronDown, Palette, Layout, Upload, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { generateAnimatedShareVideo } from './canvasVideoExporter';
 
 export interface ShareCardData {
@@ -62,16 +62,23 @@ const THEME_OPTIONS: { key: ThemeType; label: string; colors: string[]; vibe: st
   { key: 'cyberpunk', label: 'Cyberpunk Dual', colors: ['#090514', '#120a24', '#00F0FF'], vibe: 'Synthwave 🌆' },
 ];
 
-function buildOgUrl(data: ShareCardData, format: FormatType, theme: ThemeType, slideIndex?: number): string {
+const PRESET_WALLPAPERS = [
+  { name: '🏔️ Mountain', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&auto=format&fit=crop&q=80' },
+  { name: '🌆 Cyber City', url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1200&auto=format&fit=crop&q=80' },
+  { name: '🏋️ Workout', url: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=1200&auto=format&fit=crop&q=80' },
+  { name: '🌌 Cosmic Space', url: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=1200&auto=format&fit=crop&q=80' },
+];
+
+function buildOgUrl(data: ShareCardData, format: FormatType, theme: ThemeType, slideIndex?: number, bgImage?: string | null): string {
   const baseData = { ...data };
-
+  let url = `/og/daily-card?format=${format}&theme=${theme}&data=${encodeURIComponent(JSON.stringify(baseData))}`;
   if (format === 'carousel' && slideIndex !== undefined) {
-    const encoded = encodeURIComponent(JSON.stringify(baseData));
-    return `/og/daily-card?format=carousel&slide=${slideIndex}&theme=${theme}&data=${encoded}`;
+    url += `&slide=${slideIndex}`;
   }
-
-  const encoded = encodeURIComponent(JSON.stringify(baseData));
-  return `/og/daily-card?format=${format}&theme=${theme}&data=${encoded}`;
+  if (bgImage) {
+    url += `&bgImage=${encodeURIComponent(bgImage)}`;
+  }
+  return url;
 }
 
 function getUniqueFilename(prefix: string, ext: string): string {
@@ -84,6 +91,7 @@ function getUniqueFilename(prefix: string, ext: string): string {
 export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCardModalProps) {
   const [selectedFormat, setSelectedFormat] = useState<FormatType>('square');
   const [selectedTheme, setSelectedTheme] = useState<ThemeType>('strava');
+  const [customBgUrl, setCustomBgUrl] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRecordingVideo, setIsRecordingVideo] = useState(false);
   const [videoProgress, setVideoProgress] = useState(0);
@@ -97,23 +105,36 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
     if (!cardData) return;
     setIsPreviewLoading(true);
     if (selectedFormat === 'carousel') {
-      setPreviewUrl(buildOgUrl(cardData, 'carousel', selectedTheme, carouselSlide));
+      setPreviewUrl(buildOgUrl(cardData, 'carousel', selectedTheme, carouselSlide, customBgUrl));
     } else {
-      setPreviewUrl(buildOgUrl(cardData, selectedFormat, selectedTheme));
+      setPreviewUrl(buildOgUrl(cardData, selectedFormat, selectedTheme, undefined, customBgUrl));
     }
-  }, [cardData, selectedFormat, selectedTheme, carouselSlide]);
+  }, [cardData, selectedFormat, selectedTheme, carouselSlide, customBgUrl]);
 
   // Reset on close
   useEffect(() => {
     if (!isOpen) {
       setSelectedFormat('square');
       setSelectedTheme('strava');
+      setCustomBgUrl(null);
       setCopySuccess(false);
       setCarouselSlide(0);
       setIsRecordingVideo(false);
       setVideoProgress(0);
     }
   }, [isOpen]);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setCustomBgUrl(event.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleDownloadVideo = useCallback(async () => {
     if (!cardData) return;
@@ -124,14 +145,14 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
         cardData,
         selectedTheme,
         selectedFormat === 'story' ? 'story' : 'square',
-        (pct) => setVideoProgress(pct)
+        (pct) => setVideoProgress(pct),
+        customBgUrl
       );
 
       const ext = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
       const fileName = getUniqueFilename(`lifeos-${selectedFormat}-story`, ext);
       const videoFile = new File([videoBlob], fileName, { type: videoBlob.type });
 
-      // Mobile Native Share Sheet (iOS Safari & Android Chrome)
       if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [videoFile] })) {
         try {
           await navigator.share({
@@ -145,7 +166,6 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
         }
       }
 
-      // Fallback for Desktop browsers
       const blobUrl = URL.createObjectURL(videoBlob);
       const link = document.createElement('a');
       link.href = blobUrl;
@@ -159,16 +179,15 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
     } finally {
       setIsRecordingVideo(false);
     }
-  }, [cardData, selectedTheme, selectedFormat]);
+  }, [cardData, selectedTheme, selectedFormat, customBgUrl]);
 
   const handleDownload = useCallback(async () => {
     if (!previewUrl) return;
     setIsDownloading(true);
     try {
       if (selectedFormat === 'carousel') {
-        // Download all 4 slides
         for (let i = 0; i < 4; i++) {
-          const url = buildOgUrl(cardData!, 'carousel', selectedTheme, i);
+          const url = buildOgUrl(cardData!, 'carousel', selectedTheme, i, customBgUrl);
           const response = await fetch(url);
           if (!response.ok) continue;
           const blob = await response.blob();
@@ -202,7 +221,7 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
     } finally {
       setIsDownloading(false);
     }
-  }, [previewUrl, selectedFormat, selectedTheme, cardData]);
+  }, [previewUrl, selectedFormat, selectedTheme, cardData, customBgUrl]);
 
   const handleCopyImage = useCallback(async () => {
     if (!previewUrl) return;
@@ -216,7 +235,6 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
       console.error('Copy failed:', err);
-      // Fallback: copy URL
       try {
         await navigator.clipboard.writeText(window.location.origin + previewUrl);
         setCopySuccess(true);
@@ -247,6 +265,7 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
           format: selectedFormat,
           theme: selectedTheme,
           slide: carouselSlide,
+          bgImage: customBgUrl,
         }),
       });
 
@@ -398,6 +417,48 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
                     </select>
                     <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
+                </div>
+              </div>
+
+              {/* Custom Background Photo Section */}
+              <div className="space-y-1.5 bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/80">
+                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <ImageIcon className="w-3 h-3 text-indigo-400" />
+                    Custom Background Photo (Wallpaper)
+                  </span>
+                  {customBgUrl && (
+                    <button
+                      onClick={() => setCustomBgUrl(null)}
+                      className="text-rose-400 hover:text-rose-300 text-[10px] flex items-center gap-0.5 font-semibold"
+                    >
+                      <Trash2 className="w-3 h-3" /> Hapus Foto
+                    </button>
+                  )}
+                </label>
+
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  {/* Upload Local Image Button */}
+                  <label className="flex-shrink-0 flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-xs font-semibold cursor-pointer transition-all">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload Foto Kamu</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                  </label>
+
+                  {/* Preset Wallpapers */}
+                  {PRESET_WALLPAPERS.map((preset) => (
+                    <button
+                      key={preset.name}
+                      onClick={() => setCustomBgUrl(preset.url)}
+                      className={`flex-shrink-0 text-xs py-1.5 px-2.5 rounded-lg border transition-all ${
+                        customBgUrl === preset.url
+                          ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 font-semibold shadow-sm shadow-indigo-950/40'
+                          : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      {preset.name}
+                    </button>
+                  ))}
                 </div>
               </div>
 
