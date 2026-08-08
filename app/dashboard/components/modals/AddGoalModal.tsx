@@ -122,6 +122,11 @@ export function AddGoalModal({ isOpen, onClose, onSubmit }: AddGoalModalProps) {
             </div>
           </div>
 
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-300 flex items-center gap-2">
+            <span>✨</span>
+            <p>Setelah disimpan, kamu bisa klik tombol <strong>"AI Breakdown"</strong> di Goal untuk meng-generate sub-task harian secara otomatis.</p>
+          </div>
+
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-800">
             <button
               type="button"

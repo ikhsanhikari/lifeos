@@ -13,6 +13,22 @@ import { GoalPanel, GoalData } from './components/GoalPanel';
 import { AddGoalModal } from './components/modals/AddGoalModal';
 import { AddHabitModal } from './components/modals/AddHabitModal';
 import { TelegramLinkModal } from './components/modals/TelegramLinkModal';
+import { AiGoalBreakdownModal } from './components/modals/AiGoalBreakdownModal';
+import { AiSummaryModal, WeeklySummaryData } from './components/modals/AiSummaryModal';
+
+export interface AiStatusData {
+  aiAvailable: boolean;
+  features: {
+    goalBreakdown: boolean;
+    dailyCoach: boolean;
+    smartSummary: boolean;
+  };
+  quota: {
+    used: number;
+    limit: number;
+    remaining: number;
+  };
+}
 
 export interface HabitData {
   id: string;
@@ -84,6 +100,7 @@ export default function DashboardPage() {
   const [dailyLog, setDailyLog] = useState<DailyLogData | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsSummaryData | null>(null);
   const [telegramStatus, setTelegramStatus] = useState<TelegramStatusData>({ isLinked: false });
+  const [aiStatus, setAiStatus] = useState<AiStatusData | null>(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +116,11 @@ export default function DashboardPage() {
   const [linkTokenData, setLinkTokenData] = useState<{ token: string; telegramUrl: string; expiresAt: number } | null>(null);
   const [isGeneratingToken, setIsGeneratingToken] = useState<boolean>(false);
 
+  // AI Modals state
+  const [isAiBreakdownModalOpen, setIsAiBreakdownModalOpen] = useState<boolean>(false);
+  const [selectedAiGoal, setSelectedAiGoal] = useState<GoalData | null>(null);
+  const [isAiSummaryModalOpen, setIsAiSummaryModalOpen] = useState<boolean>(false);
+
   // Section references for smooth scrolling
   const goalsRef = useRef<HTMLDivElement>(null);
   const habitsRef = useRef<HTMLDivElement>(null);
@@ -112,7 +134,7 @@ export default function DashboardPage() {
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
-  // Fetch goals, habits, tasks, daily logs, analytics, and telegram status from Backend API
+  // Fetch goals, habits, tasks, daily logs, analytics, telegram status, and AI status from Backend API
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -133,26 +155,28 @@ export default function DashboardPage() {
         }
       }
 
-      const [goalsRes, habitsRes, tasksRes, logRes, analyticsRes, tgRes] = await Promise.all([
+      const [goalsRes, habitsRes, tasksRes, logRes, analyticsRes, tgRes, aiRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/goals`, { headers }),
         fetch(`${API_BASE_URL}/api/habits`, { headers }),
         fetch(`${API_BASE_URL}/api/tasks`, { headers }),
         fetch(`${API_BASE_URL}/api/daily-logs/today`, { headers }),
         fetch(`${API_BASE_URL}/api/analytics/summary`, { headers }),
         fetch(`${API_BASE_URL}/api/telegram/status`, { headers }),
+        fetch(`${API_BASE_URL}/api/ai/status`, { headers }),
       ]);
 
       if (!habitsRes.ok || !tasksRes.ok) {
         throw new Error('Gagal terhubung ke backend API server');
       }
 
-      const [goalsJson, habitsJson, tasksJson, logJson, analyticsJson, tgJson] = await Promise.all([
+      const [goalsJson, habitsJson, tasksJson, logJson, analyticsJson, tgJson, aiJson] = await Promise.all([
         goalsRes.json(),
         habitsRes.json(),
         tasksRes.json(),
         logRes.json(),
         analyticsRes.json(),
         tgRes.json(),
+        aiRes.json(),
       ]);
 
       if (goalsJson.success && Array.isArray(goalsJson.goals)) {
@@ -181,6 +205,10 @@ export default function DashboardPage() {
           telegramLink: tgJson.telegramLink,
         });
       }
+
+      if (aiJson.success) {
+        setAiStatus(aiJson);
+      }
     } catch (err: any) {
       console.error('Error fetching dashboard data:', err);
       setError(err.message || 'Koneksi ke backend API (http://localhost:3000) gagal.');
@@ -188,6 +216,103 @@ export default function DashboardPage() {
       setIsLoading(false);
     }
   }, []);
+
+  const handleOpenAiBreakdownModal = (goal: GoalData) => {
+    setSelectedAiGoal(goal);
+    setIsAiBreakdownModalOpen(true);
+  };
+
+  const handleFetchAiBreakdown = async (
+    goalTitle: string,
+    goalDescription?: string
+  ): Promise<{ tasks: Array<{ title: string; priority: string }>; advice: string } | null> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/ai/goal-breakdown`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ goalTitle, goalDescription }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        try {
+          const stRes = await fetch(`${API_BASE_URL}/api/ai/status`, { headers: getAuthHeaders() });
+          const stJson = await stRes.json();
+          if (stJson.success) setAiStatus(stJson);
+        } catch (e) {}
+
+        return { tasks: json.data.tasks, advice: json.data.advice };
+      } else {
+        throw new Error(json.message || 'Gagal membuat breakdown.');
+      }
+    } catch (err: any) {
+      console.error('Error fetching AI breakdown:', err);
+      throw err;
+    }
+  };
+
+  const handleAcceptAiTasks = async (
+    goalId: string,
+    tasksToAdd: Array<{ title: string; priority: string }>
+  ) => {
+    for (const t of tasksToAdd) {
+      await fetch(`${API_BASE_URL}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ title: t.title, priority: t.priority, goalId }),
+      });
+    }
+    await fetchData();
+  };
+
+  const handleFetchWeeklySummary = async (): Promise<WeeklySummaryData | null> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/ai/weekly-summary`, {
+        headers: getAuthHeaders(),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        try {
+          const stRes = await fetch(`${API_BASE_URL}/api/ai/status`, { headers: getAuthHeaders() });
+          const stJson = await stRes.json();
+          if (stJson.success) setAiStatus(stJson);
+        } catch (e) {}
+        return json.data;
+      } else {
+        throw new Error(json.message || 'Gagal memuat summary.');
+      }
+    } catch (err: any) {
+      console.error('Error fetching weekly summary:', err);
+      throw err;
+    }
+  };
+
+  const handleFetchDailyCoachInsight = async (
+    journal: string,
+    mood: number,
+    energy: number
+  ): Promise<{ insight: string; pattern: string; recommendation: string } | null> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/ai/daily-coach`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ journal, mood, energy }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        try {
+          const stRes = await fetch(`${API_BASE_URL}/api/ai/status`, { headers: getAuthHeaders() });
+          const stJson = await stRes.json();
+          if (stJson.success) setAiStatus(stJson);
+        } catch (e) {}
+        return json.data;
+      } else {
+        throw new Error(json.message || 'Gagal memuat insight.');
+      }
+    } catch (err: any) {
+      console.error('Error fetching daily coach insight:', err);
+      throw err;
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -494,6 +619,8 @@ export default function DashboardPage() {
             currentUser={currentUser}
             onOpenAddGoalModal={() => setIsAddGoalModalOpen(true)}
             onOpenAddHabitModal={() => setIsAddHabitModalOpen(true)}
+            onOpenAiSummaryModal={() => setIsAiSummaryModalOpen(true)}
+            aiAvailable={aiStatus?.features?.smartSummary ?? aiStatus?.aiAvailable}
           />
 
           {isLoading ? (
@@ -515,6 +642,8 @@ export default function DashboardPage() {
                   onDeleteGoal={handleDeleteGoal}
                   onOpenAddModal={() => setIsAddGoalModalOpen(true)}
                   onAddTaskToGoal={handleAddTaskToGoal}
+                  onOpenAiBreakdown={handleOpenAiBreakdownModal}
+                  aiAvailable={aiStatus?.features?.goalBreakdown ?? aiStatus?.aiAvailable}
                 />
               </div>
 
@@ -549,6 +678,8 @@ export default function DashboardPage() {
                 <DailyJournal
                   dailyLog={dailyLog}
                   onSaveDailyLog={handleSaveDailyLog}
+                  onFetchDailyCoachInsight={handleFetchDailyCoachInsight}
+                  aiAvailable={aiStatus?.features?.dailyCoach ?? aiStatus?.aiAvailable}
                 />
               </div>
             </>
@@ -578,6 +709,27 @@ export default function DashboardPage() {
         onClose={() => setIsLinkModalOpen(false)}
         isGeneratingToken={isGeneratingToken}
         linkTokenData={linkTokenData}
+      />
+
+      {selectedAiGoal && (
+        <AiGoalBreakdownModal
+          isOpen={isAiBreakdownModalOpen}
+          onClose={() => {
+            setIsAiBreakdownModalOpen(false);
+            setSelectedAiGoal(null);
+          }}
+          goalId={selectedAiGoal.id}
+          goalTitle={selectedAiGoal.title}
+          goalDescription={selectedAiGoal.description || undefined}
+          onAcceptTasks={handleAcceptAiTasks}
+          onFetchBreakdown={handleFetchAiBreakdown}
+        />
+      )}
+
+      <AiSummaryModal
+        isOpen={isAiSummaryModalOpen}
+        onClose={() => setIsAiSummaryModalOpen(false)}
+        onFetchSummary={handleFetchWeeklySummary}
       />
     </div>
   );
