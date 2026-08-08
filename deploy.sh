@@ -16,7 +16,9 @@ fi
 
 # Load variables from .env if present
 if [ -f ".env" ]; then
-  export $(grep -v '^#' .env | xargs -d '\n' 2>/dev/null) || true
+  set -a
+  source .env 2>/dev/null || true
+  set +a
 fi
 
 BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}"
