@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { CheckSquare, Check, Trash2, Plus, CornerDownLeft } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { CheckSquare, Check, Trash2, Plus, CornerDownLeft, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface TaskData {
   id: string;
@@ -13,6 +13,7 @@ export interface TaskData {
   goalId?: string | null;
   goal?: { id: string; title: string } | null;
 }
+
 import { Card } from '../../components/ui/Card';
 import { Tabs } from '../../components/ui/Tabs';
 import { Badge } from '../../components/ui/Badge';
@@ -32,6 +33,13 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
   onAddTask,
 }) => {
   const [taskTab, setTaskTab] = useState<'all' | 'todo' | 'done'>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
+  const [goalFilter, setGoalFilter] = useState<string>('ALL');
+
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 6;
+
   const [newTaskTitle, setNewTaskTitle] = useState<string>('');
   const [newTaskPriority, setNewTaskPriority] = useState<'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW'>('MEDIUM');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -39,11 +47,49 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
   const completedCount = tasks.filter((t) => t.status === 'DONE').length;
   const todoCount = tasks.filter((t) => t.status !== 'DONE').length;
 
-  const filteredTasks = tasks.filter((t) => {
-    if (taskTab === 'todo') return t.status !== 'DONE';
-    if (taskTab === 'done') return t.status === 'DONE';
-    return true;
-  });
+  // Distinct list of goals for the goal filter dropdown
+  const uniqueGoals = useMemo(() => {
+    const goalMap = new Map<string, string>();
+    tasks.forEach((t) => {
+      if (t.goalId && t.goal) {
+        goalMap.set(t.goalId, t.goal.title);
+      }
+    });
+    return Array.from(goalMap.entries()).map(([id, title]) => ({ id, title }));
+  }, [tasks]);
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      // Tab filter
+      if (taskTab === 'todo' && t.status === 'DONE') return false;
+      if (taskTab === 'done' && t.status !== 'DONE') return false;
+
+      // Priority filter
+      if (priorityFilter !== 'ALL' && t.priority !== priorityFilter) return false;
+
+      // Goal filter
+      if (goalFilter === 'NONE' && t.goalId) return false;
+      if (goalFilter !== 'ALL' && goalFilter !== 'NONE' && t.goalId !== goalFilter) return false;
+
+      // Search query
+      if (searchQuery.trim() !== '') {
+        const query = searchQuery.toLowerCase().trim();
+        const titleMatch = t.title.toLowerCase().includes(query);
+        const goalMatch = t.goal?.title.toLowerCase().includes(query) || false;
+        if (!titleMatch && !goalMatch) return false;
+      }
+
+      return true;
+    });
+  }, [tasks, taskTab, priorityFilter, goalFilter, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTasks.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
+  const paginatedTasks = useMemo(() => {
+    const start = (safeCurrentPage - 1) * pageSize;
+    return filteredTasks.slice(start, start + pageSize);
+  }, [filteredTasks, safeCurrentPage, pageSize]);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,12 +139,71 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
               { id: 'done', label: 'Selesai', count: completedCount },
             ]}
             activeTab={taskTab}
-            onChange={(tabId) => setTaskTab(tabId as any)}
+            onChange={(tabId) => {
+              setTaskTab(tabId as any);
+              setCurrentPage(1);
+            }}
           />
         </div>
 
+        {/* Search & Advanced Filters Bar */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 my-3">
+          {/* Search Input */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Cari tugas..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+            <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          </div>
+
+          {/* Priority Filter */}
+          <div className="relative">
+            <select
+              value={priorityFilter}
+              onChange={(e) => {
+                setPriorityFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="ALL">Semua Prioritas</option>
+              <option value="URGENT">🔴 Urgent</option>
+              <option value="HIGH">🟠 High</option>
+              <option value="MEDIUM">🟡 Medium</option>
+              <option value="LOW">⚪ Low</option>
+            </select>
+          </div>
+
+          {/* Goal Filter */}
+          <div className="relative">
+            <select
+              value={goalFilter}
+              onChange={(e) => {
+                setGoalFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 truncate"
+            >
+              <option value="ALL">Semua Goals</option>
+              <option value="NONE">Tanpa Goal (Standalone)</option>
+              {uniqueGoals.map((g) => (
+                <option key={g.id} value={g.id}>
+                  🌟 {g.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {/* Inline Add Task Form */}
-        <form onSubmit={handleFormSubmit} className="flex items-center gap-2 my-4">
+        <form onSubmit={handleFormSubmit} className="flex items-center gap-2 mb-4">
           <div className="relative flex-1">
             <input
               type="text"
@@ -133,7 +238,7 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
 
         {/* Tasks List */}
         <div className="space-y-2.5">
-          {filteredTasks.map((task) => (
+          {paginatedTasks.map((task) => (
             <div
               key={task.id}
               onClick={() => onToggleTask(task.id, task.status)}
@@ -188,11 +293,42 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
             <EmptyState
               icon={CheckSquare}
               title="Tidak ada tugas pada filter ini"
-              description="Tambahkan tugas baru untuk menyelesaikan agenda produktif kamu."
+              description="Coba ubah pencarian atau filter prioritas/goal Anda."
             />
           )}
         </div>
+
+        {/* Pagination Bar */}
+        {filteredTasks.length > pageSize && (
+          <div className="flex items-center justify-between pt-4 mt-2 border-t border-zinc-800/60 text-xs">
+            <span className="text-zinc-400">
+              Menampilkan {Math.min(filteredTasks.length, (safeCurrentPage - 1) * pageSize + 1)}-
+              {Math.min(filteredTasks.length, safeCurrentPage * pageSize)} dari {filteredTasks.length} task
+            </span>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safeCurrentPage === 1}
+                className="p-1 rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 disabled:opacity-40 transition"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="px-2 font-semibold text-zinc-300">
+                {safeCurrentPage} / {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safeCurrentPage === totalPages}
+                className="p-1 rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 disabled:opacity-40 transition"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   );
 };
+

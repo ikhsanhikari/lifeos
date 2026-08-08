@@ -1,6 +1,5 @@
-'use client';
-
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface GoalData {
   id: string;
@@ -34,12 +33,43 @@ export function GoalPanel({
   aiAvailable = true,
 }: GoalPanelProps) {
   const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 4;
+
   const [newTaskInput, setNewTaskInput] = useState<Record<string, string>>({});
   const [isSubmittingTask, setIsSubmittingTask] = useState<boolean>(false);
 
   const toggleExpand = (id: string) => {
     setExpandedGoalId((prev) => (prev === id ? null : id));
   };
+
+  const filteredGoals = useMemo(() => {
+    return goals.filter((g) => {
+      // Status filter
+      if (statusFilter !== 'ALL' && g.status !== statusFilter) return false;
+
+      // Search query
+      if (searchQuery.trim() !== '') {
+        const query = searchQuery.toLowerCase().trim();
+        const titleMatch = g.title.toLowerCase().includes(query);
+        const descMatch = g.description?.toLowerCase().includes(query) || false;
+        if (!titleMatch && !descMatch) return false;
+      }
+
+      return true;
+    });
+  }, [goals, statusFilter, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredGoals.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
+  const paginatedGoals = useMemo(() => {
+    const start = (safeCurrentPage - 1) * pageSize;
+    return filteredGoals.slice(start, start + pageSize);
+  }, [filteredGoals, safeCurrentPage, pageSize]);
 
   const handleAddTaskSubmit = async (goalId: string, e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +87,7 @@ export function GoalPanel({
 
   return (
     <div className="bg-[#121215] border border-zinc-800/80 rounded-2xl p-5 shadow-xl space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-sm">
             🌟
@@ -75,11 +105,46 @@ export function GoalPanel({
 
         <button
           onClick={onOpenAddModal}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-md shadow-emerald-950/40"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-md shadow-emerald-950/40 self-start sm:self-auto"
         >
           <span>+</span> Buat Goal
         </button>
       </div>
+
+      {/* Search & Status Filter Bar */}
+      {goals.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Cari mimpi / goal..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors"
+            />
+            <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+          </div>
+
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-emerald-500"
+            >
+              <option value="ALL">Semua Status Goal</option>
+              <option value="ACTIVE">⚡ Active</option>
+              <option value="COMPLETED">✅ Completed</option>
+              <option value="PAUSED">⏸️ Paused</option>
+            </select>
+          </div>
+        </div>
+      )}
 
       {goals.length === 0 ? (
         <div className="text-center py-8 px-4 border border-dashed border-zinc-800 rounded-xl bg-zinc-900/30">
@@ -97,7 +162,7 @@ export function GoalPanel({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3.5">
-          {goals.map((goal) => {
+          {paginatedGoals.map((goal) => {
             const isExpanded = expandedGoalId === goal.id;
             const formattedDeadline = goal.deadline
               ? new Date(goal.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -217,8 +282,45 @@ export function GoalPanel({
               </div>
             );
           })}
+
+          {filteredGoals.length === 0 && (
+            <div className="text-center py-6 border border-zinc-800/60 rounded-xl bg-zinc-900/20 text-xs text-zinc-400">
+              Tidak ada Goal yang sesuai dengan kata kunci pencarian atau filter status.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Goal Pagination Bar */}
+      {filteredGoals.length > pageSize && (
+        <div className="flex items-center justify-between pt-3 border-t border-zinc-800/60 text-xs">
+          <span className="text-zinc-400">
+            Menampilkan {Math.min(filteredGoals.length, (safeCurrentPage - 1) * pageSize + 1)}-
+            {Math.min(filteredGoals.length, safeCurrentPage * pageSize)} dari {filteredGoals.length} goal
+          </span>
+
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={safeCurrentPage === 1}
+              className="p-1 rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 disabled:opacity-40 transition"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="px-2 font-semibold text-zinc-300">
+              {safeCurrentPage} / {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safeCurrentPage === totalPages}
+              className="p-1 rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 disabled:opacity-40 transition"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
     </div>
   );
 }
+

@@ -19,6 +19,7 @@ import {
   handleTasksCommand,
   handleCreateTaskCommand,
   handleTaskToggleCallback,
+  handleTasksPageCallback,
 } from './controllers/taskController';
 import { generateLinkToken, redeemLinkToken } from './services/telegramLinkService';
 import {
@@ -64,6 +65,7 @@ import {
   goalWizardSessions,
   renderProgressBar,
   handleAiGoalBreakdownCallback,
+  handleGoalsPageCallback,
 } from './controllers/goalController';
 import {
   handleAiStatus,
@@ -215,11 +217,11 @@ async function handleLoginCommand(ctx: any) {
 // Telegram Bot Commands
 bot.command('menu', handleMainMenuCommand);
 bot.command('login', handleLoginCommand);
-bot.command('goals', handleGoalsCommand);
+bot.command('goals', (ctx) => handleGoalsCommand(ctx));
 bot.command('goal', handleCreateGoalCommand);
 bot.command('focus', handleFocusCommand);
 bot.command('habits', handleHabitsCommand);
-bot.command('tasks', handleTasksCommand);
+bot.command('tasks', (ctx) => handleTasksCommand(ctx));
 bot.command('task', handleCreateTaskCommand);
 bot.command('log', handleDailyLogCommand);
 bot.command('today', handleTodaySummaryCommand);
@@ -286,20 +288,20 @@ async function handleAiInfoCommand(ctx: any) {
 }
 
 // Telegram Keyboard Button Listeners (Tanpa perlu ketik /)
-bot.hears('🌟 Goals (Mimpi)', handleGoalsCommand);
+bot.hears('🌟 Goals (Mimpi)', (ctx) => handleGoalsCommand(ctx));
 bot.hears('🔎 Focus Mode', handleFocusCommand);
 bot.hears('🎯 Habit Harian', handleHabitsCommand);
-bot.hears('📋 Task List', handleTasksCommand);
+bot.hears('📋 Task List', (ctx) => handleTasksCommand(ctx));
 bot.hears('📖 Jurnal & Mood', handleDailyLogCommand);
 bot.hears('📊 Today Summary', handleTodaySummaryCommand);
 bot.hears('🔥 Habit Streaks', handleStreakCommand);
 bot.hears('⚙️ Menu Utama', handleMainMenuCommand);
 
 // Telegram Bot Callback Actions (Inline Keyboard Click)
-bot.action('nav_goals', handleGoalsCommand);
+bot.action('nav_goals', (ctx) => handleGoalsCommand(ctx));
 bot.action('nav_focus', handleFocusCommand);
 bot.action('nav_habits', handleHabitsCommand);
-bot.action('nav_tasks', handleTasksCommand);
+bot.action('nav_tasks', (ctx) => handleTasksCommand(ctx));
 bot.action('nav_log', handleDailyLogCommand);
 bot.action('nav_today', handleTodaySummaryCommand);
 bot.action('nav_streak', handleStreakCommand);
@@ -342,6 +344,8 @@ bot.action(/^toggle_habit:(.+)$/, handleHabitToggleCallback);
 bot.action('refresh_habits', handleHabitToggleCallback);
 bot.action(/^toggle_task:(.+)$/, handleTaskToggleCallback);
 bot.action('refresh_tasks', handleTaskToggleCallback);
+bot.action(/^nav_tasks_page:(.+)$/, handleTasksPageCallback);
+bot.action(/^nav_goals_page:(.+)$/, handleGoalsPageCallback);
 bot.action(/^log_mood:(.+)$/, handleLogMoodCallback);
 bot.action(/^log_energy:(.+)$/, handleLogEnergyCallback);
 bot.action(/^ai_breakdown_goal:(.+)$/, handleAiGoalBreakdownCallback);
