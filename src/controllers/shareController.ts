@@ -2,10 +2,11 @@ import { Response } from 'express';
 import { prisma } from '../server';
 import { AuthenticatedRequest } from '../middleware/authMiddleware';
 import { getAnalyticsSummary } from './analyticsController';
+import { getTodayDate } from './habitController';
 
 /**
  * Share Card Data Controller
- * Aggregates user productivity data for social share card rendering
+ * Aggregates rich productivity data for social share card rendering
  */
 
 export interface ShareCardData {
@@ -22,6 +23,10 @@ export interface ShareCardData {
   energy: number | null;
   achievements: string[];
   highlights: string[];
+  completedHabitNames: string[];
+  completedTaskTitles: string[];
+  journalSnippet: string | null;
+  activeGoalsCount: number;
   quote: string;
   habitStreaks: Array<{
     habitId: string;
@@ -106,14 +111,40 @@ export async function getShareCardData(req: AuthenticatedRequest, res: Response)
 
     const userId = req.user.id;
     const chatId = req.user.telegramChatId ? BigInt(req.user.telegramChatId) : null;
+    const today = getTodayDate();
 
-    // Get analytics summary (reuse existing function)
+    // Get analytics summary
     const analytics = await getAnalyticsSummary(chatId);
 
-    // Get today's daily log for highlights
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    // Get today's completed habit names
+    const habits = await prisma.habit.findMany({
+      where: { userId, isArchived: false },
+    });
+    const habitIds = habits.map((h: any) => h.id);
 
+    const todayHabitLogs = await prisma.habitLog.findMany({
+      where: { habitId: { in: habitIds }, date: today, status: 'DONE' },
+    });
+
+    const doneHabitIds = new Set(todayHabitLogs.map((l: any) => l.habitId));
+    const completedHabitNames = habits
+      .filter((h: any) => doneHabitIds.has(h.id))
+      .map((h: any) => h.name);
+
+    // Get today's completed task titles
+    const completedTasks = await prisma.task.findMany({
+      where: { userId, status: 'DONE' },
+      take: 5,
+      orderBy: { completedAt: 'desc' },
+    });
+    const completedTaskTitles = completedTasks.map((t: any) => t.title);
+
+    // Count active goals
+    const activeGoalsCount = await prisma.goal.count({
+      where: { userId, status: 'ACTIVE' },
+    });
+
+    // Get today's daily log for highlights & journal snippet
     const dailyLog = await prisma.dailyLog.findUnique({
       where: { userId_date: { userId, date: today } },
     });
@@ -131,12 +162,20 @@ export async function getShareCardData(req: AuthenticatedRequest, res: Response)
 
     // Parse highlights from daily log
     let highlights: string[] = [];
-    if (dailyLog && (dailyLog as any).highlights) {
-      try {
-        const raw = (dailyLog as any).highlights;
-        highlights = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : []);
-      } catch {
-        highlights = [];
+    let journalSnippet: string | null = null;
+    if (dailyLog) {
+      if ((dailyLog as any).highlights) {
+        try {
+          const raw = (dailyLog as any).highlights;
+          highlights = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : []);
+        } catch {
+          highlights = [];
+        }
+      }
+      if (dailyLog.journal) {
+        journalSnippet = dailyLog.journal.length > 120
+          ? dailyLog.journal.substring(0, 120) + '...'
+          : dailyLog.journal;
       }
     }
 
@@ -178,6 +217,10 @@ export async function getShareCardData(req: AuthenticatedRequest, res: Response)
       energy: analytics.todayEnergy,
       achievements,
       highlights,
+      completedHabitNames,
+      completedTaskTitles,
+      journalSnippet,
+      activeGoalsCount,
       quote: getRandomQuote(),
       habitStreaks: analytics.habitStreaks,
       recentMoodLogs: analytics.recentMoodLogs,

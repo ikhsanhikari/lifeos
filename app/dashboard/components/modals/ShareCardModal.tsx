@@ -18,6 +18,10 @@ export interface ShareCardData {
   energy: number | null;
   achievements: string[];
   highlights: string[];
+  completedHabitNames?: string[];
+  completedTaskTitles?: string[];
+  journalSnippet?: string | null;
+  activeGoalsCount?: number;
   quote: string;
   habitStreaks: Array<{
     habitId: string;
