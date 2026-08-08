@@ -1,6 +1,6 @@
 /**
  * Client-Side Canvas Video Exporter for LifeOS Share Cards
- * Renders a 60fps Strava-style animated video story directly in browser
+ * Renders a butter-smooth 60fps Strava-style animated video story directly in browser
  */
 
 import { ShareCardData } from './ShareCardModal';
@@ -48,6 +48,15 @@ const THEMES: Record<string, {
   },
 };
 
+// Smooth Cubic Easing helper
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function easeInOutCubic(t: number): number {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
 export async function generateAnimatedShareVideo(
   cardData: ShareCardData,
   themeKey: string = 'strava',
@@ -82,10 +91,16 @@ export async function generateAnimatedShareVideo(
       }
 
       const stream = canvas.captureStream(60);
-      const recorderOptions: MediaRecorderOptions = mimeType ? { mimeType } : {};
-      const mediaRecorder = new MediaRecorder(stream, recorderOptions);
+      const recorderOptions: MediaRecorderOptions = {
+        videoBitsPerSecond: 12000000, // 12 Mbps ultra-high quality 60fps
+      };
+      if (mimeType) {
+        recorderOptions.mimeType = mimeType;
+      }
 
+      const mediaRecorder = new MediaRecorder(stream, recorderOptions);
       const chunks: Blob[] = [];
+
       mediaRecorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) {
           chunks.push(e.data);
@@ -99,9 +114,9 @@ export async function generateAnimatedShareVideo(
 
       mediaRecorder.start();
 
-      const durationMs = 3500; // 3.5 seconds total video duration
-      const fps = 60;
-      const totalFrames = Math.floor((durationMs / 1000) * fps);
+      const durationMs = 5000; // 5.0 seconds total video duration for IG Story
+      const targetFps = 60;
+      const totalFrames = Math.floor((durationMs / 1000) * targetFps);
       let currentFrame = 0;
 
       // Sample Strava Polyline Points
@@ -119,9 +134,12 @@ export async function generateAnimatedShareVideo(
         [520, format === 'story' ? 1650 : 920],
       ];
 
-      function drawFrame() {
+      // Deterministic 60fps Interval Timer to guarantee zero-stutter recording
+      const intervalMs = 1000 / targetFps;
+      const renderInterval = setInterval(() => {
         if (!ctx) return;
-        const progress = Math.min(1, currentFrame / totalFrames);
+        const rawProgress = Math.min(1, currentFrame / totalFrames);
+        const smoothProgress = easeInOutCubic(rawProgress);
 
         // 1. Background Gradient
         const grad = ctx.createLinearGradient(0, 0, 0, height);
@@ -131,14 +149,15 @@ export async function generateAnimatedShareVideo(
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, width, height);
 
-        // 2. Radial Glow Orbs
-        const glow1 = ctx.createRadialGradient(width * 0.8, height * 0.1, 0, width * 0.8, height * 0.1, 450);
+        // 2. Radial Glow Orbs with soft breathing pulse
+        const pulse = Math.sin(rawProgress * Math.PI * 2) * 30;
+        const glow1 = ctx.createRadialGradient(width * 0.8, height * 0.1, 0, width * 0.8, height * 0.1, 450 + pulse);
         glow1.addColorStop(0, theme.glow + '40');
         glow1.addColorStop(1, 'transparent');
         ctx.fillStyle = glow1;
         ctx.fillRect(0, 0, width, height);
 
-        const glow2 = ctx.createRadialGradient(width * 0.2, height * 0.85, 0, width * 0.2, height * 0.85, 400);
+        const glow2 = ctx.createRadialGradient(width * 0.2, height * 0.85, 0, width * 0.2, height * 0.85, 400 + pulse);
         glow2.addColorStop(0, theme.secondary + '30');
         glow2.addColorStop(1, 'transparent');
         ctx.fillStyle = glow2;
@@ -165,7 +184,7 @@ export async function generateAnimatedShareVideo(
         ctx.globalAlpha = 1.0;
 
         // 4. Animated Strava Polyline Activity Route
-        const routeProgress = Math.min(1, progress * 1.4); // finishes route drawing early
+        const routeProgress = Math.min(1, easeOutCubic(Math.min(1, rawProgress * 1.5)));
         if (routePoints.length > 1) {
           const pointCountToDraw = Math.floor(routeProgress * (routePoints.length - 1)) + 1;
           ctx.beginPath();
@@ -174,7 +193,7 @@ export async function generateAnimatedShareVideo(
             ctx.lineTo(routePoints[i][0], routePoints[i][1]);
           }
           ctx.strokeStyle = theme.primary;
-          ctx.lineWidth = 8;
+          ctx.lineWidth = 9;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           ctx.globalAlpha = 0.35;
@@ -196,13 +215,12 @@ export async function generateAnimatedShareVideo(
         }
 
         // 5. Header Brand Pill
-        const pillAlpha = Math.min(1, progress * 3);
+        const pillAlpha = Math.min(1, rawProgress * 3);
         ctx.globalAlpha = pillAlpha;
         ctx.fillStyle = theme.badgeBg;
         ctx.strokeStyle = theme.cardBorder;
         ctx.lineWidth = 1.5;
 
-        // Header pill background
         roundRect(ctx, 70, 80, 360, 50, 25, true, true);
         ctx.fillStyle = theme.primary;
         ctx.beginPath();
@@ -223,9 +241,9 @@ export async function generateAnimatedShareVideo(
         ctx.fillStyle = theme.textPrimary;
         ctx.fillText(`${cardData.userName}'s Daily Flex`, 70, 190);
 
-        // 7. Hero Focus Score Box (Animated Counter)
+        // 7. Hero Focus Score Box (Smooth Eased Counter)
         const focusTarget = cardData.focusScore || 0;
-        const currentFocus = Math.floor(Math.min(focusTarget, progress * 1.3 * focusTarget));
+        const currentFocus = Math.floor(Math.min(focusTarget, smoothProgress * focusTarget));
 
         const heroBoxY = format === 'story' ? 240 : 210;
         const heroBoxHeight = format === 'story' ? 320 : 240;
@@ -272,7 +290,7 @@ export async function generateAnimatedShareVideo(
 
         const habitsDone = cardData.habitsCompleted || 0;
         const habitsTotal = cardData.habitsTotal || 0;
-        const animHabitsDone = Math.floor(Math.min(habitsDone, progress * 1.5 * habitsDone));
+        const animHabitsDone = Math.floor(Math.min(habitsDone, smoothProgress * habitsDone));
 
         ctx.font = '900 52px Inter, sans-serif';
         ctx.fillStyle = theme.textPrimary;
@@ -292,7 +310,7 @@ export async function generateAnimatedShareVideo(
 
         const tasksDone = cardData.tasksCompleted || 0;
         const tasksTotal = cardData.tasksTotal || 0;
-        const animTasksDone = Math.floor(Math.min(tasksDone, progress * 1.5 * tasksDone));
+        const animTasksDone = Math.floor(Math.min(tasksDone, smoothProgress * tasksDone));
 
         ctx.font = '900 52px Inter, sans-serif';
         ctx.fillStyle = theme.textPrimary;
@@ -342,18 +360,15 @@ export async function generateAnimatedShareVideo(
           onProgress(Math.min(100, Math.floor((currentFrame / totalFrames) * 100)));
         }
 
-        if (currentFrame <= totalFrames) {
-          requestAnimationFrame(drawFrame);
-        } else {
+        if (currentFrame > totalFrames) {
+          clearInterval(renderInterval);
           setTimeout(() => {
             if (mediaRecorder.state !== 'inactive') {
               mediaRecorder.stop();
             }
-          }, 300);
+          }, 400);
         }
-      }
-
-      drawFrame();
+      }, intervalMs);
     } catch (err) {
       console.error('Error generating animated video:', err);
       reject(err);
