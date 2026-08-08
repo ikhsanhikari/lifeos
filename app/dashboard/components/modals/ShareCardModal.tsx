@@ -75,7 +75,7 @@ function buildOgUrl(data: ShareCardData, format: FormatType, theme: ThemeType, s
   if (format === 'carousel' && slideIndex !== undefined) {
     url += `&slide=${slideIndex}`;
   }
-  if (bgImage) {
+  if (bgImage && bgImage.startsWith('http') && bgImage.length < 500) {
     url += `&bgImage=${encodeURIComponent(bgImage)}`;
   }
   return url;
@@ -86,6 +86,56 @@ function getUniqueFilename(prefix: string, ext: string): string {
   const timestamp = now.toISOString().replace(/[-:T.]/g, '').substring(0, 14);
   const randomStr = Math.random().toString(36).substring(2, 6);
   return `${prefix}-${timestamp}-${randomStr}.${ext}`;
+}
+
+async function mergeBgAndCardImages(bgUrl: string, cardUrl: string, width: number, height: number): Promise<Blob> {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas 2D unsupported');
+
+  const [bgImg, cardImg] = await Promise.all([
+    new Promise<HTMLImageElement | null>((res) => {
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => res(img);
+      img.onerror = () => res(null);
+      img.src = bgUrl;
+    }),
+    new Promise<HTMLImageElement | null>((res) => {
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => res(img);
+      img.onerror = () => res(null);
+      img.src = cardUrl;
+    }),
+  ]);
+
+  if (bgImg) {
+    const imgRatio = bgImg.width / bgImg.height;
+    const canvasRatio = width / height;
+    let dW = width;
+    let dH = height;
+    let dX = 0;
+    let dY = 0;
+    if (imgRatio > canvasRatio) {
+      dW = height * imgRatio;
+      dX = (width - dW) / 2;
+    } else {
+      dH = width / imgRatio;
+      dY = (height - dH) / 2;
+    }
+    ctx.drawImage(bgImg, dX, dY, dW, dH);
+    ctx.fillStyle = 'rgba(8, 8, 14, 0.65)';
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  if (cardImg) {
+    ctx.drawImage(cardImg, 0, 0, width, height);
+  }
+
+  return new Promise((res) => canvas.toBlob((b) => res(b || new Blob([])), 'image/png'));
 }
 
 export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCardModalProps) {
@@ -185,12 +235,20 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
     if (!previewUrl) return;
     setIsDownloading(true);
     try {
+      const width = 1080;
+      const height = selectedFormat === 'story' ? 1920 : 1080;
+
       if (selectedFormat === 'carousel') {
         for (let i = 0; i < 4; i++) {
           const url = buildOgUrl(cardData!, 'carousel', selectedTheme, i, customBgUrl);
-          const response = await fetch(url);
-          if (!response.ok) continue;
-          const blob = await response.blob();
+          let blob: Blob;
+          if (customBgUrl) {
+            blob = await mergeBgAndCardImages(customBgUrl, url, width, height);
+          } else {
+            const response = await fetch(url);
+            if (!response.ok) continue;
+            blob = await response.blob();
+          }
           const blobUrl = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = blobUrl;
@@ -202,11 +260,16 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
           await new Promise(r => setTimeout(r, 400));
         }
       } else {
-        const response = await fetch(previewUrl);
-        if (!response.ok) {
-          throw new Error(`HTTP Error ${response.status}`);
+        let blob: Blob;
+        if (customBgUrl) {
+          blob = await mergeBgAndCardImages(customBgUrl, previewUrl, width, height);
+        } else {
+          const response = await fetch(previewUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP Error ${response.status}`);
+          }
+          blob = await response.blob();
         }
-        const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = blobUrl;
@@ -226,8 +289,17 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
   const handleCopyImage = useCallback(async () => {
     if (!previewUrl) return;
     try {
-      const response = await fetch(previewUrl);
-      const blob = await response.blob();
+      const width = 1080;
+      const height = selectedFormat === 'story' ? 1920 : 1080;
+      let blob: Blob;
+
+      if (customBgUrl) {
+        blob = await mergeBgAndCardImages(customBgUrl, previewUrl, width, height);
+      } else {
+        const response = await fetch(previewUrl);
+        blob = await response.blob();
+      }
+
       await navigator.clipboard.write([
         new ClipboardItem({ 'image/png': blob }),
       ]);
@@ -241,7 +313,7 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
         setTimeout(() => setCopySuccess(false), 2000);
       } catch {}
     }
-  }, [previewUrl]);
+  }, [previewUrl, customBgUrl, selectedFormat]);
 
   const [isSendingTelegram, setIsSendingTelegram] = useState(false);
   const [telegramSuccess, setTelegramSuccess] = useState(false);
@@ -255,6 +327,19 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
     setTelegramError(null);
     try {
       const token = localStorage.getItem('lifeos_token');
+      let customImageBase64: string | undefined = undefined;
+
+      if (customBgUrl) {
+        const width = 1080;
+        const height = selectedFormat === 'story' ? 1920 : 1080;
+        const mergedBlob = await mergeBgAndCardImages(customBgUrl, previewUrl, width, height);
+        customImageBase64 = await new Promise<string>((res) => {
+          const reader = new FileReader();
+          reader.onload = (e) => res(e.target?.result as string);
+          reader.readAsDataURL(mergedBlob);
+        });
+      }
+
       const res = await fetch(`${API_BASE_URL}/api/share/send-telegram`, {
         method: 'POST',
         headers: {
@@ -265,7 +350,8 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
           format: selectedFormat,
           theme: selectedTheme,
           slide: carouselSlide,
-          bgImage: customBgUrl,
+          bgImage: customBgUrl && customBgUrl.startsWith('http') ? customBgUrl : undefined,
+          customImageBase64,
         }),
       });
 
@@ -489,8 +575,19 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
               {/* Preview */}
               <div>
                 <div className="relative min-h-[200px] bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden flex items-center justify-center p-3">
+                  {/* Custom Background Photo Layer */}
+                  {customBgUrl && (
+                    <div className="absolute inset-0 z-0 overflow-hidden">
+                      <img
+                        src={customBgUrl}
+                        alt="Custom Background"
+                        className="w-full h-full object-cover filter brightness-[0.45] contrast-[1.05]"
+                      />
+                    </div>
+                  )}
+
                   {isPreviewLoading && (
-                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-zinc-950/75 backdrop-blur-sm rounded-xl transition-all">
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-zinc-950/75 backdrop-blur-sm rounded-xl transition-all">
                       <div className="w-7 h-7 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-2" />
                       <span className="text-xs font-semibold text-indigo-300">Generasi Preview Gambar...</span>
                     </div>
@@ -501,7 +598,7 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
                       alt="Share Card Preview"
                       onLoad={() => setIsPreviewLoading(false)}
                       onError={() => setIsPreviewLoading(false)}
-                      className={`rounded-lg shadow-2xl max-w-full transition-opacity duration-300 ${
+                      className={`relative z-10 rounded-lg shadow-2xl max-w-full transition-opacity duration-300 ${
                         isPreviewLoading ? 'opacity-30 blur-[2px]' : 'opacity-100 blur-0'
                       } ${selectedFormat === 'story' ? 'max-h-[360px]' : 'max-h-[300px]'}`}
                       style={{ objectFit: 'contain' }}

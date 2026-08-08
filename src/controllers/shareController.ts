@@ -262,7 +262,7 @@ export async function sendShareCardToTelegram(req: AuthenticatedRequest, res: Re
     }
 
     const userId = req.user.id;
-    const { format = 'square', theme = 'strava', slide = 0, bgImage } = req.body;
+    const { format = 'square', theme = 'strava', slide = 0, bgImage, customImageBase64 } = req.body;
 
     // Check if user has linked Telegram account
     const tgLink = await prisma.telegramLink.findUnique({
@@ -284,20 +284,27 @@ export async function sendShareCardToTelegram(req: AuthenticatedRequest, res: Re
       return;
     }
 
-    // Next.js OG endpoint URL
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3011';
-    let ogUrl = `${frontendUrl}/og/daily-card?format=${format}&slide=${slide}&theme=${theme}&data=${encodeURIComponent(JSON.stringify(cardData))}`;
-    if (bgImage) {
-      ogUrl += `&bgImage=${encodeURIComponent(bgImage)}`;
-    }
+    let imageBuffer: Buffer;
 
-    // Fetch image as Buffer
-    const imgRes = await fetch(ogUrl);
-    if (!imgRes.ok) {
-      throw new Error(`Gagal me-render gambar kartu (HTTP ${imgRes.status})`);
+    if (customImageBase64 && typeof customImageBase64 === 'string') {
+      const base64Data = customImageBase64.replace(/^data:image\/\w+;base64,/, '');
+      imageBuffer = Buffer.from(base64Data, 'base64');
+    } else {
+      // Next.js OG endpoint URL
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3011';
+      let ogUrl = `${frontendUrl}/og/daily-card?format=${format}&slide=${slide}&theme=${theme}&data=${encodeURIComponent(JSON.stringify(cardData))}`;
+      if (bgImage && typeof bgImage === 'string' && bgImage.startsWith('http') && bgImage.length < 500) {
+        ogUrl += `&bgImage=${encodeURIComponent(bgImage)}`;
+      }
+
+      // Fetch image as Buffer
+      const imgRes = await fetch(ogUrl);
+      if (!imgRes.ok) {
+        throw new Error(`Gagal me-render gambar kartu (HTTP ${imgRes.status})`);
+      }
+      const arrayBuf = await imgRes.arrayBuffer();
+      imageBuffer = Buffer.from(arrayBuf);
     }
-    const arrayBuf = await imgRes.arrayBuffer();
-    const imageBuffer = Buffer.from(arrayBuf);
 
     // Telegram Caption
     const streakText = cardData.topStreak ? `🔥 *Top Streak:* ${cardData.topStreak.name} (${cardData.topStreak.streak} Hari)\n` : '';
