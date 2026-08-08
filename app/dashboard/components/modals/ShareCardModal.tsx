@@ -125,11 +125,29 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
         (pct) => setVideoProgress(pct)
       );
 
+      const ext = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
+      const fileName = getUniqueFilename(`lifeos-${selectedFormat}-story`, ext);
+      const videoFile = new File([videoBlob], fileName, { type: videoBlob.type });
+
+      // Mobile Native Share Sheet (iOS Safari & Android Chrome)
+      if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [videoFile] })) {
+        try {
+          await navigator.share({
+            title: 'Life OS Daily Story',
+            text: 'Cek pencapaian produktivitas harian saya di Life OS!',
+            files: [videoFile],
+          });
+          return;
+        } catch (shareErr: any) {
+          if (shareErr.name === 'AbortError') return;
+        }
+      }
+
+      // Fallback for Desktop browsers
       const blobUrl = URL.createObjectURL(videoBlob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      const ext = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
-      link.download = getUniqueFilename(`lifeos-${selectedFormat}-story`, ext);
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

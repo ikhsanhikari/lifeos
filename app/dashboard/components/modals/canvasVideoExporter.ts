@@ -225,12 +225,14 @@ export async function generateAnimatedShareVideo(
 
       let mimeType = '';
       if (typeof MediaRecorder !== 'undefined') {
-        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+        if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
+          mimeType = 'video/mp4;codecs=avc1';
+        } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+          mimeType = 'video/mp4';
+        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
           mimeType = 'video/webm;codecs=vp9';
         } else if (MediaRecorder.isTypeSupported('video/webm')) {
           mimeType = 'video/webm';
-        } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-          mimeType = 'video/mp4';
         }
       }
 
@@ -238,7 +240,7 @@ export async function generateAnimatedShareVideo(
       let mediaRecorder: MediaRecorder;
 
       try {
-        const options: MediaRecorderOptions = { videoBitsPerSecond: 8000000 };
+        const options: MediaRecorderOptions = { videoBitsPerSecond: 6000000 };
         if (mimeType) options.mimeType = mimeType;
         mediaRecorder = new MediaRecorder(stream, options);
       } catch {
@@ -256,13 +258,24 @@ export async function generateAnimatedShareVideo(
       };
 
       mediaRecorder.onstop = () => {
-        const finalBlob = new Blob(chunks, { type: mimeType || 'video/webm' });
+        // 1. Release MediaStream tracks immediately to prevent GPU VRAM crash on mobile
+        try {
+          stream.getTracks().forEach((track) => track.stop());
+        } catch (e) {
+          // ignore
+        }
+
+        // 2. Clear canvas memory
+        canvas.width = 0;
+        canvas.height = 0;
+
+        const finalBlob = new Blob(chunks, { type: mimeType || 'video/mp4' });
         resolve(finalBlob);
       };
 
       mediaRecorder.start();
 
-      const durationMs = 5000;
+      const durationMs = 6000;
       const targetFps = 60;
       const totalFrames = Math.floor((durationMs / 1000) * targetFps);
       let currentFrame = 0;
@@ -293,9 +306,9 @@ export async function generateAnimatedShareVideo(
       const renderInterval = setInterval(() => {
         if (!ctx) return;
         const rawProgress = Math.min(1, currentFrame / totalFrames);
-        const animProgress = Math.min(1, rawProgress / 0.50);
+        const animProgress = Math.min(1, rawProgress / 0.30); // 1.8s smooth entrance animation
         const smoothProgress = easeOutCubic(animProgress);
-        const floatBob = Math.sin(rawProgress * Math.PI * 4) * 12;
+        const floatBob = Math.sin(rawProgress * Math.PI * 4) * 12; // 3D floating keeps bobbing smoothly
 
         // 1. Base Dark Background
         const grad = ctx.createLinearGradient(0, 0, 0, height);
@@ -634,7 +647,7 @@ export async function generateAnimatedShareVideo(
             if (mediaRecorder.state !== 'inactive') {
               mediaRecorder.stop();
             }
-          }, 400);
+          }, 300);
         }
       }, intervalMs);
     } catch (err) {
