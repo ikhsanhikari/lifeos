@@ -72,6 +72,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const format = searchParams.get('format') || 'square';
+    const slide = searchParams.get('slide') || '0';
     const themeKey = searchParams.get('theme') || 'strava';
     const dataParam = searchParams.get('data');
 
@@ -100,6 +101,173 @@ export async function GET(request: NextRequest) {
     const taskList: string[] = cardData.completedTaskTitles && cardData.completedTaskTitles.length > 0
       ? cardData.completedTaskTitles
       : ['Productivity Sprint', 'Code Review'];
+
+    // CAROUSEL SLIDES HANDLING (4 DISTINCT SLIDES)
+    if (format === 'carousel') {
+      if (slide === '1') {
+        // SLIDE 2: HABITS & STREAKS BREAKDOWN
+        return new ImageResponse(
+          (
+            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '60px', background: `linear-gradient(140deg, ${theme.bg1} 0%, ${theme.bg2} 60%, ${theme.bg3} 100%)`, fontFamily: 'Inter, system-ui, sans-serif', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: `radial-gradient(circle, ${theme.glow}25, transparent 65%)`, display: 'flex' }} />
+              
+              {/* Slide Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 20px', borderRadius: '24px', background: theme.badgeBg, border: `1px solid ${theme.cardBorder}` }}>
+                  <span style={{ fontSize: '20px' }}>🔥</span>
+                  <span style={{ fontSize: '18px', fontWeight: 800, color: theme.badgeText, letterSpacing: '3px', textTransform: 'uppercase' }}>SLIDE 2/4 • HABITS & STREAKS</span>
+                </div>
+                <span style={{ fontSize: '18px', color: theme.textMuted, fontWeight: 700 }}>{cardData.dateShort || cardData.date}</span>
+              </div>
+
+              {/* Giant Streak Banner */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px', borderRadius: '32px', background: theme.cardBg, border: `2px solid ${theme.cardBorder}`, gap: '8px' }}>
+                <span style={{ fontSize: '48px' }}>🔥</span>
+                <span style={{ fontSize: '90px', fontWeight: 900, color: theme.primary, lineHeight: 0.95 }}>
+                  {cardData.topStreak ? cardData.topStreak.streak : 14} DAYS
+                </span>
+                <span style={{ fontSize: '24px', fontWeight: 800, color: theme.textPrimary, letterSpacing: '4px', textTransform: 'uppercase' }}>
+                  {cardData.topStreak ? cardData.topStreak.name : 'DAILY HABIT STREAK'}
+                </span>
+              </div>
+
+              {/* Habits List Grid */}
+              <div style={{ display: 'flex', flexDirection: 'column', padding: '28px', borderRadius: '26px', background: theme.cardBg, border: `1px solid ${theme.cardBorder}`, gap: '14px' }}>
+                <span style={{ fontSize: '22px', fontWeight: 900, color: theme.textPrimary }}>🎯 Completed Habits Today ({cardData.habitsCompleted}/{cardData.habitsTotal})</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  {habitList.map((hName, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '16px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${theme.cardBorder}`, fontSize: '18px', color: theme.textSecondary, fontWeight: 700 }}>
+                      <span style={{ color: theme.primary }}>✓</span> {hName}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Watermark */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 20px', borderRadius: '20px', background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                  <span style={{ fontSize: '16px' }}>⚡</span>
+                  <span style={{ fontSize: '16px', color: theme.textPrimary, fontWeight: 800, letterSpacing: '2px' }}>LIFE OS</span>
+                </div>
+              </div>
+            </div>
+          ),
+          { width, height: 1080 }
+        );
+      } else if (slide === '2') {
+        // SLIDE 3: TASKS & GOALS CHECKLIST
+        return new ImageResponse(
+          (
+            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '60px', background: `linear-gradient(140deg, ${theme.bg1} 0%, ${theme.bg2} 60%, ${theme.bg3} 100%)`, fontFamily: 'Inter, system-ui, sans-serif', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', bottom: '-100px', left: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: `radial-gradient(circle, ${theme.secondary}25, transparent 65%)`, display: 'flex' }} />
+
+              {/* Slide Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 20px', borderRadius: '24px', background: theme.badgeBg, border: `1px solid ${theme.cardBorder}` }}>
+                  <span style={{ fontSize: '20px' }}>✅</span>
+                  <span style={{ fontSize: '18px', fontWeight: 800, color: theme.badgeText, letterSpacing: '3px', textTransform: 'uppercase' }}>SLIDE 3/4 • TASKS ACCOMPLISHED</span>
+                </div>
+                <span style={{ fontSize: '18px', color: theme.textMuted, fontWeight: 700 }}>{cardData.dateShort || cardData.date}</span>
+              </div>
+
+              {/* Active Goals Badge & Task Counter */}
+              <div style={{ display: 'flex', gap: '20px' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '30px', borderRadius: '26px', background: theme.cardBg, border: `1px solid ${theme.cardBorder}`, gap: '6px' }}>
+                  <span style={{ fontSize: '32px' }}>🚀</span>
+                  <span style={{ fontSize: '56px', fontWeight: 900, color: theme.secondary, lineHeight: 1 }}>{cardData.tasksCompleted}/{cardData.tasksTotal}</span>
+                  <span style={{ fontSize: '20px', color: theme.textSecondary, fontWeight: 700 }}>Tasks Finished</span>
+                </div>
+
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '30px', borderRadius: '26px', background: theme.cardBg, border: `1px solid ${theme.cardBorder}`, gap: '6px' }}>
+                  <span style={{ fontSize: '32px' }}>🎯</span>
+                  <span style={{ fontSize: '56px', fontWeight: 900, color: theme.primary, lineHeight: 1 }}>{cardData.activeGoalsCount || 3}</span>
+                  <span style={{ fontSize: '20px', color: theme.textSecondary, fontWeight: 700 }}>Active Goals</span>
+                </div>
+              </div>
+
+              {/* Finished Task List */}
+              <div style={{ display: 'flex', flexDirection: 'column', padding: '28px', borderRadius: '26px', background: theme.cardBg, border: `1px solid ${theme.cardBorder}`, gap: '14px' }}>
+                <span style={{ fontSize: '22px', fontWeight: 900, color: theme.textPrimary }}>✅ Completed Tasks Checklist</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {taskList.map((title, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', borderRadius: '16px', background: 'rgba(255,255,255,0.06)', border: `1px solid ${theme.cardBorder}`, fontSize: '20px', color: theme.textPrimary, fontWeight: 700 }}>
+                      <span style={{ color: theme.secondary }}>✓</span> {title}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Watermark */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 20px', borderRadius: '20px', background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                  <span style={{ fontSize: '16px' }}>⚡</span>
+                  <span style={{ fontSize: '16px', color: theme.textPrimary, fontWeight: 800, letterSpacing: '2px' }}>LIFE OS</span>
+                </div>
+              </div>
+            </div>
+          ),
+          { width, height: 1080 }
+        );
+      } else if (slide === '3') {
+        // SLIDE 4: REFLECTIONS & ACHIEVEMENTS
+        return new ImageResponse(
+          (
+            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '60px', background: `linear-gradient(140deg, ${theme.bg1} 0%, ${theme.bg2} 60%, ${theme.bg3} 100%)`, fontFamily: 'Inter, system-ui, sans-serif', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: '-100px', left: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: `radial-gradient(circle, ${theme.glow}25, transparent 65%)`, display: 'flex' }} />
+
+              {/* Slide Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 20px', borderRadius: '24px', background: theme.badgeBg, border: `1px solid ${theme.cardBorder}` }}>
+                  <span style={{ fontSize: '20px' }}>📖</span>
+                  <span style={{ fontSize: '18px', fontWeight: 800, color: theme.badgeText, letterSpacing: '3px', textTransform: 'uppercase' }}>SLIDE 4/4 • REFLECTIONS & BADGES</span>
+                </div>
+                <span style={{ fontSize: '18px', color: theme.textMuted, fontWeight: 700 }}>{cardData.dateShort || cardData.date}</span>
+              </div>
+
+              {/* Journal Reflection Box */}
+              {cardData.journalSnippet ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '32px', borderRadius: '28px', background: theme.cardBg, border: `1.5px solid ${theme.cardBorder}` }}>
+                  <span style={{ fontSize: '16px', color: theme.textMuted, fontWeight: 800, letterSpacing: '3px', textTransform: 'uppercase' }}>📖 DAILY JOURNAL REFLECTION</span>
+                  <span style={{ fontSize: '24px', color: theme.textPrimary, fontStyle: 'italic', fontWeight: 500 }}>&ldquo;{cardData.journalSnippet}&rdquo;</span>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '32px', borderRadius: '28px', background: theme.cardBg, border: `1.5px solid ${theme.cardBorder}` }}>
+                  <span style={{ fontSize: '16px', color: theme.textMuted, fontWeight: 800, letterSpacing: '3px', textTransform: 'uppercase' }}>💡 MOTIVATION</span>
+                  <span style={{ fontSize: '24px', color: theme.textPrimary, fontStyle: 'italic', fontWeight: 500 }}>&ldquo;{cardData.quote}&rdquo;</span>
+                </div>
+              )}
+
+              {/* Achievements Grid */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <span style={{ fontSize: '20px', fontWeight: 900, color: theme.textPrimary }}>🏆 Unlocked Achievement Badges</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  {cardData.achievements && cardData.achievements.length > 0 ? (
+                    cardData.achievements.map((badge: string, i: number) => (
+                      <div key={i} style={{ display: 'flex', padding: '14px 22px', borderRadius: '18px', background: theme.badgeBg, border: `1px solid ${theme.cardBorder}`, fontSize: '20px', color: theme.badgeText, fontWeight: 800 }}>
+                        {badge}
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ display: 'flex', padding: '14px 22px', borderRadius: '18px', background: theme.badgeBg, border: `1px solid ${theme.cardBorder}`, fontSize: '20px', color: theme.badgeText, fontWeight: 800 }}>
+                      🚀 Productive Day
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Watermark */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 20px', borderRadius: '20px', background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                  <span style={{ fontSize: '16px' }}>⚡</span>
+                  <span style={{ fontSize: '16px', color: theme.textPrimary, fontWeight: 800, letterSpacing: '2px' }}>LIFE OS</span>
+                </div>
+              </div>
+            </div>
+          ),
+          { width, height: 1080 }
+        );
+      }
+    }
 
     if (format === 'story') {
       return new ImageResponse(
@@ -142,7 +310,6 @@ export async function GET(request: NextRequest) {
 
               {/* Google Maps City Street Grid (Secondary Roads) */}
               <g stroke={theme.mapRoadSub} strokeWidth="6" opacity="0.7">
-                {/* Horizontal City Grid Streets */}
                 <line x1="0" y1="250" x2="1080" y2="250" />
                 <line x1="0" y1="450" x2="1080" y2="450" />
                 <line x1="0" y1="680" x2="1080" y2="680" />
@@ -151,7 +318,6 @@ export async function GET(request: NextRequest) {
                 <line x1="0" y1="1420" x2="1080" y2="1420" />
                 <line x1="0" y1="1680" x2="1080" y2="1680" />
 
-                {/* Vertical City Grid Streets */}
                 <line x1="180" y1="0" x2="180" y2="1920" />
                 <line x1="380" y1="0" x2="380" y2="1920" />
                 <line x1="580" y1="0" x2="580" y2="1920" />

@@ -85,26 +85,31 @@ export async function generateAnimatedShareVideo(
         throw new Error('Canvas 2D context not supported');
       }
 
-      let mimeType = 'video/webm;codecs=vp9';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        if (MediaRecorder.isTypeSupported('video/mp4')) {
-          mimeType = 'video/mp4';
+      // Safe cross-browser MIME type check
+      let mimeType = '';
+      if (typeof MediaRecorder !== 'undefined') {
+        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+          mimeType = 'video/webm;codecs=vp9';
         } else if (MediaRecorder.isTypeSupported('video/webm')) {
           mimeType = 'video/webm';
-        } else {
-          mimeType = '';
+        } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+          mimeType = 'video/mp4';
         }
       }
 
       const stream = canvas.captureStream(60);
-      const recorderOptions: MediaRecorderOptions = {
-        videoBitsPerSecond: 12000000,
-      };
-      if (mimeType) {
-        recorderOptions.mimeType = mimeType;
+      let mediaRecorder: MediaRecorder;
+
+      try {
+        const options: MediaRecorderOptions = { videoBitsPerSecond: 8000000 };
+        if (mimeType) options.mimeType = mimeType;
+        mediaRecorder = new MediaRecorder(stream, options);
+      } catch {
+        const options: MediaRecorderOptions = {};
+        if (mimeType) options.mimeType = mimeType;
+        mediaRecorder = new MediaRecorder(stream, options);
       }
 
-      const mediaRecorder = new MediaRecorder(stream, recorderOptions);
       const chunks: Blob[] = [];
 
       mediaRecorder.ondataavailable = (e) => {
@@ -127,7 +132,7 @@ export async function generateAnimatedShareVideo(
 
       const habitList: string[] = cardData.completedHabitNames && cardData.completedHabitNames.length > 0
         ? cardData.completedHabitNames
-        : ['Workout', 'Meditation', 'Reading'];
+        : ['Workout', 'Meditation', 'Reading', 'Hydration'];
 
       const taskList: string[] = cardData.completedTaskTitles && cardData.completedTaskTitles.length > 0
         ? cardData.completedTaskTitles
@@ -171,6 +176,11 @@ export async function generateAnimatedShareVideo(
         ctx.beginPath();
         ctx.ellipse(850, 700, 180, 140, -0.3, 0, Math.PI * 2);
         ctx.fill();
+        if (format === 'story') {
+          ctx.beginPath();
+          ctx.ellipse(300, 1400, 200, 150, 0.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
         ctx.globalAlpha = 1.0;
 
         // 3. Google Maps Water Body (River / Bay)
@@ -260,27 +270,27 @@ export async function generateAnimatedShareVideo(
         ctx.fillStyle = theme.badgeBg;
         ctx.strokeStyle = theme.cardBorder;
         ctx.lineWidth = 1.5;
-        roundRect(ctx, 65, 75, 380, 50, 25, true, true);
+        roundRect(ctx, 65, format === 'story' ? 90 : 75, 380, 50, 25, true, true);
 
         ctx.font = '800 18px Inter, sans-serif';
         ctx.fillStyle = theme.badgeText;
-        ctx.fillText('📍 GOOGLE MAPS NIGHT MODE', 105, 107);
+        ctx.fillText('📍 GOOGLE MAPS NIGHT MODE', 105, format === 'story' ? 122 : 107);
 
         // Date text
         ctx.font = '600 20px Inter, sans-serif';
         ctx.fillStyle = theme.textMuted;
-        ctx.fillText(cardData.dateShort || cardData.date, width - 230, 107);
+        ctx.fillText(cardData.dateShort || cardData.date, width - 230, format === 'story' ? 122 : 107);
 
         // 8. User Header
         ctx.font = '900 50px Inter, sans-serif';
         ctx.fillStyle = theme.textPrimary;
-        ctx.fillText(`${cardData.userName}'s Performance`, 65, 180);
+        ctx.fillText(`${cardData.userName}'s Performance`, 65, format === 'story' ? 195 : 180);
 
         // 9. Hero Focus Score Box
         const focusTarget = cardData.focusScore || 0;
         const currentFocus = Math.floor(Math.min(focusTarget, smoothProgress * focusTarget));
-        const heroBoxY = format === 'story' ? 225 : 200;
-        const heroBoxHeight = format === 'story' ? 280 : 210;
+        const heroBoxY = format === 'story' ? 240 : 200;
+        const heroBoxHeight = format === 'story' ? 270 : 210;
 
         ctx.fillStyle = theme.cardBg;
         ctx.strokeStyle = theme.cardBorder;
@@ -293,7 +303,7 @@ export async function generateAnimatedShareVideo(
 
         ctx.font = '900 110px Inter, sans-serif';
         ctx.fillStyle = theme.primary;
-        ctx.fillText(`${currentFocus}%`, 100, heroBoxY + 165);
+        ctx.fillText(`${currentFocus}%`, 100, heroBoxY + 160);
 
         // Bar fill
         const barY = heroBoxY + heroBoxHeight - 40;
@@ -312,9 +322,10 @@ export async function generateAnimatedShareVideo(
 
         // 10. Rich Finished Habits List Card
         const habitsY = heroBoxY + heroBoxHeight + 25;
+        const habitsHeight = format === 'story' ? 210 : 200;
         ctx.fillStyle = theme.cardBg;
         ctx.strokeStyle = theme.cardBorder;
-        roundRect(ctx, 65, habitsY, width - 130, 200, 26, true, true);
+        roundRect(ctx, 65, habitsY, width - 130, habitsHeight, 26, true, true);
 
         ctx.font = '900 24px Inter, sans-serif';
         ctx.fillStyle = theme.textPrimary;
@@ -323,7 +334,7 @@ export async function generateAnimatedShareVideo(
         // Habit Pills
         let chipX = 95;
         let chipY = habitsY + 80;
-        habitList.slice(0, 5).forEach((hName) => {
+        habitList.slice(0, format === 'story' ? 6 : 4).forEach((hName) => {
           ctx.fillStyle = 'rgba(255,255,255,0.06)';
           ctx.strokeStyle = theme.cardBorder;
           const textWidth = ctx.measureText(`✓ ${hName}`).width + 30;
@@ -342,10 +353,11 @@ export async function generateAnimatedShareVideo(
         });
 
         // 11. Rich Finished Tasks List Card
-        const tasksY = habitsY + 225;
+        const tasksY = habitsY + habitsHeight + 25;
+        const tasksHeight = format === 'story' ? 200 : 180;
         ctx.fillStyle = theme.cardBg;
         ctx.strokeStyle = theme.cardBorder;
-        roundRect(ctx, 65, tasksY, width - 130, 180, 26, true, true);
+        roundRect(ctx, 65, tasksY, width - 130, tasksHeight, 26, true, true);
 
         ctx.font = '900 24px Inter, sans-serif';
         ctx.fillStyle = theme.textPrimary;
@@ -354,7 +366,7 @@ export async function generateAnimatedShareVideo(
         // Task Pills
         let tChipX = 95;
         let tChipY = tasksY + 80;
-        taskList.slice(0, 3).forEach((tTitle) => {
+        taskList.slice(0, format === 'story' ? 4 : 3).forEach((tTitle) => {
           ctx.fillStyle = 'rgba(255,255,255,0.06)';
           ctx.strokeStyle = theme.cardBorder;
           const textWidth = ctx.measureText(`✓ ${tTitle}`).width + 30;
@@ -372,8 +384,73 @@ export async function generateAnimatedShareVideo(
           tChipX += textWidth + 12;
         });
 
-        // 12. Watermark Pill Footer
-        const watermarkY = height - 90;
+        // Additional Cards for Story format (1080x1920)
+        if (format === 'story') {
+          // 12. Streak Banner
+          const streakY = tasksY + tasksHeight + 25;
+          ctx.fillStyle = theme.cardBg;
+          ctx.strokeStyle = theme.cardBorder;
+          roundRect(ctx, 65, streakY, width - 130, 120, 24, true, true);
+
+          ctx.font = '36px sans-serif';
+          ctx.fillText('🔥', 95, streakY + 72);
+
+          ctx.font = '900 28px Inter, sans-serif';
+          ctx.fillStyle = theme.textPrimary;
+          ctx.fillText(cardData.topStreak ? cardData.topStreak.name : 'Daily Streak', 150, streakY + 55);
+
+          ctx.font = '600 18px Inter, sans-serif';
+          ctx.fillStyle = theme.textSecondary;
+          ctx.fillText('Active Habit Streak', 150, streakY + 85);
+
+          ctx.font = '900 36px Inter, sans-serif';
+          ctx.fillStyle = theme.primary;
+          ctx.fillText(`${cardData.topStreak ? cardData.topStreak.streak : 14} DAYS`, width - 280, streakY + 72);
+
+          // 13. Achievements Badges Grid
+          const achY = streakY + 145;
+          ctx.font = '900 22px Inter, sans-serif';
+          ctx.fillStyle = theme.textPrimary;
+          ctx.fillText('🏆 Unlocked Achievements', 65, achY + 25);
+
+          let achX = 65;
+          let achRowY = achY + 45;
+          const badges = cardData.achievements && cardData.achievements.length > 0
+            ? cardData.achievements
+            : ['🎯 Perfect Habits', '🔥 14-Day Warrior', '⭐ Focus Master'];
+
+          badges.slice(0, 4).forEach((badge) => {
+            const bWidth = ctx.measureText(badge).width + 36;
+            ctx.fillStyle = theme.badgeBg;
+            ctx.strokeStyle = theme.cardBorder;
+            roundRect(ctx, achX, achRowY, bWidth, 44, 14, true, true);
+
+            ctx.font = '800 18px Inter, sans-serif';
+            ctx.fillStyle = theme.badgeText;
+            ctx.fillText(badge, achX + 18, achRowY + 28);
+            achX += bWidth + 12;
+          });
+
+          // 14. Journal Reflection Box
+          const journalY = achY + 115;
+          ctx.fillStyle = theme.cardBg;
+          ctx.strokeStyle = theme.cardBorder;
+          roundRect(ctx, 65, journalY, width - 130, 160, 26, true, true);
+
+          ctx.font = '800 16px Inter, sans-serif';
+          ctx.fillStyle = theme.textMuted;
+          ctx.fillText('📖 DAILY JOURNAL REFLECTION', 95, journalY + 45);
+
+          ctx.font = 'italic 500 22px Inter, sans-serif';
+          ctx.fillStyle = theme.textPrimary;
+          const snippetText = cardData.journalSnippet
+            ? `"${cardData.journalSnippet}"`
+            : `"${cardData.quote}"`;
+          ctx.fillText(snippetText, 95, journalY + 95);
+        }
+
+        // 15. Watermark Pill Footer
+        const watermarkY = height - 100;
         ctx.fillStyle = 'rgba(0,0,0,0.55)';
         ctx.strokeStyle = 'rgba(255,255,255,0.18)';
         roundRect(ctx, (width - 340) / 2, watermarkY, 340, 50, 25, true, true);

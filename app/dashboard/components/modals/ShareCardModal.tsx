@@ -63,26 +63,9 @@ const THEME_OPTIONS: { key: ThemeType; label: string; colors: string[]; vibe: st
 function buildOgUrl(data: ShareCardData, format: FormatType, theme: ThemeType, slideIndex?: number): string {
   const baseData = { ...data };
 
-  // For carousel, modify data per slide
   if (format === 'carousel' && slideIndex !== undefined) {
-    const slideData: any = { ...baseData };
-    if (slideIndex === 1) {
-      // Slide 2: Streak breakdown
-      slideData.highlights = [];
-      slideData.achievements = [];
-    } else if (slideIndex === 2) {
-      // Slide 3: Mood trend (keep recentMoodLogs)
-      slideData.highlights = [];
-      slideData.achievements = [];
-    } else if (slideIndex === 3) {
-      // Slide 4: Highlights + reflection
-      slideData.habitsCompleted = 0;
-      slideData.habitsTotal = 0;
-      slideData.tasksCompleted = 0;
-      slideData.tasksTotal = 0;
-    }
-    const encoded = encodeURIComponent(JSON.stringify(slideData));
-    return `/og/daily-card?format=square&theme=${theme}&data=${encoded}`;
+    const encoded = encodeURIComponent(JSON.stringify(baseData));
+    return `/og/daily-card?format=carousel&slide=${slideIndex}&theme=${theme}&data=${encoded}`;
   }
 
   const encoded = encodeURIComponent(JSON.stringify(baseData));
@@ -97,13 +80,15 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
   const [videoProgress, setVideoProgress] = useState(0);
   const [copySuccess, setCopySuccess] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [isPreviewLoading, setIsPreviewLoading] = useState<boolean>(true);
   const [carouselSlide, setCarouselSlide] = useState(0);
 
   // Build preview URL
   useEffect(() => {
     if (!cardData) return;
+    setIsPreviewLoading(true);
     if (selectedFormat === 'carousel') {
-      setPreviewUrl(buildOgUrl(cardData, 'square', selectedTheme, carouselSlide));
+      setPreviewUrl(buildOgUrl(cardData, 'carousel', selectedTheme, carouselSlide));
     } else {
       setPreviewUrl(buildOgUrl(cardData, selectedFormat, selectedTheme));
     }
@@ -362,14 +347,22 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
                 <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 block">
                   Preview
                 </label>
-                <div className="relative bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden flex items-center justify-center p-4">
+                <div className="relative min-h-[220px] bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden flex items-center justify-center p-4">
+                  {isPreviewLoading && (
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-zinc-950/75 backdrop-blur-sm rounded-xl transition-all">
+                      <div className="w-7 h-7 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-2.5" />
+                      <span className="text-xs font-semibold text-indigo-300">Generasi Preview Gambar...</span>
+                    </div>
+                  )}
                   {previewUrl && (
                     <img
                       src={previewUrl}
                       alt="Share Card Preview"
-                      className={`rounded-lg shadow-2xl max-w-full ${
-                        selectedFormat === 'story' ? 'max-h-[400px]' : 'max-h-[320px]'
-                      }`}
+                      onLoad={() => setIsPreviewLoading(false)}
+                      onError={() => setIsPreviewLoading(false)}
+                      className={`rounded-lg shadow-2xl max-w-full transition-opacity duration-300 ${
+                        isPreviewLoading ? 'opacity-30 blur-[2px]' : 'opacity-100 blur-0'
+                      } ${selectedFormat === 'story' ? 'max-h-[400px]' : 'max-h-[320px]'}`}
                       style={{ objectFit: 'contain' }}
                     />
                   )}
