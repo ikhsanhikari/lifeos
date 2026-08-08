@@ -58,13 +58,13 @@ export const TopBar: React.FC<TopBarProps> = ({
       <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
         {onOpenShareModal && (
           <Button
-            variant="secondary"
+            variant="ghost"
             size="md"
-            className="bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 border border-violet-500/30"
-            leftIcon={<Share2 className="w-4 h-4 text-violet-400" />}
+            className="bg-gradient-to-r from-violet-600/30 to-indigo-600/30 hover:from-violet-600/40 hover:to-indigo-600/40 text-violet-200 border border-violet-500/40 shadow-lg shadow-violet-950/40 font-bold"
+            leftIcon={<Share2 className="w-4 h-4 text-violet-300" />}
             onClick={onOpenShareModal}
           >
-            Share
+            Share Card 📤
           </Button>
         )}
         {aiAvailable && onOpenAiSummaryModal && (

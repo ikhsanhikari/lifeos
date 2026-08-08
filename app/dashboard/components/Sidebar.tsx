@@ -8,7 +8,8 @@ import {
   LogOut, 
   Send, 
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  Share2
 } from 'lucide-react';
 import { UserAuthData, TelegramStatusData } from '../page';
 
@@ -18,6 +19,7 @@ interface SidebarProps {
   activeSection: string;
   setActiveSection: (section: string) => void;
   onOpenLinkModal: () => void;
+  onOpenShareModal?: () => void;
   onLogout: () => void;
   isMobileOpen: boolean;
   setIsMobileOpen: (open: boolean) => void;
@@ -29,6 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeSection,
   setActiveSection,
   onOpenLinkModal,
+  onOpenShareModal,
   onLogout,
   isMobileOpen,
   setIsMobileOpen,
@@ -81,6 +84,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               );
             })}
+            {onOpenShareModal && (
+              <button
+                onClick={onOpenShareModal}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold bg-violet-600/10 text-violet-300 border border-violet-500/20 hover:bg-violet-600/20 transition-all shadow-sm mt-2"
+              >
+                <Share2 className="w-4 h-4 text-violet-400" />
+                <span>Share Card (Flex) 📤</span>
+              </button>
+            )}
           </nav>
 
           {/* Telegram Sync Widget */}
@@ -163,6 +175,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           );
         })}
+        {onOpenShareModal && (
+          <button
+            onClick={onOpenShareModal}
+            className="flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl text-violet-400 font-semibold"
+          >
+            <Share2 className="w-5 h-5" />
+            <span className="text-[10px]">Share</span>
+          </button>
+        )}
       </div>
     </>
   );

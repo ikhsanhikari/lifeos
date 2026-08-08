@@ -632,6 +632,7 @@ export default function DashboardPage() {
         activeSection={activeSection}
         setActiveSection={handleSelectSection}
         onOpenLinkModal={handleOpenLinkModal}
+        onOpenShareModal={handleOpenShareModal}
         onLogout={handleLogout}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
@@ -660,6 +661,7 @@ export default function DashboardPage() {
                 tasks={tasks}
                 dailyLog={dailyLog}
                 analytics={analytics}
+                onOpenShareModal={handleOpenShareModal}
               />
 
               {/* Goal Breakdown Section */}
