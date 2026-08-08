@@ -57,6 +57,24 @@ const THEMES: Record<string, {
     badgeBg: 'rgba(163, 230, 53, 0.25)', badgeText: '#BEF264',
     mapRoadMain: '#33333b', mapRoadSub: '#222228', mapWater: '#121721', mapPark: '#19241b',
   },
+  sunset: {
+    name: 'Sunset Crimson (Golden Hour)',
+    bg1: '#1f0910', bg2: '#2a0e18', bg3: '#0f0407',
+    primary: '#FF6B00', secondary: '#FF1493', glow: '#FF3B00',
+    textPrimary: '#FFFFFF', textSecondary: '#FFD1B3', textMuted: '#D4889C',
+    cardBg: 'rgba(42, 14, 24, 0.75)', cardBorder: 'rgba(255, 107, 0, 0.35)',
+    badgeBg: 'rgba(255, 107, 0, 0.25)', badgeText: '#FF9E43',
+    mapRoadMain: '#47222c', mapRoadSub: '#2e141c', mapWater: '#1c0812', mapPark: '#2d1810',
+  },
+  cyberpunk: {
+    name: 'Cyberpunk Dual-Tone (Synthwave)',
+    bg1: '#090514', bg2: '#120a24', bg3: '#040209',
+    primary: '#00F0FF', secondary: '#FF007F', glow: '#00F0FF',
+    textPrimary: '#FFFFFF', textSecondary: '#B5F6FF', textMuted: '#D175FF',
+    cardBg: 'rgba(18, 10, 36, 0.75)', cardBorder: 'rgba(0, 240, 255, 0.35)',
+    badgeBg: 'rgba(0, 240, 255, 0.25)', badgeText: '#5CE6FF',
+    mapRoadMain: '#2c174d', mapRoadSub: '#1c0d33', mapWater: '#0d0621', mapPark: '#290b2e',
+  },
 };
 
 function getMoodEmoji(mood: number | null): string {

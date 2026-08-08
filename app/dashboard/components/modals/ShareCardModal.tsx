@@ -44,7 +44,7 @@ interface ShareCardModalProps {
 }
 
 type FormatType = 'square' | 'story' | 'carousel';
-type ThemeType = 'strava' | 'cyber' | 'purple' | 'ocean' | 'dark';
+type ThemeType = 'strava' | 'cyber' | 'purple' | 'ocean' | 'dark' | 'sunset' | 'cyberpunk';
 
 const FORMAT_OPTIONS: { key: FormatType; label: string; icon: React.ReactNode; size: string }[] = [
   { key: 'square', label: 'Square (Post)', icon: <Image className="w-4 h-4" />, size: '1080×1080' },
@@ -58,6 +58,8 @@ const THEME_OPTIONS: { key: ThemeType; label: string; colors: string[]; vibe: st
   { key: 'purple', label: 'Neon Violet', colors: ['#0f051d', '#1f0a3b', '#C084FC'], vibe: 'Spotify Wrapped 🎧' },
   { key: 'ocean', label: 'Sapphire Cyan', colors: ['#04101e', '#08213d', '#38BDF8'], vibe: 'Clean & Cool 🌊' },
   { key: 'dark', label: 'Obsidian Lime', colors: ['#09090b', '#18181b', '#A3E635'], vibe: 'Minimal Dark 🖤' },
+  { key: 'sunset', label: 'Sunset Crimson', colors: ['#1f0910', '#2a0e18', '#FF6B00'], vibe: 'Golden Hour 🌅' },
+  { key: 'cyberpunk', label: 'Cyberpunk Dual', colors: ['#090514', '#120a24', '#00F0FF'], vibe: 'Synthwave 🌆' },
 ];
 
 function buildOgUrl(data: ShareCardData, format: FormatType, theme: ThemeType, slideIndex?: number): string {

@@ -59,6 +59,24 @@ const THEMES: Record<string, {
     badgeBg: 'rgba(163, 230, 53, 0.25)', badgeText: '#BEF264',
     mapRoadMain: '#33333b', mapRoadSub: '#222228', mapWater: '#121721', mapPark: '#19241b',
   },
+  sunset: {
+    name: 'Sunset Crimson (Golden Hour)',
+    bg1: '#1f0910', bg2: '#2a0e18', bg3: '#0f0407',
+    primary: '#FF6B00', secondary: '#FF1493', glow: '#FF3B00',
+    textPrimary: '#FFFFFF', textSecondary: '#FFD1B3', textMuted: '#D4889C',
+    cardBg: 'rgba(42, 14, 24, 0.85)', cardBorder: 'rgba(255, 107, 0, 0.35)',
+    badgeBg: 'rgba(255, 107, 0, 0.25)', badgeText: '#FF9E43',
+    mapRoadMain: '#47222c', mapRoadSub: '#2e141c', mapWater: '#1c0812', mapPark: '#2d1810',
+  },
+  cyberpunk: {
+    name: 'Cyberpunk Dual-Tone (Synthwave)',
+    bg1: '#090514', bg2: '#120a24', bg3: '#040209',
+    primary: '#00F0FF', secondary: '#FF007F', glow: '#00F0FF',
+    textPrimary: '#FFFFFF', textSecondary: '#B5F6FF', textMuted: '#D175FF',
+    cardBg: 'rgba(18, 10, 36, 0.85)', cardBorder: 'rgba(0, 240, 255, 0.35)',
+    badgeBg: 'rgba(0, 240, 255, 0.25)', badgeText: '#5CE6FF',
+    mapRoadMain: '#2c174d', mapRoadSub: '#1c0d33', mapWater: '#0d0621', mapPark: '#290b2e',
+  },
 };
 
 function easeOutCubic(t: number): number {
@@ -234,6 +252,17 @@ export async function generateAnimatedShareVideo(
         throw new Error('Canvas 2D context not supported');
       }
 
+      // Pre-calculate deterministic floating ambient particles
+      const particleCount = 28;
+      const particles = Array.from({ length: particleCount }, (_, i) => ({
+        x: (i * 39 + 17) % baseWidth,
+        startY: (i * 71 + 35) % baseHeight,
+        size: 2 + (i % 4) * 1.5,
+        speed: 0.35 + (i % 3) * 0.25,
+        alphaBase: 0.25 + (i % 5) * 0.12,
+        wobbleSpeed: 1.5 + (i % 3),
+      }));
+
       let mimeType = '';
       if (typeof MediaRecorder !== 'undefined') {
         if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
@@ -269,14 +298,12 @@ export async function generateAnimatedShareVideo(
       };
 
       mediaRecorder.onstop = () => {
-        // 1. Release MediaStream tracks immediately to prevent GPU VRAM crash on mobile
         try {
           stream.getTracks().forEach((track) => track.stop());
         } catch (e) {
           // ignore
         }
 
-        // 2. Clear canvas memory
         canvas.width = 0;
         canvas.height = 0;
 
@@ -316,9 +343,9 @@ export async function generateAnimatedShareVideo(
       const renderInterval = setInterval(() => {
         if (!ctx) return;
         const rawProgress = Math.min(1, currentFrame / totalFrames);
-        const animProgress = Math.min(1, rawProgress / 0.30); // 1.8s smooth entrance animation
+        const animProgress = Math.min(1, rawProgress / 0.30);
         const smoothProgress = easeOutCubic(animProgress);
-        const floatBob = Math.sin(rawProgress * Math.PI * 4) * 12; // 3D floating keeps bobbing smoothly
+        const floatBob = Math.sin(rawProgress * Math.PI * 4) * 12;
 
         ctx.save();
         if (scaleRatio !== 1) {
@@ -332,6 +359,21 @@ export async function generateAnimatedShareVideo(
         grad.addColorStop(1, theme.bg3);
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, baseWidth, baseHeight);
+
+        // 1b. Floating Ambient Neon Particles
+        ctx.save();
+        particles.forEach((p, idx) => {
+          const pY = (p.startY - rawProgress * 260 * p.speed + baseHeight) % baseHeight;
+          const pX = p.x + Math.sin(rawProgress * Math.PI * p.wobbleSpeed + idx) * 18;
+          const alpha = Math.max(0, Math.sin(rawProgress * Math.PI * 2 + idx) * p.alphaBase);
+
+          ctx.fillStyle = idx % 2 === 0 ? theme.primary : theme.secondary;
+          ctx.globalAlpha = alpha;
+          ctx.beginPath();
+          ctx.arc(pX, pY, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.restore();
 
         // 2. 3D Iso-Depth Map Layer (Greenery Parks with 3D Drop Shadows)
         ctx.save();
@@ -402,7 +444,7 @@ export async function generateAnimatedShareVideo(
         ctx.quadraticCurveTo(850, 600, 1150, 750);
         ctx.stroke();
 
-        ctx.strokeStyle = '#FFC107'; // Highway Yellow
+        ctx.strokeStyle = '#FFC107';
         ctx.lineWidth = 4;
         ctx.globalAlpha = 0.75;
         ctx.stroke();
@@ -468,6 +510,19 @@ export async function generateAnimatedShareVideo(
         const heroBoxY = format === 'story' ? 240 : 200;
         const heroBoxHeight = format === 'story' ? 260 : 210;
 
+        // Pulsing Ambient Aura Glow behind Hero Box
+        ctx.save();
+        const auraGlow = ctx.createRadialGradient(
+          baseWidth / 2, heroBoxY + heroBoxHeight / 2, 40,
+          baseWidth / 2, heroBoxY + heroBoxHeight / 2, baseWidth * 0.45
+        );
+        auraGlow.addColorStop(0, theme.glow);
+        auraGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = auraGlow;
+        ctx.globalAlpha = 0.18 + Math.sin(rawProgress * Math.PI * 3) * 0.08;
+        ctx.fillRect(0, heroBoxY - 40, baseWidth, heroBoxHeight + 80);
+        ctx.restore();
+
         ctx.fillStyle = theme.cardBg;
         ctx.strokeStyle = theme.cardBorder;
         ctx.lineWidth = 2;
@@ -491,6 +546,31 @@ export async function generateAnimatedShareVideo(
           theme.secondary,
           rawProgress * Math.PI * 2
         );
+
+        // --- CELEBRATION CONFETTI / SPARKLE BURST (Fires around 3D Orb at completion) ---
+        if (rawProgress > 0.28 && rawProgress < 0.72) {
+          const burstProgress = (rawProgress - 0.28) / 0.44;
+          const originX = baseWidth - 180;
+          const originY = heroBoxY + 110;
+          ctx.save();
+          for (let c = 0; c < 32; c++) {
+            const angle = (c / 32) * Math.PI * 2;
+            const dist = burstProgress * 135 * (0.8 + (c % 4) * 0.15);
+            const cx = originX + Math.cos(angle) * dist;
+            const cy = originY + Math.sin(angle) * dist + Math.pow(burstProgress, 1.8) * 35;
+            const cSize = 4.5 + (c % 3) * 2;
+            const cAlpha = Math.max(0, 1 - burstProgress * 1.25);
+
+            ctx.fillStyle = c % 3 === 0 ? theme.primary : (c % 3 === 1 ? theme.secondary : '#FFD700');
+            ctx.globalAlpha = cAlpha;
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(burstProgress * Math.PI * 4 + c);
+            ctx.fillRect(-cSize / 2, -cSize / 2, cSize, cSize * 1.4);
+            ctx.restore();
+          }
+          ctx.restore();
+        }
 
         // Bar fill
         const barY = heroBoxY + heroBoxHeight - 40;
