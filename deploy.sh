@@ -14,8 +14,18 @@ if [ -s "$HOME/.bashrc" ]; then
   . "$HOME/.bashrc"
 fi
 
-# Load variables from .env if present
+# Load and sanitize variables from .env if present
 if [ -f ".env" ]; then
+  # Remove Windows CRLF carriage returns (\r)
+  tr -d '\r' < .env > .env.tmp && mv .env.tmp .env
+
+  # Parse DATABASE_URL safely without quotes or carriage returns
+  RAW_DB_URL=$(grep -E '^DATABASE_URL=' .env | cut -d '=' -f 2- | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//" | tr -d '\r')
+  if [ -n "$RAW_DB_URL" ]; then
+    export DATABASE_URL="$RAW_DB_URL"
+    echo "🔑 DATABASE_URL exported: ${DATABASE_URL:0:15}..."
+  fi
+
   set -a
   source .env 2>/dev/null || true
   set +a
