@@ -1,5 +1,7 @@
 import { Context, Markup } from 'telegraf';
 import { prisma } from '../server';
+import { isAiGloballyEnabled, generateGoalBreakdown } from '../services/aiService';
+import { createTask } from './taskController';
 
 export interface GoalWithDetails {
   id: string;
@@ -297,19 +299,94 @@ export async function handleCreateGoalCommand(ctx: Context) {
       taskCount: 0,
     });
 
+    const aiAvailable = isAiGloballyEnabled();
+    const keyboard = aiAvailable
+      ? Markup.inlineKeyboard([
+          [Markup.button.callback('✨ Breakdown Otomatis dengan AI', `ai_breakdown_goal:${newGoal.id}`)],
+        ])
+      : undefined;
+
     await ctx.reply(
       `🎉 *Goal Baru Dibuat!*\n` +
         `📌 *"${newGoal.title}"*\n\n` +
-        `⚡ *Breakdown Mode Aktif!*\n` +
-        `Ketikkan langkah-langkah / task konkret untuk mencapai goal ini satu per satu (langsung kirim teks di chat):\n\n` +
+        (aiAvailable
+          ? `💡 *Fitur AI:* Tap tombol di bawah untuk meminta AI Coach membuat daftar task breakdown secara otomatis! 🤖\n\n`
+          : '') +
+        `⚡ *Breakdown Mode Manual:* Ketikkan langkah task satu per satu di chat:\n` +
         `• Kirim teks biasa untuk tambah task baru\n` +
-        `• Ketik \`/done\` jika sudah selesai me-breakdown\n` +
-        `• Ketik \`/skip\` jika ingin me-breakdown nanti`,
-      { parse_mode: 'Markdown' }
+        `• Ketik \`/done\` jika sudah selesai\n` +
+        `• Ketik \`/skip\` untuk lewati`,
+      { parse_mode: 'Markdown', ...(keyboard || {}) }
     );
   } catch (error) {
     console.error('Error handling /goal command:', error);
     await ctx.reply('❌ Terjadi kesalahan saat membuat goal baru.');
+  }
+}
+
+/**
+ * 7b. Callback Handler untuk AI Breakdown Goal di Telegram
+ */
+export async function handleAiGoalBreakdownCallback(ctx: Context) {
+  try {
+    if (!ctx.chat || !('data' in ctx.callbackQuery!)) return;
+
+    const callbackData = ctx.callbackQuery.data;
+    const goalId = callbackData.replace('ai_breakdown_goal:', '');
+
+    const chatId = ctx.chat.id;
+    const telegramChatId = BigInt(chatId);
+    const userId = await resolveUserId(telegramChatId);
+
+    const goal = await getGoalById(goalId);
+    if (!goal) {
+      await ctx.answerCbQuery('⚠️ Goal tidak ditemukan.');
+      return;
+    }
+
+    await ctx.answerCbQuery('🧠 AI sedang menyusun breakdown langkah...');
+    await ctx.reply(`🧠 *AI Coach sedang memikirkan langkah konkret untuk:* \n*"${goal.title}"*...\n\n_Mohon tunggu sebentar..._`, { parse_mode: 'Markdown' });
+
+    const result = await generateGoalBreakdown(userId, goal.title, goal.description || undefined);
+
+    if (!result.success || !result.data) {
+      await ctx.reply(`⚠️ *AI Breakdown Gagal:* ${result.message || 'Terjadi kesalahan'}`);
+      return;
+    }
+
+    const { tasks, advice } = result.data;
+
+    // Batch create tasks under this goal
+    const createdTasks = [];
+    for (const t of tasks) {
+      const newTask = await createTask({
+        title: t.title,
+        priority: t.priority,
+        goalId: goal.id,
+        userId,
+      });
+      createdTasks.push(newTask);
+    }
+
+    // Remove active wizard session if any
+    goalWizardSessions.delete(chatId);
+
+    let responseMessage =
+      `✨ *AI Goal Breakdown Selesai!* 🎉\n\n` +
+      `📌 *Goal:* *"${goal.title}"*\n` +
+      `💡 *Saran AI Coach:* _"${advice}"_\n\n` +
+      `📋 *${createdTasks.length} Langkah Konkret Berhasil Ditambahkan:* \n`;
+
+    createdTasks.forEach((t, i) => {
+      responseMessage += `  ${i + 1}. ⬜ ${t.title}\n`;
+    });
+
+    responseMessage += `\nKetik \`/focus\` atau \`/goals\` untuk memantau progres kamu! 🚀`;
+
+    await ctx.reply(responseMessage, { parse_mode: 'Markdown' });
+  } catch (error) {
+    console.error('Error handling AI Goal Breakdown callback in Telegram:', error);
+    await ctx.reply('❌ Terjadi kesalahan saat memproses AI Goal Breakdown.');
   }
 }
 

@@ -7,17 +7,25 @@ import { Button } from '../../components/ui/Button';
 interface DailyJournalProps {
   dailyLog: DailyLogData | null;
   onSaveDailyLog: (mood: number, energy: number, journal: string) => Promise<void>;
+  onFetchDailyCoachInsight?: (journal: string, mood: number, energy: number) => Promise<{ insight: string; pattern: string; recommendation: string } | null>;
+  aiAvailable?: boolean;
 }
 
 export const DailyJournal: React.FC<DailyJournalProps> = ({
   dailyLog,
   onSaveDailyLog,
+  onFetchDailyCoachInsight,
+  aiAvailable = true,
 }) => {
   const [mood, setMood] = useState<number>(4);
   const [energy, setEnergy] = useState<number>(4);
   const [journal, setJournal] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+
+  const [aiInsightData, setAiInsightData] = useState<{ insight: string; pattern: string; recommendation: string } | null>(null);
+  const [isFetchingInsight, setIsFetchingInsight] = useState<boolean>(false);
+  const [insightError, setInsightError] = useState<string | null>(null);
 
   useEffect(() => {
     if (dailyLog) {
@@ -56,6 +64,24 @@ export const DailyJournal: React.FC<DailyJournalProps> = ({
     { value: 4, label: 'High', icon: '⚡⚡' },
     { value: 5, label: 'Peak Performance', icon: '⚡⚡⚡' },
   ];
+
+  const handleRequestInsight = async () => {
+    if (!onFetchDailyCoachInsight) return;
+    setIsFetchingInsight(true);
+    setInsightError(null);
+    try {
+      const res = await onFetchDailyCoachInsight(journal, mood, energy);
+      if (res) {
+        setAiInsightData(res);
+      } else {
+        setInsightError('Gagal mendapatkan respon AI Coach.');
+      }
+    } catch (err: any) {
+      setInsightError(err.message || 'Gagal memanggil AI Coach.');
+    } finally {
+      setIsFetchingInsight(false);
+    }
+  };
 
   return (
     <Card className="relative overflow-hidden">
@@ -145,8 +171,20 @@ export const DailyJournal: React.FC<DailyJournalProps> = ({
           />
         </div>
 
-        {/* Submit Action */}
-        <div className="flex justify-end">
+        {/* Submit Actions */}
+        <div className="flex items-center justify-end gap-3">
+          {aiAvailable && onFetchDailyCoachInsight && (
+            <button
+              type="button"
+              onClick={handleRequestInsight}
+              disabled={isFetchingInsight}
+              className="px-4 py-2 bg-indigo-950/40 hover:bg-indigo-900/60 text-indigo-300 border border-indigo-500/30 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              {isFetchingInsight ? 'Menganalisis...' : '🤖 Minta Insight AI'}
+            </button>
+          )}
+
           <Button
             type="submit"
             variant="primary"
@@ -157,6 +195,32 @@ export const DailyJournal: React.FC<DailyJournalProps> = ({
             Simpan Jurnal
           </Button>
         </div>
+
+        {/* AI Coach Response Card */}
+        {aiInsightData && (
+          <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-indigo-950/40 via-purple-950/30 to-zinc-900/50 border border-indigo-500/30 space-y-3 animate-fadeIn shadow-xl">
+            <div className="flex items-center gap-2 text-indigo-300 font-bold text-xs border-b border-indigo-500/20 pb-2">
+              <Sparkles className="w-4 h-4 text-indigo-400" />
+              <span>AI Coach Feedback & Refleksi Personal</span>
+            </div>
+
+            <div className="space-y-2 text-xs text-zinc-200">
+              <p className="leading-relaxed"><strong className="text-indigo-300">Observasi Coach:</strong> {aiInsightData.insight}</p>
+              {aiInsightData.pattern && (
+                <p className="leading-relaxed"><strong className="text-purple-300">Pola Terdeteksi:</strong> {aiInsightData.pattern}</p>
+              )}
+              {aiInsightData.recommendation && (
+                <p className="leading-relaxed bg-indigo-500/10 p-2.5 rounded-xl border border-indigo-500/20 text-indigo-200">
+                  <strong className="text-emerald-400">💡 Aksi Mikro Disarankan:</strong> {aiInsightData.recommendation}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {insightError && (
+          <p className="text-xs text-rose-400 mt-2">{insightError}</p>
+        )}
       </form>
     </Card>
   );

@@ -7,12 +7,16 @@ interface TopBarProps {
   currentUser: UserAuthData | null;
   onOpenAddGoalModal: () => void;
   onOpenAddHabitModal: () => void;
+  onOpenAiSummaryModal?: () => void;
+  aiAvailable?: boolean;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
   currentUser,
   onOpenAddGoalModal,
   onOpenAddHabitModal,
+  onOpenAiSummaryModal,
+  aiAvailable = true,
 }) => {
   const currentDateFormatted = new Date().toLocaleDateString('id-ID', {
     weekday: 'long',
@@ -49,7 +53,18 @@ export const TopBar: React.FC<TopBarProps> = ({
         </p>
       </div>
 
-      <div className="flex items-center gap-2.5 self-start sm:self-auto">
+      <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+        {aiAvailable && onOpenAiSummaryModal && (
+          <Button
+            variant="secondary"
+            size="md"
+            className="bg-teal-600/20 hover:bg-teal-600/30 text-teal-300 border border-teal-500/30"
+            leftIcon={<Sparkles className="w-4 h-4 text-teal-400" />}
+            onClick={onOpenAiSummaryModal}
+          >
+            AI Summary
+          </Button>
+        )}
         <Button
           variant="secondary"
           size="md"

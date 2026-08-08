@@ -21,9 +21,18 @@ interface GoalPanelProps {
   onDeleteGoal: (goalId: string, e: React.MouseEvent) => void;
   onOpenAddModal: () => void;
   onAddTaskToGoal: (goalId: string, taskTitle: string) => Promise<void>;
+  onOpenAiBreakdown?: (goal: GoalData) => void;
+  aiAvailable?: boolean;
 }
 
-export function GoalPanel({ goals, onDeleteGoal, onOpenAddModal, onAddTaskToGoal }: GoalPanelProps) {
+export function GoalPanel({
+  goals,
+  onDeleteGoal,
+  onOpenAddModal,
+  onAddTaskToGoal,
+  onOpenAiBreakdown,
+  aiAvailable = true,
+}: GoalPanelProps) {
   const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null);
   const [newTaskInput, setNewTaskInput] = useState<Record<string, string>>({});
   const [isSubmittingTask, setIsSubmittingTask] = useState<boolean>(false);
@@ -148,9 +157,20 @@ export function GoalPanel({ goals, onDeleteGoal, onOpenAddModal, onAddTaskToGoal
                 {isExpanded && (
                   <div className="pt-3 border-t border-zinc-800/80 space-y-3 animate-fadeIn">
                     <div>
-                      <h4 className="text-xs font-semibold text-zinc-300 mb-2 flex items-center gap-1.5">
-                        <span>📋</span> Sub-Tasks Breakdown:
-                      </h4>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
+                          <span>📋</span> Sub-Tasks Breakdown:
+                        </h4>
+                        {aiAvailable && onOpenAiBreakdown && (
+                          <button
+                            type="button"
+                            onClick={() => onOpenAiBreakdown(goal)}
+                            className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold rounded-lg transition"
+                          >
+                            <span>✨</span> AI Breakdown
+                          </button>
+                        )}
+                      </div>
 
                       {goal.tasks && goal.tasks.length > 0 ? (
                         <div className="space-y-1.5 mb-3">

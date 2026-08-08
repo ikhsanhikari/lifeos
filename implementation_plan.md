@@ -1,351 +1,256 @@
-# UI/UX Revamp — LifeOS Dashboard
+# LifeOS UI/UX Improvement Plan
 
-> **Tujuan:** Transformasi dari single-page monolith yang ramai → dashboard modern, bersih, dan responsive dengan navigasi sidebar, layout terstruktur, dan UX yang intuitif.
-
----
-
-## Analisis Masalah UI/UX Saat Ini
-
-### ❌ Masalah yang Ditemukan
-
-| # | Masalah | Dampak UX |
-|---|---------|-----------|
-| 1 | **Single-page monolith** — Semua fitur (stats, habits, tasks, journal, analytics, modals) dijejali dalam 1 file 1141 baris | User overwhelmed, cognitive overload |
-| 2 | **Tidak ada navigasi** — Tidak ada sidebar/navbar, user harus scroll panjang untuk akses fitur | Discoverability buruk |
-| 3 | **Header terlalu ramai** — Login status, add habit, logout, telegram link semua di satu baris | Visual clutter, bingung prioritas aksi |
-| 4 | **Font terlalu kecil** — Banyak `text-xs` (10px-11px) di seluruh UI | Readability buruk, eye strain |
-| 5 | **Terlalu banyak label teknis** — "(DB Live)", "(Telegram Bot `/streak`)", "(Bisa diisi via Telegram `/log`)" | Terasa seperti debug panel, bukan product |
-| 6 | **Emoji sebagai icon** — 🎯📋📖🔥 digunakan sebagai visual utama | Tidak konsisten, kurang profesional |
-| 7 | **Warna monoton** — Hampir semua card identik (glass-card gelap + indigo accent) | Tidak ada visual hierarchy |
-| 8 | **Responsive kurang optimal** — Grid mobile tidak teroptimasi, padding terlalu kecil | UX mobile jelek |
-| 9 | **Tidak ada empty state yang engaging** — Hanya teks biasa saat data kosong | Terasa "broken", bukan "inviting" |
-| 10 | **Tidak ada loading skeleton** — Hanya teks "Memuat data..." | Perceived performance buruk |
+> Analisis mendalam kondisi UI/UX saat ini + proposal improvement untuk mempermudah user
 
 ---
 
-## Proposed Design Direction
+## Kondisi Saat Ini — Apa yang Sudah Bagus ✅
 
-### 🎨 Design System: "Calm Productivity"
-
-Inspirasi: Linear, Notion, Arc Browser — clean, spacious, purposeful.
-
-**Prinsip:**
-1. **Breathing Space** — Generous whitespace, tidak padat
-2. **Progressive Disclosure** — Tampilkan info esensial dulu, detail bisa di-expand
-3. **Clear Hierarchy** — Setiap section punya tujuan jelas
-4. **Contextual Actions** — Tombol muncul di konteks yang tepat
-5. **Consistent Visual Language** — Icon library yang konsisten (Lucide/Heroicons), bukan emoji campur-campur
-
-### 🎨 Color Palette
-
-```
-Background:     #09090b (zinc-950)  — lebih hangat dari current #0b0f19
-Surface:        #18181b (zinc-900)  — card background
-Surface Hover:  #27272a (zinc-800)  — interactive state
-Border:         #3f3f46 (zinc-700)  — subtle borders
-                
-Text Primary:   #fafafa (zinc-50)   
-Text Secondary: #a1a1aa (zinc-400)  
-Text Muted:     #71717a (zinc-500)  
-
-Accent:         #818cf8 (indigo-400) — primary action
-Success:        #34d399 (emerald-400)
-Warning:        #fbbf24 (amber-400)
-Danger:         #f87171 (red-400)
-```
-
-### 📐 Typography
-
-```
-Font:           Inter (Google Fonts) — modern, highly legible
-Body:           14px (text-sm)      — naik dari 10-11px
-Small:          12px (text-xs)      — hanya untuk metadata
-Heading:        18-24px             — section titles
-Display:        28-32px             — stat numbers
-```
+| Aspek | Detail |
+|---|---|
+| **Design System** | Sudah ada primitif UI (`Button`, `Card`, `Tabs`, `Badge`, `ProgressBar`) — konsisten |
+| **Dark Theme** | Glassmorphism + zinc palette sudah solid dan cohesive |
+| **Navigation** | Sidebar desktop + bottom nav mobile sudah ada |
+| **Responsiveness** | Grid layout responsif (sm/md/lg breakpoints) |
+| **Micro-interactions** | Hover effects, scale, transition, dan skeleton loading sudah diterapkan |
 
 ---
 
-## Proposed Layout Architecture
+## 🔍 Area Improvement — UI/UX Issues Ditemukan
 
-### Desktop (≥1024px)
+### 1. 🚨 Navigasi: Single-Page Scroll vs True Page Routing
 
-```
-┌──────────────────────────────────────────────────────────┐
-│  ┌──────────┐  ┌───────────────────────────────────────┐ │
-│  │          │  │  Top Bar (greeting, date, actions)     │ │
-│  │          │  ├───────────────────────────────────────┤ │
-│  │ Sidebar  │  │                                       │ │
-│  │ (240px)  │  │       Main Content Area               │ │
-│  │          │  │       (scrollable)                     │ │
-│  │ - Home   │  │                                       │ │
-│  │ - Habits │  │  ┌─────────────────────────────────┐  │ │
-│  │ - Tasks  │  │  │  Quick Stats (4 cards compact)  │  │ │
-│  │ - Journal│  │  ├─────────────┬───────────────────┤  │ │
-│  │ - Streak │  │  │  Habits     │  Tasks             │  │ │
-│  │          │  │  │  Panel      │  Panel              │  │ │
-│  │ ──────── │  │  │  (left)     │  (right)            │  │ │
-│  │ Settings │  │  └─────────────┴───────────────────┘  │ │
-│  │ Telegram │  │  ┌─────────────────────────────────┐  │ │
-│  │          │  │  │  Daily Journal (collapsible)     │  │ │
-│  └──────────┘  │  └─────────────────────────────────┘  │ │
-│                └───────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────┘
-```
+**Masalah:** Semua section (Goals, Habits, Tasks, Journal, Streaks) di-render dalam **satu halaman scroll panjang**. Sidebar hanya melakukan `scrollIntoView`, bukan navigasi antar halaman.
 
-### Tablet (768px–1023px)
+**Dampak UX:**
+- User harus scroll panjang untuk menemukan section
+- Pada mobile, halaman terasa "overwhelming" — terlalu banyak info sekaligus
+- Tidak bisa bookmark/share URL section spesifik
 
-```
-┌────────────────────────────────────┐
-│  ┌──────┐  ┌─────────────────────┐ │
-│  │ Icon │  │  Main Content       │ │
-│  │ Only │  │  (single column)    │ │
-│  │ Side │  │                     │ │
-│  │ bar  │  │  Stats → Habits →   │ │
-│  │(64px)│  │  Tasks → Journal    │ │
-│  └──────┘  └─────────────────────┘ │
-└────────────────────────────────────┘
-```
-
-### Mobile (<768px)
-
-```
-┌──────────────────────┐
-│  Top Bar (hamburger)  │
-├──────────────────────┤
-│                      │
-│  Full-width Content  │
-│  (single column)     │
-│                      │
-│  Stats (2x2 grid)   │
-│  Habits (full)       │
-│  Tasks (full)        │
-│  Journal (full)      │
-│                      │
-├──────────────────────┤
-│  Bottom Nav (4 tabs) │
-│  🏠  🎯  📋  📓     │
-└──────────────────────┘
-```
+**Solusi yang direkomendasikan:**
+- Jadikan setiap menu sidebar sebagai **view/tab filter** yang hanya menampilkan section terkait
+- "Dashboard" view menampilkan overview semua, tapi masing-masing section (Goals, Habits, Tasks, Journal) tampil sebagai **focused single-view** saat dipilih
+- Tetap single page (no full page route), tapi **conditional render** berdasarkan `activeSection`
 
 ---
 
-## Proposed Changes
+### 2. 🚨 Tidak Ada Fitur Quick Actions / Command Palette
 
-### Component Decomposition
+**Masalah:** User harus klik button spesifik untuk setiap action. Tidak ada shortcut.
 
-File monolith 1141 baris akan dipecah menjadi komponen modular:
+**Dampak UX:**
+- User power-user (productivity app target audience) tidak punya cara cepat untuk melakukan aksi
+- Harus navigasi ke section dulu baru bisa add
 
----
-
-### 1. Layout & Navigation
-
-#### [NEW] `app/dashboard/layout.tsx`
-- Sidebar navigation component
-- Responsive: full sidebar → icon-only → bottom nav
-- Active state indicator dengan animated pill
-- User avatar & quick actions di bottom sidebar
-
-#### [MODIFY] [layout.tsx](file:///c:/Users/Nurikhsan/Documents/project/lifeos/app/layout.tsx)
-- Import Google Fonts (Inter)
-- Improved meta tags
-- Smooth page transitions
+**Solusi yang direkomendasikan:**
+- Tambah **Floating Action Button (FAB)** di mobile yang menampilkan quick menu (+ Goal, + Habit, + Task, + Journal)
+- Tambah **keyboard shortcut** `Ctrl+K` atau `Ctrl+J` untuk command palette di desktop
 
 ---
 
-### 2. Core Dashboard Components
+### 3. 🚨 Feedback & Notification System Kurang
 
-#### [NEW] `app/dashboard/components/Sidebar.tsx`
-- Navigation items: Home, Habits, Tasks, Journal, Analytics
-- Collapsible pada tablet (icon-only mode)
-- User profile section di bottom
-- Telegram link status indicator
-- Logout button
+**Masalah:** 
+- Setelah action (create/delete/toggle), tidak ada **toast notification** — hanya `console.error`
+- Success feedback hanya ada di DailyJournal (dan hanya sementara)
+- Delete menggunakan `confirm()` bawaan browser yang jelek
 
-#### [NEW] `app/dashboard/components/TopBar.tsx`
-- Greeting + tanggal (clean, tanpa label teknis)
-- Quick action: "+ New" dropdown (habit/task)
-- Mobile hamburger menu trigger
+**Dampak UX:**
+- User tidak yakin apakah aksi berhasil atau gagal
+- Delete dialog tidak konsisten dengan design premium
 
-#### [NEW] `app/dashboard/components/StatsGrid.tsx`
-- 4 stat cards yang compact dan clean
-- Tanpa label "(DB Live)" — cukup data yang relevan
-- Micro-animation pada angka (count-up)
-- Color-coded berdasarkan performance
-
-#### [NEW] `app/dashboard/components/HabitPanel.tsx`
-- Clean list dengan inline check-in toggle
-- Progress ring (circular) di header
-- Filter tabs yang lebih subtle
-- "Add habit" sebagai inline form (bukan modal terpisah)
-- Empty state yang engaging: ilustrasi + CTA
-
-#### [NEW] `app/dashboard/components/TaskPanel.tsx`
-- Inline add task (keyboard shortcut: Enter)
-- Priority sebagai colored dot, bukan text badge
-- Swipe-to-complete di mobile
-- Clean grouping: Today → Upcoming → Completed
-
-#### [NEW] `app/dashboard/components/DailyJournal.tsx`
-- Collapsible section (default: collapsed jika sudah terisi)
-- Mood picker yang lebih elegant (slider/emoji row)
-- Energy picker sebagai visual bar
-- Auto-save indicator
-
-#### [NEW] `app/dashboard/components/StreakInsights.tsx`
-- Mini heatmap calendar (GitHub-style)
-- Top streaks ranking
-- Hanya tampil jika ada data
-
-#### [NEW] `app/dashboard/components/EmptyState.tsx`
-- Reusable empty state component
-- Ilustrasi/icon + deskripsi + CTA button
-- Variant: habits, tasks, journal
-
-#### [NEW] `app/dashboard/components/LoadingSkeleton.tsx`
-- Skeleton placeholder yang match layout
-- Pulsing animation
-- Per-section skeleton (stats, habits, tasks)
+**Solusi yang direkomendasikan:**
+- Tambah **Toast Notification component** global (success, error, warning)
+- Ganti `confirm()` dengan **Custom Confirmation Modal** yang match dark theme
+- Animasi success saat habit check-in (✅ confetti kecil / pulse effect)
 
 ---
 
-### 3. Modal Components
+### 4. 🚨 Search & Filter Terbatas
 
-#### [NEW] `app/dashboard/components/modals/AddHabitModal.tsx`
-- Extracted dari page utama
-- Slide-up animation di mobile
-- Auto-focus pada input
-- Keyboard navigation support
+**Masalah:**
+- Task dan Habit hanya bisa difilter via tab (All/Pending/Done)
+- Tidak ada fitur **search** sama sekali
+- Task tidak bisa difilter by **priority, due date, atau goal**
+- Goal list tidak ada filter status (Active/Completed/Paused)
 
-#### [NEW] `app/dashboard/components/modals/TelegramLinkModal.tsx`
-- Extracted dari page utama
-- QR code style token display
-- Countdown timer visual
-- Success animation
+**Dampak UX:**
+- Saat data banyak, user tidak bisa menemukan item spesifik dengan cepat
 
----
-
-### 4. Shared UI Components
-
-#### [NEW] `app/components/ui/Card.tsx`
-- Consistent card styling
-- Variant: default, elevated, interactive
-- Proper hover/focus states
-
-#### [NEW] `app/components/ui/Button.tsx`
-- Variant: primary, secondary, ghost, danger
-- Size: sm, md, lg
-- Loading state built-in
-
-#### [NEW] `app/components/ui/Badge.tsx`
-- Priority badges
-- Status badges
-- Frequency badges
-
-#### [NEW] `app/components/ui/ProgressBar.tsx`
-- Linear progress
-- Circular progress ring
-- Animated transitions
-
-#### [NEW] `app/components/ui/Tabs.tsx`
-- Clean tab component
-- Animated active indicator
+**Solusi yang direkomendasikan:**
+- Tambah **search bar** di TopBar atau di dalam panel (Habits, Tasks)
+- Tambah **filter chips** untuk Task: by Priority, by Goal, by Due Date
+- Tambah **sort options**: alphabetical, newest, priority
 
 ---
 
-### 5. Styling
+### 5. ⚠️ Mobile Experience — Bottom Nav Terpotong
 
-#### [MODIFY] [globals.css](file:///c:/Users/Nurikhsan/Documents/project/lifeos/app/globals.css)
-- Import Inter font
-- Updated CSS custom properties (design tokens)
-- Improved glassmorphism utilities
-- Skeleton animation utilities
-- Scroll behavior: smooth
-- Focus-visible styles untuk accessibility
-- Transition utilities
+**Masalah:**
+- Bottom nav hanya menampilkan **5 dari 6 item** (`.slice(0, 5)`)
+- Main content punya `pb-20` untuk menghindari overlap, tapi tidak optimal
+- Tidak ada gesture/swipe antar section
 
-#### [MODIFY] [tailwind.config.js](file:///c:/Users/Nurikhsan/Documents/project/lifeos/tailwind.config.js)
-- Extended color palette (zinc-based)
-- Custom animation keyframes
-- Typography plugin integration
+**Dampak UX:**
+- Habit Streaks section tidak bisa diakses dari bottom nav di mobile
+- Bottom nav labels terpotong (`item.label.split(' ')[0]`)
+
+**Solusi yang direkomendasikan:**
+- Redesign bottom nav menjadi **4-5 icon paling penting** saja (Dashboard, Goals, Habits, Tasks, Journal)
+- Gabungkan Streaks ke dalam Dashboard view sebagai sub-section
+- Gunakan label pendek yang jelas ("Home", "Goals", "Habits", "Tasks", "Log")
 
 ---
 
-### 6. Main Dashboard Page
+### 6. ⚠️ Onboarding / Empty State Bisa Lebih Baik
+
+**Masalah:**
+- Empty state untuk Habits dan Tasks sudah ada tapi **generik**
+- Tidak ada **Welcome/Onboarding flow** untuk user baru
+- Tidak ada guided tour saat pertama kali buka dashboard
+
+**Dampak UX:**
+- User baru bingung harus mulai dari mana
+- Tidak ada sense of direction
+
+**Solusi yang direkomendasikan:**
+- Tambah **Welcome Card** di dashboard saat data masih kosong: "Mulai dari buat Goal pertama → Breakdown jadi task → Buat habit pendukung"
+- Empty states lebih actionable dengan step-by-step CTA
+- Optional: tambah **progress indicator onboarding** ("3 dari 5 setup selesai")
+
+---
+
+### 7. ⚠️ Task Management — Fitur Edit Tidak Ada
+
+**Masalah:**
+- Task dan Habit hanya bisa **create, toggle, delete** — tidak ada fitur **edit**
+- Tidak bisa update judul, priority, due date, atau description setelah dibuat
+- Goal juga tidak bisa diedit setelah dibuat
+
+**Dampak UX:**
+- User harus delete + recreate jika ada typo atau perubahan prioritas
+- Tidak practical untuk daily use
+
+**Solusi yang direkomendasikan:**
+- Tambah **inline edit** atau **edit modal** untuk Tasks (title, priority, due date, description)
+- Tambah **edit modal** untuk Goals (title, deadline, description)
+- Tambah **edit** untuk Habits (name, frequency)
+
+---
+
+### 8. ⚠️ Visual Hierarchy — Terlalu Banyak Info Sejajar
+
+**Masalah:**
+- Dashboard menampilkan Stats → Goals → Streaks → Habits/Tasks grid → Journal sekaligus
+- Semua section punya bobot visual yang **sama** — tidak ada yang "menonjol"
+- Stats cards, walaupun informatif, tidak ada **micro-chart atau trend indicator**
+
+**Dampak UX:**
+- User tidak tahu harus fokus ke mana
+- Dashboard terasa "flat" — tidak ada info yang di-highlight
+
+**Solusi yang direkomendasikan:**
+- Tambah **"Today's Focus" hero section** di atas: "3 hal utama hari ini" (habit pending + task urgent + journal reminder)
+- Stats cards: tambah **trend arrow** (↑↓) atau **sparkline mini chart**
+- Gunakan visual hierarchy: Hero → Stats → Primary panels → Secondary
+
+---
+
+### 9. 💡 Drag-and-Drop Sorting Belum Diimplementasi
+
+**Masalah:** Schema sudah punya `sort_order` field di Habit dan Task, tapi **UI belum implement drag-and-drop**.
+
+**Solusi:** Implement dengan library seperti `@dnd-kit/core` untuk reordering habits dan tasks.
+
+---
+
+### 10. 💡 Dark Mode Only — Tidak Ada Light Mode Toggle
+
+**Masalah:** Hanya ada dark mode. Beberapa user mungkin prefer light mode saat siang hari.
+
+**Solusi:** Tambah toggle di sidebar footer untuk **dark/light mode** switch. (Lower priority)
+
+---
+
+## Proposed Changes — Prioritas Implementasi
+
+### Phase 1: Quick Wins (Dampak Tinggi, Effort Rendah)
+
+> [!IMPORTANT]
+> Perubahan ini bisa langsung dirasakan user tanpa refactor besar
 
 #### [MODIFY] [page.tsx](file:///c:/Users/Nurikhsan/Documents/project/lifeos/app/dashboard/page.tsx)
-- Refactored: dari 1141 baris → ~200 baris (composition of components)
-- Custom hooks extracted: `useHabits`, `useTasks`, `useDailyLog`, `useAnalytics`
-- Clean data flow via props
-- Proper loading/error/empty states
+- Ubah dashboard dari scroll-panjang menjadi **conditional section rendering** berdasarkan `activeSection`
+- Dashboard view = semua stats + overview ringkas
+- Section spesifik = focused view satu panel saja
+
+#### [NEW] `app/dashboard/components/Toast.tsx`
+- Toast notification component (success, error, info)
+- Auto-dismiss 3 detik
+
+#### [NEW] `app/dashboard/components/ConfirmDialog.tsx`
+- Custom confirmation dialog mengganti `confirm()`
+
+#### [MODIFY] [TopBar.tsx](file:///c:/Users/Nurikhsan/Documents/project/lifeos/app/dashboard/components/TopBar.tsx)
+- Tambah quick action dropdown atau FAB equivalent
+
+#### [MODIFY] [Sidebar.tsx](file:///c:/Users/Nurikhsan/Documents/project/lifeos/app/dashboard/components/Sidebar.tsx)
+- Fix mobile bottom nav labels (gunakan label pendek)
+- Pastikan semua section accessible
 
 ---
 
-## UX Improvements Detail
+### Phase 2: Core UX Improvements (Dampak Tinggi, Effort Medium)
 
-### Interaction Design
+#### [MODIFY] [TaskPanel.tsx](file:///c:/Users/Nurikhsan/Documents/project/lifeos/app/dashboard/components/TaskPanel.tsx)
+- Tambah search bar di panel
+- Tambah filter by priority chips
+- Tambah edit modal per task
 
-| Area | Sebelum | Sesudah |
-|------|---------|---------|
-| **Check-in habit** | Click seluruh row | Tap checkbox, row tetap informational |
-| **Add task** | Input + select + button | Inline input, Enter to submit, priority selector on focus |
-| **Mood picker** | 5 buttons horizontal | Elegant slider dengan emoji yang scale |
-| **Delete** | Click 🗑️ emoji | Swipe atau kebab menu → confirm |
-| **Empty states** | Teks plain "Tidak ada" | Illustrated empty state + CTA |
-| **Loading** | Teks "Memuat..." | Skeleton placeholders |
-| **Success feedback** | Alert banner | Subtle toast notification |
+#### [MODIFY] [HabitPanel.tsx](file:///c:/Users/Nurikhsan/Documents/project/lifeos/app/dashboard/components/HabitPanel.tsx)
+- Tambah edit capability
+- Animasi success saat check-in
 
-### Accessibility
+#### [NEW] `app/dashboard/components/WelcomeCard.tsx`
+- Onboarding card saat data kosong
+- Step-by-step guide: Goal → Task → Habit → Journal
 
-- Proper `aria-label` pada semua interactive elements
-- Keyboard navigation (Tab, Enter, Escape)
-- Focus-visible rings
-- Sufficient color contrast (WCAG AA minimum)
-- Reduced motion: respect `prefers-reduced-motion`
-
-### Performance
-
-- Component lazy loading dengan `React.lazy` + `Suspense`
-- Skeleton loading untuk perceived performance
-- Optimistic UI updates (sudah ada, akan dipertahankan)
+#### [MODIFY] [StatsGrid.tsx](file:///c:/Users/Nurikhsan/Documents/project/lifeos/app/dashboard/components/StatsGrid.tsx)
+- Tambah trend indicators (↑↓ vs kemarin)
+- Micro sparkline chart untuk mood history
 
 ---
 
-## User Review Required
+### Phase 3: Polish & Advanced (Effort Tinggi)
+
+#### [NEW] `app/dashboard/components/CommandPalette.tsx`
+- Keyboard shortcut `Ctrl+K` command palette
+
+#### Drag-and-drop sorting untuk habits dan tasks
+
+#### Light/dark mode toggle
+
+---
+
+## Open Questions
 
 > [!IMPORTANT]
-> **Layout Choice:** Saya merekomendasikan sidebar navigation (seperti Linear/Notion) karena ini dashboard app yang dipakai daily. Apakah kamu setuju dengan pendekatan sidebar, atau prefer top navigation bar saja?
+> Beberapa keputusan perlu konfirmasi sebelum implementasi:
 
-> [!IMPORTANT]
-> **Color Scheme:** Saya merekomendasikan tetap dark mode tapi dengan warna yang lebih hangat (zinc-based, bukan slate-based). Apakah tetap dark-only, atau mau support light mode juga?
+1. **Navigasi model**: Apakah mau tetap **single-page scroll** atau beralih ke **conditional render per section** (lebih fokus)? Saya rekomendasikan conditional render.
 
-> [!IMPORTANT]
-> **Bottom Navigation di Mobile:** Untuk mobile, saya sarankan bottom navigation bar (seperti app native) bukan hamburger menu. Setuju?
+2. **Prioritas phase**: Mau mulai dari Phase 1 (Quick Wins) saja dulu, atau langsung Phase 1 + 2?
 
-> [!IMPORTANT]
-> **Bahasa UI:** Saat ini campuran Indonesia-English. Mau distandarkan ke bahasa apa? (Saya rekomendasikan full Indonesian untuk consistency)
+3. **Bahasa UI**: Saat ini mixing Bahasa Indonesia + English ("Selamat Datang", "Focus Score", "Habit Tracker"). Mau distandarisasi ke salah satu, atau tetap bilingual?
+
+4. **Task Edit**: Mau pakai **inline edit** (klik langsung di list) atau **edit modal** (popup form)?
 
 ---
 
 ## Verification Plan
 
-### Build Verification
-```bash
-npm run build
-```
-- Pastikan zero TypeScript errors
-- Pastikan Next.js build sukses
-
-### Visual Verification
-- Screenshot perbandingan before/after
-- Test di 3 breakpoint: Mobile (375px), Tablet (768px), Desktop (1440px)
-- Verify di browser: Chrome, Firefox, Safari
-
-### Functional Verification
-- Semua API calls tetap berfungsi (tidak ada perubahan logic)
-- Toggle habit check-in
-- Add/delete habit
-- Add/delete task
-- Save daily journal
-- Telegram link flow
-- Auth callback flow
+### Manual Verification
+- Test di browser desktop dan mobile viewport
+- Verify semua improvement accessible
+- Check animasi dan transition smooth
+- Test flow: create → edit → toggle → delete dengan toast feedback

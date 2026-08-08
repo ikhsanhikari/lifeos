@@ -62,7 +62,15 @@ import {
   handleGoalDetailCallback,
   goalWizardSessions,
   renderProgressBar,
+  handleAiGoalBreakdownCallback,
 } from './controllers/goalController';
+import {
+  handleAiStatus,
+  handleAiGoalBreakdown,
+  handleAiDailyCoach,
+  handleAiWeeklySummary,
+} from './controllers/aiController';
+import { generateWeeklySummary, isAiGloballyEnabled } from './services/aiService';
 import { authMiddleware, AuthenticatedRequest } from './middleware/authMiddleware';
 
 // Load environment variables
@@ -215,6 +223,66 @@ bot.command('task', handleCreateTaskCommand);
 bot.command('log', handleDailyLogCommand);
 bot.command('today', handleTodaySummaryCommand);
 bot.command('streak', handleStreakCommand);
+bot.command('summary', handleWeeklySummaryCommand);
+bot.command('ai', handleAiInfoCommand);
+
+async function handleWeeklySummaryCommand(ctx: any) {
+  try {
+    if (!ctx.chat) return;
+    const chatId = BigInt(ctx.chat.id);
+    const link = await prisma.telegramLink.findUnique({
+      where: { telegramChatId: chatId },
+      select: { userId: true },
+    });
+    const firstUser = await prisma.user.findFirst();
+    const userId = link?.userId || firstUser?.id;
+
+    if (!userId) {
+      await ctx.reply('❌ User tidak ditemukan.');
+      return;
+    }
+
+    await ctx.reply('📊 *AI Coach sedang menyusun Rangkuman Mingguan Cerdas...*\n_Mohon tunggu sebentar..._', { parse_mode: 'Markdown' });
+
+    const result = await generateWeeklySummary(userId);
+
+    if (!result.success || !result.data) {
+      await ctx.reply(`⚠️ *Gagal membuat summary:* ${result.message || 'Terjadi kesalahan'}`);
+      return;
+    }
+
+    const { highlights, improvements, summary, advice } = result.data;
+
+    let msg = `📊 *Weekly Smart Summary (AI Coach)* 🏆\n\n` +
+      `📝 *Ringkasan Evaluasi:*\n${summary}\n\n` +
+      `🌟 *Pencapaian Utama:*\n` + (highlights.length ? highlights.map((h) => `• ${h}`).join('\n') : '• Belum ada data pencapaian khusus') + `\n\n` +
+      `⚠️ *Area Perbaikan:*\n` + (improvements.length ? improvements.map((i) => `• ${i}`).join('\n') : '• Pertahankan performa baik kamu!') + `\n\n` +
+      `💡 *Fokus Minggu Depan:*\n_${advice}_`;
+
+    await ctx.reply(msg, { parse_mode: 'Markdown' });
+  } catch (error) {
+    console.error('Error handling /summary command:', error);
+    await ctx.reply('❌ Gagal memuat weekly summary.');
+  }
+}
+
+async function handleAiInfoCommand(ctx: any) {
+  try {
+    const enabled = isAiGloballyEnabled();
+    const msg = enabled
+      ? `🧠 *LifeOS AI Assistant & Coach*\n\n` +
+        `Fitur AI aktif di akun kamu! ✨\n\n` +
+        `• \`/goal <judul>\` — Buat goal & AI breakdown otomatis\n` +
+        `• \`/summary\` — Rangkuman Mingguan Cerdas oleh AI Coach\n` +
+        `• Web Dashboard — AI Daily Journal Coach & Sub-tasks breakdown`
+      : `⚠️ *Layanan AI Saat Ini Nonaktif*\n\n` +
+        `OPENAI_API_KEY tidak dikonfigurasi di server. Semua fungsi dasar LifeOS tetap berjalan 100% normal tanpa AI.`;
+
+    await ctx.reply(msg, { parse_mode: 'Markdown' });
+  } catch (error) {
+    console.error(error);
+  }
+}
 
 // Telegram Keyboard Button Listeners (Tanpa perlu ketik /)
 bot.hears('🌟 Goals (Mimpi)', handleGoalsCommand);
@@ -275,6 +343,7 @@ bot.action(/^toggle_task:(.+)$/, handleTaskToggleCallback);
 bot.action('refresh_tasks', handleTaskToggleCallback);
 bot.action(/^log_mood:(.+)$/, handleLogMoodCallback);
 bot.action(/^log_energy:(.+)$/, handleLogEnergyCallback);
+bot.action(/^ai_breakdown_goal:(.+)$/, handleAiGoalBreakdownCallback);
 
 // Text Message Middleware for Goal Breakdown Wizard
 bot.on('text', async (ctx, next) => {
@@ -646,6 +715,12 @@ app.delete('/api/goals/:id', async (req: AuthenticatedRequest, res: Response) =>
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// AI REST API ENDPOINTS
+app.get('/api/ai/status', handleAiStatus);
+app.post('/api/ai/goal-breakdown', handleAiGoalBreakdown);
+app.post('/api/ai/daily-coach', handleAiDailyCoach);
+app.get('/api/ai/weekly-summary', handleAiWeeklySummary);
 
 // TASK REST API ENDPOINTS
 app.get('/api/tasks', async (req: AuthenticatedRequest, res: Response) => {

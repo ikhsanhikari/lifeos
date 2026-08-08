@@ -67,8 +67,25 @@ model User {
   dailyLogs    DailyLog[]
   magicTokens  MagicToken[]
   goals        Goal[]
+  settings     UserSettings?
 
   @@map("users")
+}
+
+/// User settings for feature toggles and quotas
+model UserSettings {
+  id               String  @id @default(uuid()) @db.Uuid
+  userId           String  @unique @map("user_id") @db.Uuid
+  aiEnabled        Boolean @default(true) @map("ai_enabled")
+  aiGoalBreakdown  Boolean @default(true) @map("ai_goal_breakdown")
+  aiDailyCoach     Boolean @default(true) @map("ai_daily_coach")
+  aiSmartSummary   Boolean @default(true) @map("ai_smart_summary")
+  aiMonthlyQuota   Int     @default(50) @map("ai_monthly_quota")
+  aiUsageThisMonth Int     @default(0) @map("ai_usage_this_month")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
 }
 
 /// Goal entity for high-level objectives
