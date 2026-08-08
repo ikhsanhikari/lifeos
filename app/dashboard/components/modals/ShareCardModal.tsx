@@ -72,6 +72,13 @@ function buildOgUrl(data: ShareCardData, format: FormatType, theme: ThemeType, s
   return `/og/daily-card?format=${format}&theme=${theme}&data=${encoded}`;
 }
 
+function getUniqueFilename(prefix: string, ext: string): string {
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[-:T.]/g, '').substring(0, 14);
+  const randomStr = Math.random().toString(36).substring(2, 6);
+  return `${prefix}-${timestamp}-${randomStr}.${ext}`;
+}
+
 export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCardModalProps) {
   const [selectedFormat, setSelectedFormat] = useState<FormatType>('square');
   const [selectedTheme, setSelectedTheme] = useState<ThemeType>('strava');
@@ -122,7 +129,7 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
       const link = document.createElement('a');
       link.href = blobUrl;
       const ext = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
-      link.download = `lifeos-animated-story.${ext}`;
+      link.download = getUniqueFilename(`lifeos-${selectedFormat}-story`, ext);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -148,7 +155,7 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
           const blobUrl = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = blobUrl;
-          link.download = `lifeos-card-slide-${i + 1}.png`;
+          link.download = getUniqueFilename(`lifeos-slide-${i + 1}`, 'png');
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -164,7 +171,7 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
         const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = blobUrl;
-        link.download = `lifeos-${selectedFormat}-card.png`;
+        link.download = getUniqueFilename(`lifeos-${selectedFormat}-card`, 'png');
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
