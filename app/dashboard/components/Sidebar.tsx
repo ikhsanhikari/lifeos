@@ -49,8 +49,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="space-y-6">
           {/* Brand Logo */}
           <div className="flex items-center gap-3 px-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-lg shadow-indigo-500/25 overflow-hidden p-1">
+              <img src="/icon.svg" alt="Life OS Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="font-bold text-base text-zinc-50 tracking-tight flex items-center gap-1.5">

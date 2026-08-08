@@ -11,6 +11,14 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Life OS — Modern Habit, Task & Daily Journal System',
   description: 'Operating System harian terpadu untuk kebiasaan, produktivitas, dan refleksi dengan integrasi Telegram.',
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({
