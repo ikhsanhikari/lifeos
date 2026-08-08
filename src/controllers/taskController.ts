@@ -138,10 +138,15 @@ export async function deleteTask(taskId: string): Promise<TaskWithDetails> {
 }
 
 /**
- * 5. Helper Inline Keyboard untuk list task Telegram
+ * 5. Helper Inline Keyboard untuk list task Telegram (dengan Pagination)
  */
-function buildTasksInlineKeyboard(tasks: TaskWithDetails[]) {
-  const buttons = tasks.slice(0, 8).map((task) => {
+function buildTasksInlineKeyboard(tasks: TaskWithDetails[], page: number = 1, pageSize: number = 5) {
+  const totalPages = Math.max(1, Math.ceil(tasks.length / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+
+  const paginatedTasks = tasks.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  const buttons = paginatedTasks.map((task) => {
     const statusIcon = task.status === 'DONE' ? '✅' : '⬜';
     const priorityBadge = task.priority === 'URGENT' ? '🔴' : task.priority === 'HIGH' ? '🟠' : task.priority === 'MEDIUM' ? '🟡' : '⚪';
     const goalTag = task.goal ? `[${task.goal.title}] ` : '';
@@ -149,16 +154,30 @@ function buildTasksInlineKeyboard(tasks: TaskWithDetails[]) {
     return [Markup.button.callback(label, `toggle_task:${task.id}`)];
   });
 
-  buttons.push([Markup.button.callback('🔄 Refresh Task List', 'refresh_tasks')]);
+  if (totalPages > 1) {
+    const navRow = [];
+    if (safePage > 1) {
+      navRow.push(Markup.button.callback('◀️ Sblm', `nav_tasks_page:${safePage - 1}`));
+    }
+    navRow.push(Markup.button.callback(`Hal ${safePage}/${totalPages}`, 'refresh_tasks'));
+    if (safePage < totalPages) {
+      navRow.push(Markup.button.callback('Lanjut ▶️', `nav_tasks_page:${safePage + 1}`));
+    }
+    buttons.push(navRow);
+  } else {
+    buttons.push([Markup.button.callback('🔄 Refresh Task List', 'refresh_tasks')]);
+  }
+
   return Markup.inlineKeyboard(buttons);
 }
 
 /**
- * 6. Telegram Command /tasks: Tampilkan daftar tugas interaktif
+ * 6. Telegram Command /tasks: Tampilkan daftar tugas interaktif dengan Pagination
  */
-export async function handleTasksCommand(ctx: Context) {
+export async function handleTasksCommand(ctx: Context, pageParam?: number) {
   try {
     if (!ctx.chat) return;
+    const page = typeof pageParam === 'number' ? pageParam : 1;
 
     const telegramChatId = BigInt(ctx.chat.id);
     const { tasks } = await getUserTasks(telegramChatId);
@@ -181,11 +200,33 @@ export async function handleTasksCommand(ctx: Context) {
 
     await ctx.reply(messageText, {
       parse_mode: 'Markdown',
-      ...buildTasksInlineKeyboard(tasks),
+      ...buildTasksInlineKeyboard(tasks, page),
     });
   } catch (error) {
     console.error('Error handling /tasks command:', error);
     await ctx.reply('❌ Terjadi kesalahan saat mengambil daftar tugas.');
+  }
+}
+
+/**
+ * 6b. Callback Query Handler untuk Navigasi Halaman Task Telegram
+ */
+export async function handleTasksPageCallback(ctx: Context) {
+  try {
+    const callbackQuery = ctx.callbackQuery as any;
+    if (!callbackQuery || !callbackQuery.data || !ctx.chat) return;
+
+    const pageStr = callbackQuery.data.replace('nav_tasks_page:', '');
+    const page = parseInt(pageStr, 10) || 1;
+
+    const telegramChatId = BigInt(ctx.chat.id);
+    const { tasks } = await getUserTasks(telegramChatId);
+
+    await ctx.editMessageReplyMarkup(buildTasksInlineKeyboard(tasks, page).reply_markup);
+    await ctx.answerCbQuery(`📄 Halaman ${page}`);
+  } catch (error) {
+    console.error('Error handling tasks page callback:', error);
+    await ctx.answerCbQuery();
   }
 }
 

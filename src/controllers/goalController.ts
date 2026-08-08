@@ -212,11 +212,13 @@ export async function deleteGoal(goalId: string) {
 }
 
 /**
- * 6. Telegram Command /goals: Tampilkan semua Goal + Progress Bar
+ * 6. Telegram Command /goals: Tampilkan semua Goal + Progress Bar (dengan Pagination)
  */
-export async function handleGoalsCommand(ctx: Context) {
+export async function handleGoalsCommand(ctx: Context, pageParam?: number, pageSizeParam?: number) {
   try {
     if (!ctx.chat) return;
+    const page = typeof pageParam === 'number' ? pageParam : 1;
+    const pageSize = typeof pageSizeParam === 'number' ? pageSizeParam : 4;
 
     const telegramChatId = BigInt(ctx.chat.id);
     const goals = await getUserGoals(telegramChatId);
@@ -233,20 +235,38 @@ export async function handleGoalsCommand(ctx: Context) {
       return;
     }
 
-    let messageText = `🎯 *Daftar Goals (Mimpi Besar) Kamu*\n\n`;
+    const totalPages = Math.max(1, Math.ceil(goals.length / pageSize));
+    const safePage = Math.min(Math.max(1, page), totalPages);
 
-    const buttons = goals.map((g, index) => {
+    const paginatedGoals = goals.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+    let messageText = `🎯 *Daftar Goals (Mimpi Besar) Kamu* (Hal ${safePage}/${totalPages})\n\n`;
+
+    const buttons = paginatedGoals.map((g, index) => {
+      const globalIdx = (safePage - 1) * pageSize + index + 1;
       const deadlineStr = g.deadline
         ? ` (Deadline: ${new Date(g.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })})`
         : '';
       const bar = renderProgressBar(g.progress);
 
       messageText +=
-        `*${index + 1}. ${g.title}*${deadlineStr}\n` +
+        `*${globalIdx}. ${g.title}*${deadlineStr}\n` +
         `   ${bar} (${g.completedTasks}/${g.totalTasks} task selesai)\n\n`;
 
       return [Markup.button.callback(`📌 ${g.title} (${g.progress}%)`, `goal_detail:${g.id}`)];
     });
+
+    if (totalPages > 1) {
+      const navRow = [];
+      if (safePage > 1) {
+        navRow.push(Markup.button.callback('◀️ Sblm', `nav_goals_page:${safePage - 1}`));
+      }
+      navRow.push(Markup.button.callback(`Hal ${safePage}/${totalPages}`, 'nav_goals'));
+      if (safePage < totalPages) {
+        navRow.push(Markup.button.callback('Lanjut ▶️', `nav_goals_page:${safePage + 1}`));
+      }
+      buttons.push(navRow);
+    }
 
     buttons.push([Markup.button.callback('➕ Tambah Goal Baru', 'prompt_add_goal')]);
 
@@ -259,6 +279,68 @@ export async function handleGoalsCommand(ctx: Context) {
   } catch (error) {
     console.error('Error handling /goals command:', error);
     await ctx.reply('❌ Terjadi kesalahan saat mengambil daftar goal.');
+  }
+}
+
+/**
+ * 6b. Callback Query Handler untuk Navigasi Halaman Goal Telegram
+ */
+export async function handleGoalsPageCallback(ctx: Context) {
+  try {
+    const callbackQuery = ctx.callbackQuery as any;
+    if (!callbackQuery || !callbackQuery.data || !ctx.chat) return;
+
+    const pageStr = callbackQuery.data.replace('nav_goals_page:', '');
+    const page = parseInt(pageStr, 10) || 1;
+
+    const telegramChatId = BigInt(ctx.chat.id);
+    const goals = await getUserGoals(telegramChatId);
+    const pageSize = 4;
+    const totalPages = Math.max(1, Math.ceil(goals.length / pageSize));
+    const safePage = Math.min(Math.max(1, page), totalPages);
+
+    const paginatedGoals = goals.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+    let messageText = `🎯 *Daftar Goals (Mimpi Besar) Kamu* (Hal ${safePage}/${totalPages})\n\n`;
+
+    const buttons = paginatedGoals.map((g, index) => {
+      const globalIdx = (safePage - 1) * pageSize + index + 1;
+      const deadlineStr = g.deadline
+        ? ` (Deadline: ${new Date(g.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })})`
+        : '';
+      const bar = renderProgressBar(g.progress);
+
+      messageText +=
+        `*${globalIdx}. ${g.title}*${deadlineStr}\n` +
+        `   ${bar} (${g.completedTasks}/${g.totalTasks} task selesai)\n\n`;
+
+      return [Markup.button.callback(`📌 ${g.title} (${g.progress}%)`, `goal_detail:${g.id}`)];
+    });
+
+    if (totalPages > 1) {
+      const navRow = [];
+      if (safePage > 1) {
+        navRow.push(Markup.button.callback('◀️ Sblm', `nav_goals_page:${safePage - 1}`));
+      }
+      navRow.push(Markup.button.callback(`Hal ${safePage}/${totalPages}`, 'nav_goals'));
+      if (safePage < totalPages) {
+        navRow.push(Markup.button.callback('Lanjut ▶️', `nav_goals_page:${safePage + 1}`));
+      }
+      buttons.push(navRow);
+    }
+
+    buttons.push([Markup.button.callback('➕ Tambah Goal Baru', 'prompt_add_goal')]);
+
+    messageText += `_Tap pada salah satu goal untuk melihat detail task & habit yang terhubung._`;
+
+    await ctx.editMessageText(messageText, {
+      parse_mode: 'Markdown',
+      ...Markup.inlineKeyboard(buttons),
+    });
+    await ctx.answerCbQuery(`📄 Halaman ${safePage}`);
+  } catch (error) {
+    console.error('Error handling goals page callback:', error);
+    await ctx.answerCbQuery();
   }
 }
 
