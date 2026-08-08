@@ -76,11 +76,11 @@ function buildOgUrl(data: ShareCardData, format: FormatType, theme: ThemeType, s
       slideData.tasksTotal = 0;
     }
     const encoded = encodeURIComponent(JSON.stringify(slideData));
-    return `/api/og/daily-card?format=square&theme=${theme}&data=${encoded}`;
+    return `/og/daily-card?format=square&theme=${theme}&data=${encoded}`;
   }
 
   const encoded = encodeURIComponent(JSON.stringify(baseData));
-  return `/api/og/daily-card?format=${format}&theme=${theme}&data=${encoded}`;
+  return `/og/daily-card?format=${format}&theme=${theme}&data=${encoded}`;
 }
 
 export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCardModalProps) {

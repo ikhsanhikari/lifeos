@@ -3,8 +3,6 @@ import { NextRequest } from 'next/server';
 
 export const runtime = 'edge';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-
 // Theme color configurations
 const THEMES: Record<string, {
   bg1: string; bg2: string; bg3: string;
