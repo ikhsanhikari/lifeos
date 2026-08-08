@@ -122,7 +122,7 @@ export default function DashboardPage() {
   const [selectedAiGoal, setSelectedAiGoal] = useState<GoalData | null>(null);
   const [isAiSummaryModalOpen, setIsAiSummaryModalOpen] = useState<boolean>(false);
 
-  // Share modal state
+  // Share modal state & pre-fetched background data
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [shareCardData, setShareCardData] = useState<any>(null);
   const [isShareLoading, setIsShareLoading] = useState<boolean>(false);
@@ -139,6 +139,29 @@ export default function DashboardPage() {
     const token = typeof window !== 'undefined' ? localStorage.getItem('lifeos_token') : null;
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
+
+  // Pre-fetch share card data & pre-warm image cache in background
+  const fetchShareCardData = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/share/daily-card`, {
+        headers: getAuthHeaders(),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setShareCardData(json.data);
+        setIsShareLoading(false);
+
+        // Pre-load default square image into browser memory cache for 0ms instant display!
+        if (typeof window !== 'undefined') {
+          const defaultOgUrl = `/og/daily-card?format=square&theme=strava&data=${encodeURIComponent(JSON.stringify(json.data))}`;
+          const img = new Image();
+          img.src = defaultOgUrl;
+        }
+      }
+    } catch (err) {
+      console.error('Error prefetching share card data:', err);
+    }
+  }, []);
 
   // Fetch goals, habits, tasks, daily logs, analytics, telegram status, and AI status from Backend API
   const fetchData = useCallback(async () => {
@@ -215,13 +238,16 @@ export default function DashboardPage() {
       if (aiJson.success) {
         setAiStatus(aiJson);
       }
+
+      // Pre-fetch share card data in background
+      fetchShareCardData();
     } catch (err: any) {
       console.error('Error fetching dashboard data:', err);
       setError(err.message || 'Koneksi ke backend API (http://localhost:3000) gagal.');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchShareCardData]);
 
   const handleOpenAiBreakdownModal = (goal: GoalData) => {
     setSelectedAiGoal(goal);
@@ -320,23 +346,12 @@ export default function DashboardPage() {
     }
   };
 
-  // Fetch share card data
-  const handleOpenShareModal = async () => {
+  // Instant opening of Share Modal with pre-loaded background data
+  const handleOpenShareModal = () => {
     setIsShareModalOpen(true);
-    setIsShareLoading(true);
-    setShareCardData(null);
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/share/daily-card`, {
-        headers: getAuthHeaders(),
-      });
-      const json = await res.json();
-      if (json.success && json.data) {
-        setShareCardData(json.data);
-      }
-    } catch (err) {
-      console.error('Error fetching share card data:', err);
-    } finally {
-      setIsShareLoading(false);
+    if (!shareCardData) {
+      setIsShareLoading(true);
+      fetchShareCardData();
     }
   };
 
