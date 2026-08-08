@@ -39,7 +39,7 @@ interface ShareCardModalProps {
 }
 
 type FormatType = 'square' | 'story' | 'carousel';
-type ThemeType = 'dark' | 'purple' | 'ocean' | 'sunset';
+type ThemeType = 'strava' | 'cyber' | 'purple' | 'ocean' | 'dark';
 
 const FORMAT_OPTIONS: { key: FormatType; label: string; icon: React.ReactNode; size: string }[] = [
   { key: 'square', label: 'Square', icon: <Image className="w-4 h-4" />, size: '1080×1080' },
@@ -48,10 +48,11 @@ const FORMAT_OPTIONS: { key: FormatType; label: string; icon: React.ReactNode; s
 ];
 
 const THEME_OPTIONS: { key: ThemeType; label: string; colors: string[]; vibe: string }[] = [
-  { key: 'dark', label: 'Dark Neon', colors: ['#09090b', '#1a0a2e', '#818cf8'], vibe: 'Cyberpunk' },
-  { key: 'purple', label: 'Midnight Purple', colors: ['#0d0015', '#1a0033', '#c084fc'], vibe: 'Aesthetic' },
-  { key: 'ocean', label: 'Ocean Blue', colors: ['#0a1628', '#0d2847', '#38bdf8'], vibe: 'Professional' },
-  { key: 'sunset', label: 'Sunset Warm', colors: ['#1a0a00', '#2d1500', '#fbbf24'], vibe: 'Energetic' },
+  { key: 'strava', label: 'Strava Kinetic', colors: ['#0d0705', '#1f0d07', '#FC4C02'], vibe: 'Fitness Flex 🔥' },
+  { key: 'cyber', label: 'Cyber Mint', colors: ['#03140e', '#082b1d', '#00E676'], vibe: 'Tech Neon ⚡' },
+  { key: 'purple', label: 'Neon Violet', colors: ['#0f051d', '#1f0a3b', '#C084FC'], vibe: 'Spotify Wrapped 🎧' },
+  { key: 'ocean', label: 'Sapphire Cyan', colors: ['#04101e', '#08213d', '#38BDF8'], vibe: 'Clean & Cool 🌊' },
+  { key: 'dark', label: 'Obsidian Lime', colors: ['#09090b', '#18181b', '#A3E635'], vibe: 'Minimal Dark 🖤' },
 ];
 
 function buildOgUrl(data: ShareCardData, format: FormatType, theme: ThemeType, slideIndex?: number): string {
@@ -85,7 +86,7 @@ function buildOgUrl(data: ShareCardData, format: FormatType, theme: ThemeType, s
 
 export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCardModalProps) {
   const [selectedFormat, setSelectedFormat] = useState<FormatType>('square');
-  const [selectedTheme, setSelectedTheme] = useState<ThemeType>('dark');
+  const [selectedTheme, setSelectedTheme] = useState<ThemeType>('strava');
   const [isDownloading, setIsDownloading] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -105,7 +106,7 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
   useEffect(() => {
     if (!isOpen) {
       setSelectedFormat('square');
-      setSelectedTheme('dark');
+      setSelectedTheme('strava');
       setCopySuccess(false);
       setCarouselSlide(0);
     }
