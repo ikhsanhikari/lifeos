@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Download, Share2, Copy, MessageCircle, Send, X, Image, Smartphone, Layers, Check } from 'lucide-react';
+import { Download, Share2, Copy, MessageCircle, Send, X, Image, Smartphone, Layers, Check, Film } from 'lucide-react';
+import { generateAnimatedShareVideo } from './canvasVideoExporter';
 
-interface ShareCardData {
+export interface ShareCardData {
   date: string;
   dateShort: string;
   userName: string;
@@ -88,6 +89,8 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
   const [selectedFormat, setSelectedFormat] = useState<FormatType>('square');
   const [selectedTheme, setSelectedTheme] = useState<ThemeType>('strava');
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
   const [copySuccess, setCopySuccess] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [carouselSlide, setCarouselSlide] = useState(0);
@@ -109,8 +112,36 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
       setSelectedTheme('strava');
       setCopySuccess(false);
       setCarouselSlide(0);
+      setIsRecordingVideo(false);
+      setVideoProgress(0);
     }
   }, [isOpen]);
+
+  const handleDownloadVideo = useCallback(async () => {
+    if (!cardData) return;
+    setIsRecordingVideo(true);
+    setVideoProgress(0);
+    try {
+      const videoBlob = await generateAnimatedShareVideo(
+        cardData,
+        selectedTheme,
+        selectedFormat === 'story' ? 'story' : 'square',
+        (pct) => setVideoProgress(pct)
+      );
+
+      const blobUrl = URL.createObjectURL(videoBlob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      const ext = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
+      link.download = `lifeos-animated-story.${ext}`;
+      link.click();
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('Video recording failed:', err);
+    } finally {
+      setIsRecordingVideo(false);
+    }
+  }, [cardData, selectedTheme, selectedFormat]);
 
   const handleDownload = useCallback(async () => {
     if (!previewUrl) return;
@@ -344,30 +375,50 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
               {/* Action Buttons */}
               <div className="space-y-3">
                 {/* Primary Actions */}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
                   <button
-                    onClick={handleDownload}
-                    disabled={isDownloading}
-                    className="flex items-center justify-center gap-2 py-3 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl font-semibold text-xs transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]"
+                    onClick={handleDownloadVideo}
+                    disabled={isRecordingVideo || isDownloading}
+                    className="w-full flex items-center justify-center gap-2.5 py-3 px-4 bg-gradient-to-r from-orange-500 via-rose-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 text-white rounded-xl font-bold text-xs transition-all shadow-lg shadow-orange-950/40 active:scale-[0.98]"
                   >
-                    {isDownloading ? (
-                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    {isRecordingVideo ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        <span>Rendering 60FPS Video Story... ({videoProgress}%)</span>
+                      </>
                     ) : (
-                      <Download className="w-4 h-4" />
+                      <>
+                        <Film className="w-4.5 h-4.5 text-amber-200 animate-pulse" />
+                        <span>Export Animated Video Story (60FPS) 🎬</span>
+                      </>
                     )}
-                    {isDownloading ? 'Downloading...' : selectedFormat === 'carousel' ? 'Download All Slides' : 'Download PNG'}
                   </button>
-                  <button
-                    onClick={handleCopyImage}
-                    className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-xs transition-all active:scale-[0.98] ${
-                      copySuccess
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700'
-                    }`}
-                  >
-                    {copySuccess ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    {copySuccess ? 'Copied!' : 'Copy Image'}
-                  </button>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={handleDownload}
+                      disabled={isDownloading || isRecordingVideo}
+                      className="flex items-center justify-center gap-2 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl font-semibold text-xs transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]"
+                    >
+                      {isDownloading ? (
+                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
+                      {isDownloading ? 'Downloading...' : selectedFormat === 'carousel' ? 'Download All Slides' : 'Download PNG'}
+                    </button>
+                    <button
+                      onClick={handleCopyImage}
+                      className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-semibold text-xs transition-all active:scale-[0.98] ${
+                        copySuccess
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700'
+                      }`}
+                    >
+                      {copySuccess ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {copySuccess ? 'Copied!' : 'Copy Image'}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Share Buttons */}
