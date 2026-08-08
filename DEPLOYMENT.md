@@ -170,6 +170,19 @@ sudo ufw enable
 
 ---
 
+## ⚡ Langkah 9: Setup Auto Deploy (GitHub Actions CI/CD)
+
+Aplikasi LifeOS kini dilengkapi dengan otomatisasi deploy setiap kali ada `push` ke branch `main`.
+
+1. Buka repo GitHub: `https://github.com/ikhsanhikari/lifeos`
+2. Masuk ke **Settings** → **Secrets and variables** → **Actions**.
+3. Klik **New repository secret**:
+   - Jika menggunakan SSH Key: Name = `VPS_SSH_KEY`, Value = isi private key SSH root VPS kamu (`cat ~/.ssh/id_rsa`).
+   - Jika menggunakan Password VPS: Name = `VPS_PASSWORD`, Value = password user root VPS kamu.
+4. Lakukan `git push origin main`. GitHub Actions akan otomatis SSH ke VPS dan mengeksekusi `./deploy.sh`.
+
+---
+
 ## 🎉 Selesai!
 
 Aplikasi Life OS sekarang dapat diakses secara resmi di:
