@@ -27,3 +27,33 @@ jobs:
             export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node 2>/dev/null | tail -n 1)/bin
             cd /opt/lifeos 2>/dev/null || cd /var/www/lifeos
             bash deploy.sh
+
+      - name: Send Telegram Notification on Success
+        if: success() && secrets.TELEGRAM_BOT_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != ''
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            ✅ *GitHub Actions Auto-Deploy Success!*
+
+            *Repository:* `${{ github.repository }}`
+            *Commit:* `${{ github.sha }}`
+            *Author:* `${{ github.actor }}`
+            *Domain:* https://lifeos.nurikhsan.web.id
+
+      - name: Send Telegram Notification on Failure
+        if: failure() && secrets.TELEGRAM_BOT_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != ''
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            🚨 *GitHub Actions Auto-Deploy FAILED!*
+
+            *Repository:* `${{ github.repository }}`
+            *Commit:* `${{ github.sha }}`
+            *Author:* `${{ github.actor }}`
+            ⚠️ Periksa log di GitHub Actions atau server VPS.
