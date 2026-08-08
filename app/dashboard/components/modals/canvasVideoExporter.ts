@@ -1,6 +1,7 @@
 /**
  * Client-Side Canvas Video Exporter for LifeOS Share Cards
- * Renders a butter-smooth 60fps Google Maps Dark Mode animated video story with 3D objects directly in browser
+ * Renders a butter-smooth animated video story with 3D objects directly in browser
+ * Optimized with dynamic mobile RAM/GPU resolution scaling for 100% Android Chrome stability
  */
 
 import { ShareCardData } from './ShareCardModal';
@@ -211,12 +212,22 @@ export async function generateAnimatedShareVideo(
   return new Promise((resolve, reject) => {
     try {
       const theme = THEMES[themeKey] || THEMES.strava;
-      const width = 1080;
-      const height = format === 'story' ? 1920 : 1080;
+
+      // Mobile device detection for RAM/GPU optimization
+      const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+      const targetFps = isMobile ? 30 : 60;
+      const targetWidth = isMobile ? 720 : 1080;
+      const targetHeight = format === 'story'
+        ? (isMobile ? 1280 : 1920)
+        : (isMobile ? 720 : 1080);
+
+      const baseWidth = 1080;
+      const baseHeight = format === 'story' ? 1920 : 1080;
+      const scaleRatio = targetWidth / baseWidth;
 
       const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
       const ctx = canvas.getContext('2d');
 
       if (!ctx) {
@@ -236,11 +247,11 @@ export async function generateAnimatedShareVideo(
         }
       }
 
-      const stream = canvas.captureStream(60);
+      const stream = canvas.captureStream(targetFps);
       let mediaRecorder: MediaRecorder;
 
       try {
-        const options: MediaRecorderOptions = { videoBitsPerSecond: 6000000 };
+        const options: MediaRecorderOptions = { videoBitsPerSecond: isMobile ? 3000000 : 8000000 };
         if (mimeType) options.mimeType = mimeType;
         mediaRecorder = new MediaRecorder(stream, options);
       } catch {
@@ -276,7 +287,6 @@ export async function generateAnimatedShareVideo(
       mediaRecorder.start();
 
       const durationMs = 6000;
-      const targetFps = 60;
       const totalFrames = Math.floor((durationMs / 1000) * targetFps);
       let currentFrame = 0;
 
@@ -310,13 +320,18 @@ export async function generateAnimatedShareVideo(
         const smoothProgress = easeOutCubic(animProgress);
         const floatBob = Math.sin(rawProgress * Math.PI * 4) * 12; // 3D floating keeps bobbing smoothly
 
+        ctx.save();
+        if (scaleRatio !== 1) {
+          ctx.scale(scaleRatio, scaleRatio);
+        }
+
         // 1. Base Dark Background
-        const grad = ctx.createLinearGradient(0, 0, 0, height);
+        const grad = ctx.createLinearGradient(0, 0, 0, baseHeight);
         grad.addColorStop(0, theme.bg1);
         grad.addColorStop(0.55, theme.bg2);
         grad.addColorStop(1, theme.bg3);
         ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, width, height);
+        ctx.fillRect(0, 0, baseWidth, baseHeight);
 
         // 2. 3D Iso-Depth Map Layer (Greenery Parks with 3D Drop Shadows)
         ctx.save();
@@ -362,16 +377,16 @@ export async function generateAnimatedShareVideo(
         ctx.strokeStyle = theme.mapRoadSub;
         ctx.lineWidth = 5;
         ctx.globalAlpha = 0.6;
-        for (let y = 250; y < height; y += 220) {
+        for (let y = 250; y < baseHeight; y += 220) {
           ctx.beginPath();
           ctx.moveTo(0, y);
-          ctx.lineTo(width, y);
+          ctx.lineTo(baseWidth, y);
           ctx.stroke();
         }
-        for (let x = 180; x < width; x += 200) {
+        for (let x = 180; x < baseWidth; x += 200) {
           ctx.beginPath();
           ctx.moveTo(x, 0);
-          ctx.lineTo(x, height);
+          ctx.lineTo(x, baseHeight);
           ctx.stroke();
         }
         ctx.globalAlpha = 1.0;
@@ -440,7 +455,7 @@ export async function generateAnimatedShareVideo(
         // Date text
         ctx.font = '600 20px Inter, sans-serif';
         ctx.fillStyle = theme.textMuted;
-        ctx.fillText(cardData.dateShort || cardData.date, width - 230, format === 'story' ? 122 : 107);
+        ctx.fillText(cardData.dateShort || cardData.date, baseWidth - 230, format === 'story' ? 122 : 107);
 
         // 8. User Header
         ctx.font = '900 50px Inter, sans-serif';
@@ -456,7 +471,7 @@ export async function generateAnimatedShareVideo(
         ctx.fillStyle = theme.cardBg;
         ctx.strokeStyle = theme.cardBorder;
         ctx.lineWidth = 2;
-        roundRect(ctx, 65, heroBoxY, width - 130, heroBoxHeight, 30, true, true);
+        roundRect(ctx, 65, heroBoxY, baseWidth - 130, heroBoxHeight, 30, true, true);
 
         ctx.font = '800 18px Inter, sans-serif';
         ctx.fillStyle = theme.textMuted;
@@ -469,7 +484,7 @@ export async function generateAnimatedShareVideo(
         // --- DYNAMIC 3D FLOATING GLASS ORB (Trophy Orb inside Hero Focus Box) ---
         draw3DGlassOrb(
           ctx,
-          width - 180,
+          baseWidth - 180,
           heroBoxY + 110 + floatBob,
           48,
           theme.primary,
@@ -479,7 +494,7 @@ export async function generateAnimatedShareVideo(
 
         // Bar fill
         const barY = heroBoxY + heroBoxHeight - 40;
-        const barWidth = width - 200;
+        const barWidth = baseWidth - 200;
         ctx.fillStyle = 'rgba(255,255,255,0.08)';
         roundRect(ctx, 100, barY, barWidth, 14, 7, true, false);
 
@@ -497,7 +512,7 @@ export async function generateAnimatedShareVideo(
         const habitsHeight = format === 'story' ? 210 : 200;
         ctx.fillStyle = theme.cardBg;
         ctx.strokeStyle = theme.cardBorder;
-        roundRect(ctx, 65, habitsY, width - 130, habitsHeight, 26, true, true);
+        roundRect(ctx, 65, habitsY, baseWidth - 130, habitsHeight, 26, true, true);
 
         ctx.font = '900 24px Inter, sans-serif';
         ctx.fillStyle = theme.textPrimary;
@@ -511,7 +526,7 @@ export async function generateAnimatedShareVideo(
           ctx.fillStyle = 'rgba(255,255,255,0.06)';
           ctx.strokeStyle = theme.cardBorder;
           const textWidth = ctx.measureText(`✓ ${hName}`).width + 30;
-          if (chipX + textWidth > width - 100) {
+          if (chipX + textWidth > baseWidth - 100) {
             chipX = 95;
             chipY += 46;
           }
@@ -531,7 +546,7 @@ export async function generateAnimatedShareVideo(
         const tasksHeight = format === 'story' ? 220 : 180;
         ctx.fillStyle = theme.cardBg;
         ctx.strokeStyle = theme.cardBorder;
-        roundRect(ctx, 65, tasksY, width - 130, tasksHeight, 26, true, true);
+        roundRect(ctx, 65, tasksY, baseWidth - 130, tasksHeight, 26, true, true);
 
         ctx.font = '900 24px Inter, sans-serif';
         ctx.fillStyle = theme.textPrimary;
@@ -559,7 +574,7 @@ export async function generateAnimatedShareVideo(
           const streakY = tasksY + tasksHeight + 25;
           ctx.fillStyle = theme.cardBg;
           ctx.strokeStyle = theme.cardBorder;
-          roundRect(ctx, 65, streakY, width - 130, 120, 24, true, true);
+          roundRect(ctx, 65, streakY, baseWidth - 130, 120, 24, true, true);
 
           // Render 3D Faceted Flame Gem
           draw3DFacetedFlame(
@@ -581,7 +596,7 @@ export async function generateAnimatedShareVideo(
 
           ctx.font = '900 36px Inter, sans-serif';
           ctx.fillStyle = theme.primary;
-          ctx.fillText(`${cardData.topStreak ? cardData.topStreak.streak : 14} DAYS`, width - 280, streakY + 72);
+          ctx.fillText(`${cardData.topStreak ? cardData.topStreak.streak : 14} DAYS`, baseWidth - 280, streakY + 72);
 
           // 13. Achievements Badges Grid
           const achY = streakY + 145;
@@ -611,7 +626,7 @@ export async function generateAnimatedShareVideo(
           const journalY = achY + 115;
           ctx.fillStyle = theme.cardBg;
           ctx.strokeStyle = theme.cardBorder;
-          roundRect(ctx, 65, journalY, width - 130, 160, 26, true, true);
+          roundRect(ctx, 65, journalY, baseWidth - 130, 160, 26, true, true);
 
           ctx.font = '800 16px Inter, sans-serif';
           ctx.fillStyle = theme.textMuted;
@@ -625,16 +640,17 @@ export async function generateAnimatedShareVideo(
         }
 
         // 15. Watermark Pill Footer
-        const watermarkY = height - 100;
+        const watermarkY = baseHeight - 100;
         ctx.fillStyle = 'rgba(0,0,0,0.55)';
         ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-        roundRect(ctx, (width - 340) / 2, watermarkY, 340, 50, 25, true, true);
+        roundRect(ctx, (baseWidth - 340) / 2, watermarkY, 340, 50, 25, true, true);
 
         ctx.font = '800 20px Inter, sans-serif';
         ctx.fillStyle = theme.textPrimary;
-        ctx.fillText('⚡ LIFE OS • lifeos.app', (width - 340) / 2 + 38, watermarkY + 32);
+        ctx.fillText('⚡ LIFE OS • lifeos.app', (baseWidth - 340) / 2 + 38, watermarkY + 32);
 
         ctx.globalAlpha = 1.0;
+        ctx.restore();
 
         currentFrame++;
         if (onProgress) {
