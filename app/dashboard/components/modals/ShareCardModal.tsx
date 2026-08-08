@@ -205,6 +205,47 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
     }
   }, [previewUrl]);
 
+  const [isSendingTelegram, setIsSendingTelegram] = useState(false);
+  const [telegramSuccess, setTelegramSuccess] = useState(false);
+  const [telegramError, setTelegramError] = useState<string | null>(null);
+
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+
+  const handleSendTelegram = async () => {
+    setIsSendingTelegram(true);
+    setTelegramSuccess(false);
+    setTelegramError(null);
+    try {
+      const token = localStorage.getItem('lifeos_token');
+      const res = await fetch(`${API_BASE_URL}/api/share/send-telegram`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          format: selectedFormat,
+          theme: selectedTheme,
+          slide: carouselSlide,
+        }),
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        setTelegramSuccess(true);
+        setTimeout(() => setTelegramSuccess(false), 4000);
+      } else {
+        setTelegramError(json.message || 'Gagal mengirim ke Telegram');
+        setTimeout(() => setTelegramError(null), 4000);
+      }
+    } catch (err: any) {
+      setTelegramError(err.message || 'Koneksi error');
+      setTimeout(() => setTelegramError(null), 4000);
+    } finally {
+      setIsSendingTelegram(false);
+    }
+  };
+
   const handleShareTwitter = useCallback(() => {
     if (!cardData) return;
     const text = encodeURIComponent(
@@ -432,6 +473,38 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
                       {copySuccess ? 'Copied!' : 'Copy Image'}
                     </button>
                   </div>
+
+                  {/* Telegram Direct Send Button */}
+                  <button
+                    onClick={handleSendTelegram}
+                    disabled={isSendingTelegram}
+                    className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-xs transition-all shadow-md active:scale-[0.98] ${
+                      telegramSuccess
+                        ? 'bg-emerald-600 text-white'
+                        : telegramError
+                        ? 'bg-rose-600 text-white'
+                        : 'bg-sky-600 hover:bg-sky-500 text-white shadow-sky-950/30'
+                    }`}
+                  >
+                    {isSendingTelegram ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        <span>Sending to Telegram...</span>
+                      </>
+                    ) : telegramSuccess ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Terkirim ke Chat Telegram! ✈️</span>
+                      </>
+                    ) : telegramError ? (
+                      <span>⚠️ {telegramError}</span>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 text-sky-200" />
+                        <span>Kirim Langsung ke Telegram Bot ✈️</span>
+                      </>
+                    )}
+                  </button>
                 </div>
 
                 {/* Share Buttons */}
