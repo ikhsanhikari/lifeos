@@ -140,7 +140,7 @@ export default function DashboardPage() {
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
-  // Pre-fetch share card data & pre-warm image cache in background
+  // Pre-fetch share card data & pre-warm ALL card formats and themes in background
   const fetchShareCardData = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/share/daily-card`, {
@@ -151,11 +151,24 @@ export default function DashboardPage() {
         setShareCardData(json.data);
         setIsShareLoading(false);
 
-        // Pre-load default square image into browser memory cache for 0ms instant display!
+        // Pre-load ALL card formats (Square, Story, Carousel 1-4) across all themes into browser cache!
         if (typeof window !== 'undefined') {
-          const defaultOgUrl = `/og/daily-card?format=square&theme=strava&data=${encodeURIComponent(JSON.stringify(json.data))}`;
-          const img = new Image();
-          img.src = defaultOgUrl;
+          const encData = encodeURIComponent(JSON.stringify(json.data));
+          const themes = ['strava', 'cyber', 'purple', 'ocean', 'dark'];
+          themes.forEach((theme) => {
+            const urls = [
+              `/og/daily-card?format=square&theme=${theme}&data=${encData}`,
+              `/og/daily-card?format=story&theme=${theme}&data=${encData}`,
+              `/og/daily-card?format=carousel&slide=0&theme=${theme}&data=${encData}`,
+              `/og/daily-card?format=carousel&slide=1&theme=${theme}&data=${encData}`,
+              `/og/daily-card?format=carousel&slide=2&theme=${theme}&data=${encData}`,
+              `/og/daily-card?format=carousel&slide=3&theme=${theme}&data=${encData}`,
+            ];
+            urls.forEach((url) => {
+              const img = new window.Image();
+              img.src = url;
+            });
+          });
         }
       }
     } catch (err) {
@@ -239,7 +252,7 @@ export default function DashboardPage() {
         setAiStatus(aiJson);
       }
 
-      // Pre-fetch share card data in background
+      // Pre-fetch share card data & all image versions in background
       fetchShareCardData();
     } catch (err: any) {
       console.error('Error fetching dashboard data:', err);

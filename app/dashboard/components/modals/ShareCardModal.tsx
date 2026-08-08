@@ -83,7 +83,7 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
   const [isPreviewLoading, setIsPreviewLoading] = useState<boolean>(true);
   const [carouselSlide, setCarouselSlide] = useState(0);
 
-  // Build preview URL
+  // Build preview URL & pre-warm all variant URLs for selected theme
   useEffect(() => {
     if (!cardData) return;
     setIsPreviewLoading(true);
@@ -91,6 +91,23 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
       setPreviewUrl(buildOgUrl(cardData, 'carousel', selectedTheme, carouselSlide));
     } else {
       setPreviewUrl(buildOgUrl(cardData, selectedFormat, selectedTheme));
+    }
+
+    // Pre-warm all slides & formats for active theme in browser cache
+    if (typeof window !== 'undefined') {
+      const encData = encodeURIComponent(JSON.stringify(cardData));
+      const urls = [
+        `/og/daily-card?format=square&theme=${selectedTheme}&data=${encData}`,
+        `/og/daily-card?format=story&theme=${selectedTheme}&data=${encData}`,
+        `/og/daily-card?format=carousel&slide=0&theme=${selectedTheme}&data=${encData}`,
+        `/og/daily-card?format=carousel&slide=1&theme=${selectedTheme}&data=${encData}`,
+        `/og/daily-card?format=carousel&slide=2&theme=${selectedTheme}&data=${encData}`,
+        `/og/daily-card?format=carousel&slide=3&theme=${selectedTheme}&data=${encData}`,
+      ];
+      urls.forEach((url) => {
+        const img = new window.Image();
+        img.src = url;
+      });
     }
   }, [cardData, selectedFormat, selectedTheme, carouselSlide]);
 
