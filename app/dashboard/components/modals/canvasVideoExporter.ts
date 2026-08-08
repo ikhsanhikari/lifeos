@@ -53,10 +53,6 @@ function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
 
-function easeInOutCubic(t: number): number {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
 export async function generateAnimatedShareVideo(
   cardData: ShareCardData,
   themeKey: string = 'strava',
@@ -139,7 +135,10 @@ export async function generateAnimatedShareVideo(
       const renderInterval = setInterval(() => {
         if (!ctx) return;
         const rawProgress = Math.min(1, currentFrame / totalFrames);
-        const smoothProgress = easeInOutCubic(rawProgress);
+
+        // Active animation completes at 50% mark (2.5s), remaining 50% (2.5s) is hold time for viewers to read
+        const animProgress = Math.min(1, rawProgress / 0.50);
+        const smoothProgress = easeOutCubic(animProgress);
 
         // 1. Background Gradient
         const grad = ctx.createLinearGradient(0, 0, 0, height);
@@ -149,7 +148,7 @@ export async function generateAnimatedShareVideo(
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, width, height);
 
-        // 2. Radial Glow Orbs with soft breathing pulse
+        // 2. Radial Glow Orbs with soft breathing pulse across entire 5 seconds
         const pulse = Math.sin(rawProgress * Math.PI * 2) * 30;
         const glow1 = ctx.createRadialGradient(width * 0.8, height * 0.1, 0, width * 0.8, height * 0.1, 450 + pulse);
         glow1.addColorStop(0, theme.glow + '40');
@@ -183,8 +182,8 @@ export async function generateAnimatedShareVideo(
         ctx.setLineDash([]);
         ctx.globalAlpha = 1.0;
 
-        // 4. Animated Strava Polyline Activity Route
-        const routeProgress = Math.min(1, easeOutCubic(Math.min(1, rawProgress * 1.5)));
+        // 4. Animated Strava Polyline Activity Route (animates smooth during first 2.2s)
+        const routeProgress = easeOutCubic(Math.min(1, rawProgress / 0.45));
         if (routePoints.length > 1) {
           const pointCountToDraw = Math.floor(routeProgress * (routePoints.length - 1)) + 1;
           ctx.beginPath();
@@ -215,7 +214,7 @@ export async function generateAnimatedShareVideo(
         }
 
         // 5. Header Brand Pill
-        const pillAlpha = Math.min(1, rawProgress * 3);
+        const pillAlpha = Math.min(1, rawProgress * 4);
         ctx.globalAlpha = pillAlpha;
         ctx.fillStyle = theme.badgeBg;
         ctx.strokeStyle = theme.cardBorder;
