@@ -28,6 +28,9 @@ import {
   handleDailyLogCommand,
   handleLogMoodCallback,
   handleLogEnergyCallback,
+  handleLogSkipJournalCallback,
+  handleLogJournalText,
+  logWizardSessions,
 } from './controllers/dailyLogController';
 import {
   getAnalyticsSummary,
@@ -348,19 +351,32 @@ bot.action(/^nav_tasks_page:(.+)$/, handleTasksPageCallback);
 bot.action(/^nav_goals_page:(.+)$/, handleGoalsPageCallback);
 bot.action(/^log_mood:(.+)$/, handleLogMoodCallback);
 bot.action(/^log_energy:(.+)$/, handleLogEnergyCallback);
+bot.action('log_skip_journal', handleLogSkipJournalCallback);
 bot.action(/^ai_breakdown_goal:(.+)$/, handleAiGoalBreakdownCallback);
 
-// Text Message Middleware for Goal Breakdown Wizard
+// Text Message Middleware for Goal Breakdown Wizard & Daily Journal Text Entry
 bot.on('text', async (ctx, next) => {
   if (!ctx.chat) return next();
   const chatId = ctx.chat.id;
-  const session = goalWizardSessions.get(chatId);
+  const text = ctx.message.text.trim();
 
+  // Check Daily Log Journal Text session
+  const logSession = logWizardSessions.get(chatId);
+  if (logSession && logSession.step === 'WAITING_JOURNAL_TEXT') {
+    if (text === '/skip' || text === '/done') {
+      await handleLogSkipJournalCallback(ctx);
+      return;
+    }
+    if (!text.startsWith('/')) {
+      await handleLogJournalText(ctx, text);
+      return;
+    }
+  }
+
+  const session = goalWizardSessions.get(chatId);
   if (!session) {
     return next();
   }
-
-  const text = ctx.message.text.trim();
 
   if (text.startsWith('/')) {
     if (text === '/done') {

@@ -15,7 +15,7 @@ export interface DailyLogData {
 }
 
 // In-memory temp wizard state for Telegram /log command per user
-const wizardSessions = new Map<number, { mood?: number; energy?: number; journal?: string; highlights?: string[] }>();
+export const logWizardSessions = new Map<number, { mood?: number; energy?: number; step?: 'WAITING_MOOD' | 'WAITING_ENERGY' | 'WAITING_JOURNAL_TEXT' }>();
 
 /**
  * Helper to resolve user ID
@@ -115,7 +115,7 @@ export async function handleDailyLogCommand(ctx: Context) {
     if (!ctx.chat) return;
 
     const chatId = ctx.chat.id;
-    wizardSessions.set(chatId, {});
+    logWizardSessions.set(chatId, { step: 'WAITING_MOOD' });
 
     const moodButtons = Markup.inlineKeyboard([
       [
@@ -133,7 +133,7 @@ export async function handleDailyLogCommand(ctx: Context) {
 
     await ctx.reply(
       `📖 *Daily Journal & Mood Log*\n\n` +
-        `*Langkah 1/2:* Bagaimana suasana hati (Mood) kamu hari ini?`,
+        `*Langkah 1/3:* Bagaimana suasana hati (Mood) kamu hari ini?`,
       {
         parse_mode: 'Markdown',
         ...moodButtons,
@@ -156,9 +156,10 @@ export async function handleLogMoodCallback(ctx: Context) {
     const callbackData = ctx.callbackQuery.data;
     const moodVal = parseInt(callbackData.replace('log_mood:', ''), 10);
 
-    const session = wizardSessions.get(chatId) || {};
+    const session = logWizardSessions.get(chatId) || {};
     session.mood = moodVal;
-    wizardSessions.set(chatId, session);
+    session.step = 'WAITING_ENERGY';
+    logWizardSessions.set(chatId, session);
 
     await ctx.answerCbQuery(`Mood dicatat: ${moodVal}/5`);
 
@@ -179,7 +180,7 @@ export async function handleLogMoodCallback(ctx: Context) {
     await ctx.editMessageText(
       `📖 *Daily Journal & Mood Log*\n\n` +
         `Mood: *${moodVal}/5*\n` +
-        `*Langkah 2/2:* Bagaimana tingkat energi fisik kamu hari ini?`,
+        `*Langkah 2/3:* Bagaimana tingkat energi fisik kamu hari ini?`,
       {
         parse_mode: 'Markdown',
         ...energyButtons,
@@ -192,7 +193,7 @@ export async function handleLogMoodCallback(ctx: Context) {
 }
 
 /**
- * Callback action handler untuk pemilihan Energy di Telegram (Simpan ke DB)
+ * Callback action handler untuk pemilihan Energy di Telegram (Langkah 3: Minta Teks Refleksi)
  */
 export async function handleLogEnergyCallback(ctx: Context) {
   try {
@@ -202,31 +203,122 @@ export async function handleLogEnergyCallback(ctx: Context) {
     const callbackData = ctx.callbackQuery.data;
     const energyVal = parseInt(callbackData.replace('log_energy:', ''), 10);
 
-    const session = wizardSessions.get(chatId) || {};
+    const session = logWizardSessions.get(chatId) || {};
     const moodVal = session.mood || 4;
+
+    session.energy = energyVal;
+    session.step = 'WAITING_JOURNAL_TEXT';
+    logWizardSessions.set(chatId, session);
+
+    const telegramChatId = BigInt(chatId);
+    await upsertDailyLog({
+      telegramChatId,
+      mood: moodVal,
+      energy: energyVal,
+    });
+
+    await ctx.answerCbQuery(`Energi dicatat: ${energyVal}/5`);
+
+    const moodLabel = moodVal === 5 ? '😊 Sangat Baik' : moodVal === 4 ? '🙂 Baik' : moodVal === 3 ? '😐 Biasa' : moodVal === 2 ? '🙁 Buruk' : '😭 Sangat Buruk';
+
+    const skipButtons = Markup.inlineKeyboard([
+      [Markup.button.callback('⏭️ Selesai (Tanpa Catatan Teks)', 'log_skip_journal')],
+    ]);
+
+    await ctx.editMessageText(
+      `📖 *Daily Journal & Mood Log*\n\n` +
+        `😊 *Mood:* ${moodLabel} (${moodVal}/5)\n` +
+        `⚡ *Energi:* ${energyVal}/5\n\n` +
+        `*Langkah 3/3 (Opsional):*\n` +
+        `Ketikkan pesan teks refleksi / cerita harian kamu di chat ini:\n\n` +
+        `_(Atau tekan tombol di bawah jika hanya ingin menyimpan Mood & Energi)_`,
+      {
+        parse_mode: 'Markdown',
+        ...skipButtons,
+      }
+    );
+  } catch (error) {
+    console.error('Error in handleLogEnergyCallback:', error);
+    await ctx.answerCbQuery('❌ Gagal menyimpan mood/energi.');
+  }
+}
+
+/**
+ * Callback action handler jika user memilih lewati teks jurnal
+ */
+export async function handleLogSkipJournalCallback(ctx: Context) {
+  try {
+    if (!ctx.chat) return;
+
+    const chatId = ctx.chat.id;
+    const session = logWizardSessions.get(chatId) || {};
+    const moodVal = session.mood || 4;
+    const energyVal = session.energy || 4;
+
+    logWizardSessions.delete(chatId);
+    if ('callbackQuery' in ctx && ctx.callbackQuery) {
+      await ctx.answerCbQuery('Log selesai disimpan');
+    }
+
+    const moodLabel = moodVal === 5 ? '😊 Sangat Baik' : moodVal === 4 ? '🙂 Baik' : moodVal === 3 ? '😐 Biasa' : moodVal === 2 ? '🙁 Buruk' : '😭 Sangat Buruk';
+    const dateStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+    const msg =
+      `🎉 *Daily Log Hari Ini Berhasil Disimpan!*\n\n` +
+      `😊 *Mood:* ${moodLabel} (${moodVal}/5)\n` +
+      `⚡ *Energi:* ${energyVal}/5\n` +
+      `📅 *Tanggal:* ${dateStr}\n\n` +
+      `Log kamu tersimpan di database PostgreSQL dan disinkronkan ke Web Dashboard!`;
+
+    if ('callbackQuery' in ctx && ctx.callbackQuery) {
+      await ctx.editMessageText(msg, { parse_mode: 'Markdown' });
+    } else {
+      await ctx.reply(msg, { parse_mode: 'Markdown' });
+    }
+  } catch (error) {
+    console.error('Error in handleLogSkipJournalCallback:', error);
+  }
+}
+
+/**
+ * Text message handler saat user mengetikkan catatan refleksi jurnal di chat
+ */
+export async function handleLogJournalText(ctx: Context, text: string) {
+  try {
+    if (!ctx.chat) return;
+
+    const chatId = ctx.chat.id;
+    const session = logWizardSessions.get(chatId);
+
+    if (!session || session.step !== 'WAITING_JOURNAL_TEXT') return;
+
+    const moodVal = session.mood || 4;
+    const energyVal = session.energy || 4;
 
     const telegramChatId = BigInt(chatId);
     const savedLog = await upsertDailyLog({
       telegramChatId,
       mood: moodVal,
       energy: energyVal,
+      journal: text.trim(),
     });
 
-    wizardSessions.delete(chatId);
-    await ctx.answerCbQuery(`Energi dicatat: ${energyVal}/5`);
+    logWizardSessions.delete(chatId);
 
     const moodLabel = moodVal === 5 ? '😊 Sangat Baik' : moodVal === 4 ? '🙂 Baik' : moodVal === 3 ? '😐 Biasa' : moodVal === 2 ? '🙁 Buruk' : '😭 Sangat Buruk';
+    const dateStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-    await ctx.editMessageText(
-      `🎉 *Daily Log Hari Ini Berhasil Disimpan!*\n\n` +
+    await ctx.reply(
+      `🎉 *Daily Log & Refleksi Jurnal Berhasil Disimpan!* 📖\n\n` +
         `😊 *Mood:* ${moodLabel} (${savedLog.mood}/5)\n` +
         `⚡ *Energi:* ${savedLog.energy}/5\n` +
-        `📅 *Tanggal:* ${new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}\n\n` +
-        `Log kamu sudah tersimpan di database PostgreSQL dan dapat dilihat di Web Dashboard!`,
+        `📝 *Catatan Refleksi:*\n_"${savedLog.journal}"_\n\n` +
+        `📅 *Tanggal:* ${dateStr}\n\n` +
+        `Log kamu tersimpan di database PostgreSQL dan dapat di-review oleh AI Coach di Web Dashboard! ✨`,
       { parse_mode: 'Markdown' }
     );
   } catch (error) {
-    console.error('Error in handleLogEnergyCallback:', error);
-    await ctx.answerCbQuery('❌ Gagal menyimpan daily log.');
+    console.error('Error in handleLogJournalText:', error);
+    await ctx.reply('❌ Gagal menyimpan teks jurnal.');
   }
 }
