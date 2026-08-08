@@ -24,5 +24,5 @@ jobs:
           port: 22
           script: |
             echo "🚀 Connecting to VPS for Auto Deployment..."
-            cd /var/www/lifeos
+            cd /opt/lifeos
             bash deploy.sh
