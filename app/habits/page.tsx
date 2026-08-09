@@ -43,8 +43,8 @@ export default function HabitsPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-6xl mx-auto">
-      {/* 1. Quick-Add Habit Bar */}
-      <Card className="p-3 sm:p-4 bg-zinc-900/80 border border-zinc-800/80 space-y-3">
+      {/* 1. Quick-Add Habit Bar (Desktop Only) */}
+      <Card className="hidden sm:block p-3 sm:p-4 bg-zinc-900/80 border border-zinc-800/80 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-zinc-200">⚡ Fast Add Habit</span>
