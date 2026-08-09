@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Target, Check, Trash2, Plus } from 'lucide-react';
-import { HabitData } from '../page';
+import { HabitData } from '../../types';
+export type { HabitData };
 import { Card } from '../../components/ui/Card';
 import { Tabs } from '../../components/ui/Tabs';
 import { Badge } from '../../components/ui/Badge';

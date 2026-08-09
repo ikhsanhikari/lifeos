@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Save, CheckCircle, Sparkles } from 'lucide-react';
-import { DailyLogData } from '../page';
+import { DailyLogData } from '../../types';
+export type { DailyLogData };
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 

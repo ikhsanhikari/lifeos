@@ -1,6 +1,6 @@
 import React from 'react';
 import { Plus, Calendar, ShieldCheck, Sparkles, Send, Share2 } from 'lucide-react';
-import { UserAuthData } from '../page';
+import { UserAuthData } from '../../types';
 import { Button } from '../../components/ui/Button';
 
 interface TopBarProps {

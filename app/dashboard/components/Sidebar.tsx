@@ -1,4 +1,6 @@
 import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
   Target, 
@@ -12,40 +14,36 @@ import {
   Share2,
   Sliders
 } from 'lucide-react';
-import { UserAuthData, TelegramStatusData } from '../page';
+import { UserAuthData, TelegramStatusData } from '../../types';
 
 interface SidebarProps {
   currentUser: UserAuthData | null;
   telegramStatus: TelegramStatusData;
-  activeSection: string;
-  setActiveSection: (section: string) => void;
   onOpenLinkModal: () => void;
   onOpenShareModal?: () => void;
   onOpenSettingsModal?: () => void;
   onLogout: () => void;
-  isMobileOpen: boolean;
-  setIsMobileOpen: (open: boolean) => void;
+  isMobileOpen?: boolean;
+  setIsMobileOpen?: (open: boolean) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentUser,
   telegramStatus,
-  activeSection,
-  setActiveSection,
   onOpenLinkModal,
   onOpenShareModal,
   onOpenSettingsModal,
   onLogout,
-  isMobileOpen,
-  setIsMobileOpen,
 }) => {
+  const pathname = usePathname();
+
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'goals', label: 'Goals (Mimpi)', icon: Sparkles },
-    { id: 'habits', label: 'Habit Tracker', icon: Target },
-    { id: 'tasks', label: 'Tugas & Task', icon: CheckSquare },
-    { id: 'journal', label: 'Jurnal Harian', icon: BookOpen },
-    { id: 'streaks', label: 'Habit Streaks', icon: Flame },
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/goals', label: 'Goals (Mimpi)', icon: Sparkles },
+    { href: '/habits', label: 'Habit Tracker', icon: Target },
+    { href: '/tasks', label: 'Tugas & Task', icon: CheckSquare },
+    { href: '/journal', label: 'Jurnal Harian', icon: BookOpen },
+    { href: '/streaks', label: 'Habit Streaks', icon: Flame },
   ];
 
   return (
@@ -54,8 +52,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside className="hidden md:flex flex-col w-64 bg-zinc-900/80 border-r border-zinc-800/80 backdrop-blur-xl h-screen sticky top-0 p-5 z-30 justify-between">
         <div className="space-y-6">
           {/* Brand Logo */}
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-lg shadow-indigo-500/25 overflow-hidden p-1">
+          <Link href="/" className="flex items-center gap-3 px-2 group">
+            <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-lg shadow-indigo-500/25 overflow-hidden p-1 group-hover:border-indigo-500/50 transition-colors">
               <img src="/icon.svg" alt="Life OS Logo" className="w-full h-full object-contain" />
             </div>
             <div>
@@ -64,18 +62,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </h1>
               <p className="text-[11px] text-zinc-400">Calm Productivity</p>
             </div>
-          </div>
+          </Link>
 
           {/* Navigation Links */}
           <nav className="space-y-1">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 px-3 mb-2">Navigasi Utama</p>
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = activeSection === item.id;
+              const isActive = pathname === item.href;
               return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveSection(item.id)}
+                <Link
+                  key={item.href}
+                  href={item.href}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 ${
                     isActive
                       ? 'bg-indigo-600/10 text-indigo-400 font-semibold border border-indigo-500/20 shadow-sm'
@@ -84,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-400' : 'text-zinc-400'}`} />
                   <span>{item.label}</span>
-                </button>
+                </Link>
               );
             })}
             {onOpenShareModal && (
@@ -174,18 +172,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 border-t border-zinc-800/80 backdrop-blur-xl px-2 py-2 flex items-center justify-around">
         {navItems.slice(0, 5).map((item) => {
           const Icon = item.icon;
-          const isActive = activeSection === item.id;
+          const isActive = pathname === item.href;
           return (
-            <button
-              key={item.id}
-              onClick={() => setActiveSection(item.id)}
+            <Link
+              key={item.href}
+              href={item.href}
               className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition-all ${
                 isActive ? 'text-indigo-400 font-semibold' : 'text-zinc-400'
               }`}
             >
               <Icon className="w-5 h-5" />
               <span className="text-[10px]">{item.label.split(' ')[0]}</span>
-            </button>
+            </Link>
           );
         })}
         {onOpenShareModal && (

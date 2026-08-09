@@ -1,6 +1,6 @@
 import React from 'react';
 import { Flame, CheckCircle, Clock } from 'lucide-react';
-import { AnalyticsSummaryData } from '../page';
+import { AnalyticsSummaryData } from '../../types';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 

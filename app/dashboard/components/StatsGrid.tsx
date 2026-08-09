@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckCircle2, Zap, Smile, Activity, Share2 } from 'lucide-react';
-import { HabitData, TaskData, DailyLogData, AnalyticsSummaryData } from '../page';
+import { HabitData, TaskData, DailyLogData, AnalyticsSummaryData } from '../../types';
 import { Card } from '../../components/ui/Card';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 
