@@ -308,6 +308,91 @@ export async function createHabit(data: {
 }
 
 /**
+ * Parser pintar untuk mengekstrak nama habit dari teks checklist/bulk
+ */
+export function parseBulkHabitText(rawText: string): string[] {
+  const lines = rawText.split('\n');
+  const habitNames: string[] = [];
+
+  for (const line of lines) {
+    let clean = line.trim();
+    if (!clean) continue;
+
+    const hadBulletOrCheckbox = /^[\s*•\-–—\d\.\)\:]|^[⬜✅☑️▫️◽◾◻️◼️⏹️]|^\s*\[[ xX]?\]/.test(clean);
+
+    const stripped = clean
+      .replace(/^[\s*•\-–—\d\.\)\:]+/, '')
+      .replace(/^[⬜✅☑️▫️◽◾◻️◼️⏹️\s]+/, '')
+      .replace(/^\[[ xX]?\]\s*/, '')
+      .trim();
+
+    if (hadBulletOrCheckbox && stripped.length > 1) {
+      habitNames.push(stripped);
+    } else if (
+      !hadBulletOrCheckbox &&
+      stripped.length > 2 &&
+      !clean.startsWith('✅') &&
+      !clean.startsWith('🤲') &&
+      !clean.startsWith('🎥') &&
+      !clean.startsWith('👩') &&
+      !clean.startsWith('💪') &&
+      !clean.toLowerCase().includes('checklist') &&
+      !clean.toLowerCase().includes('rencana')
+    ) {
+      habitNames.push(stripped);
+    }
+  }
+
+  return habitNames;
+}
+
+/**
+ * Membuat banyak habit sekaligus dalam satu transaksi (Bulk Import)
+ */
+export async function createHabitsBulk(
+  items: Array<string | { name: string; frequency?: string; reminderTime?: string | null; color?: string }>,
+  userId: string
+) {
+  if (!items || items.length === 0) return [];
+
+  // Dapatkan max sortOrder saat ini
+  const existingMax = await prisma.habit.aggregate({
+    where: { userId, isArchived: false },
+    _max: { sortOrder: true },
+  });
+  let startOrder = (existingMax._max.sortOrder || 0) + 1;
+
+  const newHabits = await prisma.$transaction(
+    items.map((item, idx) => {
+      const name = typeof item === 'string' ? item : item.name;
+      const frequency = typeof item === 'string' ? 'DAILY' : (item.frequency as any) || 'DAILY';
+      const color = typeof item === 'string' ? 'indigo' : item.color || 'indigo';
+
+      let reminderDate: Date | null = null;
+      if (typeof item !== 'string' && item.reminderTime) {
+        const [h, m] = item.reminderTime.split(':').map(Number);
+        if (!isNaN(h) && !isNaN(m)) {
+          reminderDate = new Date(Date.UTC(1970, 0, 1, h, m, 0));
+        }
+      }
+
+      return prisma.habit.create({
+        data: {
+          userId,
+          name,
+          frequency,
+          color,
+          reminderTime: reminderDate,
+          sortOrder: startOrder + idx,
+        },
+      });
+    })
+  );
+
+  return newHabits;
+}
+
+/**
  * Helper core function untuk menghapus / mengarsip Habit
  */
 export async function deleteHabit(habitId: string) {

@@ -11,6 +11,8 @@ import {
   createHabit,
   deleteHabit,
   reorderHabits,
+  parseBulkHabitText,
+  createHabitsBulk,
 } from './controllers/habitController';
 import {
   getUserTasks,
@@ -80,7 +82,7 @@ import {
 } from './controllers/aiController';
 import { getShareCardData, sendShareCardToTelegram, fetchCardDataInternal } from './controllers/shareController';
 import { handleGetUserSettings, handleUpdateUserSettings } from './controllers/settingsController';
-import { generateWeeklySummary, isAiGloballyEnabled } from './services/aiService';
+import { generateWeeklySummary, isAiGloballyEnabled, parseHabitsWithAi } from './services/aiService';
 import { authMiddleware, AuthenticatedRequest } from './middleware/authMiddleware';
 
 // Load environment variables
@@ -221,6 +223,65 @@ async function handleLoginCommand(ctx: any) {
   }
 }
 
+// Handler untuk Impor Bulk Habit via Telegram (/importhabit)
+async function handleImportHabitsCommand(ctx: any) {
+  try {
+    if (!ctx.chat || !ctx.message?.text) return;
+    const rawText = ctx.message.text.replace(/^\/importhabit\s*/i, '').trim();
+
+    if (!rawText) {
+      await ctx.reply(
+        `📋 *Cara Impor Bulk Habit via Telegram*\n\n` +
+        `Ketik \`/importhabit\` diikuti dengan daftar checklist kamu, contoh:\n\n` +
+        `\`/importhabit\`\n` +
+        `* ⬜ Bangun Subuh\n` +
+        `* ⬜ Sholat 5 Waktu\n` +
+        `* ⬜ Olahraga 20 Menit\n` +
+        `* ⬜ Minum Air 2 Liter`,
+        { parse_mode: 'Markdown' }
+      );
+      return;
+    }
+
+    const telegramChatId = BigInt(ctx.chat.id);
+    const user = await prisma.user.findFirst({
+      where: { telegramLink: { telegramChatId, isActive: true } },
+    });
+
+    if (!user) {
+      await ctx.reply('⚠️ Akun Telegram belum terhubung. Silakan hubungkan via Web Dashboard terlebih dahulu.');
+      return;
+    }
+
+    let itemsToInsert: Array<string | { name: string; frequency?: string; reminderTime?: string | null; color?: string }> = [];
+    let isAiUsed = false;
+
+    const aiRes = await parseHabitsWithAi(user.id, rawText);
+    if (aiRes.success && aiRes.habits && aiRes.habits.length > 0) {
+      itemsToInsert = aiRes.habits;
+      isAiUsed = true;
+    } else {
+      itemsToInsert = parseBulkHabitText(rawText);
+    }
+
+    if (itemsToInsert.length === 0) {
+      await ctx.reply(`⚠️ Gagal mengekstrak item habit.\n${aiRes.message || 'Pastikan teks berisi baris checklist.'}`);
+      return;
+    }
+
+    const created = await createHabitsBulk(itemsToInsert, user.id);
+    await ctx.reply(
+      `🎉 *Berhasil Mengimpor ${created.length} Habit!* ${isAiUsed ? '(powered by AI ✨)' : ''}\n\n` +
+      created.map((h, i) => `${i + 1}. ✅ *${h.name}*`).join('\n') +
+      `\n\nGunakan perintah /habits untuk melihat checklist harian kamu!`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (err: any) {
+    console.error('Error in /importhabit:', err);
+    await ctx.reply(`❌ Gagal mengimpor habit: ${err.message}`);
+  }
+}
+
 // Telegram Bot Commands
 bot.command('menu', handleMainMenuCommand);
 bot.command('login', handleLoginCommand);
@@ -228,6 +289,7 @@ bot.command('goals', (ctx) => handleGoalsCommand(ctx));
 bot.command('goal', handleCreateGoalCommand);
 bot.command('focus', handleFocusCommand);
 bot.command('habits', handleHabitsCommand);
+bot.command('importhabit', handleImportHabitsCommand);
 bot.command('tasks', (ctx) => handleTasksCommand(ctx));
 bot.command('task', handleCreateTaskCommand);
 bot.command('log', handleDailyLogCommand);
@@ -624,6 +686,72 @@ app.post('/api/habits/reorder', async (req: AuthenticatedRequest, res: Response)
 
     await reorderHabits(orderedIds);
     res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Route to AI parse habit checklist via REST API
+app.post('/api/ai/parse-habits', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const { rawText } = req.body;
+    if (!rawText || typeof rawText !== 'string' || !rawText.trim()) {
+      res.status(400).json({ success: false, message: 'Teks checklist (rawText) wajib diisi.' });
+      return;
+    }
+
+    const result = await parseHabitsWithAi(req.user.id, rawText);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.message });
+      return;
+    }
+
+    res.json({ success: true, habits: result.habits, quotaRemaining: result.quotaRemaining });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Route to bulk import habits via REST API
+app.post('/api/habits/bulk', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const { rawText, habitItems, habitNames, useAi } = req.body;
+    let itemsToInsert: Array<string | { name: string; frequency?: string; reminderTime?: string | null; color?: string }> = [];
+
+    if (Array.isArray(habitItems) && habitItems.length > 0) {
+      itemsToInsert = habitItems;
+    } else if (Array.isArray(habitNames) && habitNames.length > 0) {
+      itemsToInsert = habitNames;
+    } else if (rawText && typeof rawText === 'string') {
+      if (useAi) {
+        const aiRes = await parseHabitsWithAi(req.user.id, rawText);
+        if (!aiRes.success) {
+          res.status(400).json({ success: false, message: aiRes.message });
+          return;
+        }
+        itemsToInsert = aiRes.habits || [];
+      } else {
+        itemsToInsert = parseBulkHabitText(rawText);
+      }
+    }
+
+    if (itemsToInsert.length === 0) {
+      res.status(400).json({ success: false, message: 'Tidak ada item habit yang dapat diekstrak' });
+      return;
+    }
+
+    const created = await createHabitsBulk(itemsToInsert, req.user.id);
+    res.json({ success: true, count: created.length, habits: created });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

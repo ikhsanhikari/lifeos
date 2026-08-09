@@ -7,6 +7,7 @@ import { LoadingSkeleton } from '../dashboard/components/LoadingSkeleton';
 import { GoalData } from '../dashboard/components/GoalPanel';
 import { AddGoalModal } from '../dashboard/components/modals/AddGoalModal';
 import { AddHabitModal } from '../dashboard/components/modals/AddHabitModal';
+import { BulkImportHabitModal } from '../dashboard/components/modals/BulkImportHabitModal';
 import { EditGoalModal } from '../dashboard/components/modals/EditGoalModal';
 import { EditHabitModal } from '../dashboard/components/modals/EditHabitModal';
 import { EditTaskModal } from '../dashboard/components/modals/EditTaskModal';
@@ -63,6 +64,9 @@ interface DashboardContextType {
   handleAddTaskToGoal: (goalId: string, taskTitle: string) => Promise<void>;
   handleDeleteHabit: (habitId: string, e: React.MouseEvent) => Promise<void>;
   handleCreateHabitSubmit: (name: string, frequency: 'DAILY' | 'WEEKLY', color: string, reminderTime?: string) => Promise<void>;
+  handleBulkImportHabits: (items: any[]) => Promise<void>;
+  isBulkImportModalOpen: boolean;
+  setIsBulkImportModalOpen: (open: boolean) => void;
   handleReorderHabits: (orderedIds: string[]) => Promise<void>;
   toggleHabit: (id: string) => Promise<void>;
   toggleTaskStatus: (taskId: string, currentStatus: string) => Promise<void>;
@@ -143,6 +147,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   // Modals state
   const [isAddGoalModalOpen, setIsAddGoalModalOpen] = useState<boolean>(false);
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState<boolean>(false);
+  const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState<boolean>(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState<boolean>(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
   const [linkTokenData, setLinkTokenData] = useState<{ token: string; telegramUrl: string; expiresAt: number } | null>(null);
@@ -434,6 +439,37 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleBulkImportHabits = async (items: any[]) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/habits/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ habitItems: items }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || 'Gagal mengimpor habit');
+      }
+      await fetchData();
+    } catch (err: any) {
+      console.error('Error bulk importing habits:', err);
+      throw err;
+    }
+  };
+
+  const handleParseHabitsWithAi = async (rawText: string) => {
+    const res = await fetch(`${API_BASE_URL}/api/ai/parse-habits`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ rawText }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.message || 'Gagal memproses AI Smart Parsing');
+    }
+    return json.habits || [];
+  };
+
   const handleDeleteHabit = async (habitId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm('Apakah Anda yakin ingin menghapus habit ini?')) return;
@@ -716,6 +752,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         handleAddTaskToGoal,
         handleDeleteHabit,
         handleCreateHabitSubmit,
+        handleBulkImportHabits,
+        isBulkImportModalOpen,
+        setIsBulkImportModalOpen,
         handleReorderHabits,
         toggleHabit,
         toggleTaskStatus,
@@ -783,6 +822,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           isOpen={isAddHabitModalOpen}
           onClose={() => setIsAddHabitModalOpen(false)}
           onSubmit={handleCreateHabitSubmit}
+        />
+
+        <BulkImportHabitModal
+          isOpen={isBulkImportModalOpen}
+          onClose={() => setIsBulkImportModalOpen(false)}
+          onImportSubmit={handleBulkImportHabits}
+          onAiParse={handleParseHabitsWithAi}
+          aiAvailable={aiStatus?.features?.smartSummary ?? aiStatus?.aiAvailable}
         />
 
         <EditGoalModal

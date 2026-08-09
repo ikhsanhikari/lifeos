@@ -520,3 +520,110 @@ ${goalsStr || 'Tidak ada goals aktif.'}`;
   }
 }
 
+export interface ParsedHabitItem {
+  name: string;
+  frequency?: 'DAILY' | 'WEEKLY';
+  reminderTime?: string | null;
+  color?: string;
+}
+
+/**
+ * Intelligent Bulk Habit Extraction using OpenAI / Gemini AI
+ */
+export async function parseHabitsWithAi(
+  userId: string,
+  rawText: string
+): Promise<{ success: boolean; habits?: ParsedHabitItem[]; quotaRemaining?: number; message?: string }> {
+  if (!isAiGloballyEnabled()) {
+    return {
+      success: false,
+      message: 'Fitur AI Bulk Import membutuhkan konfigurasi AI aktif (OPENAI_API_KEY / AI_ENABLED pada server).',
+    };
+  }
+
+  const settings = await getOrCreateUserSettings(userId);
+
+  if (!settings.aiEnabled) {
+    return {
+      success: false,
+      message: 'Fitur AI dinonaktifkan pada Pengaturan Akun Anda. Silakan aktifkan AI terlebih dahulu di menu Settings.',
+    };
+  }
+
+  if (settings.aiUsageThisMonth >= settings.aiMonthlyQuota) {
+    return {
+      success: false,
+      message: `Kuota penggunaan AI bulan ini (${settings.aiMonthlyQuota} panggil) telah habis.`,
+    };
+  }
+
+  const client = getOpenAIClient();
+  if (!client) {
+    return {
+      success: false,
+      message: 'Koneksi ke AI Client API gagal.',
+    };
+  }
+
+  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+
+  const systemPrompt = `Anda adalah AI Executive Productivity Assistant. 
+Tugas Anda adalah mengekstrak dan menata item-item habit dari teks bebas / checklist raw pengguna menjadi daftar rutinitas harian yang rapi dan terstruktur.
+
+Aturan Parsing AI:
+1. Abaikan baris pembuka umum seperti "Ibu sih rencana...", "Checklist Harian", "Rencana hari ini", atau nama kategori header seperti "Ibadah", "Konten", "Keluarga", "Diri Sendiri".
+2. Bersihkan karakter bullet list ('*', '-', '•') dan emoji kotak ('⬜', '✅', '[ ]').
+3. Deteksi jika nama habit mencantumkan jam spesifik (seperti "tidur maksimal jam 22.00" -> "22:00", "bangun sebelum Subuh" -> "04:30") dan simpan ke 'reminderTime' dalam format HH:MM 24 jam. Jika tidak ada jam spesifik, beri nilai null.
+4. Set 'frequency' ke 'DAILY' atau 'WEEKLY'.
+
+Kembalikan respons JSON valid dengan struktur:
+{
+  "habits": [
+    {
+      "name": "Nama habit konkret & jelas",
+      "frequency": "DAILY",
+      "reminderTime": "22:00" atau null,
+      "color": "indigo"
+    }
+  ]
+}`;
+
+  try {
+    const response = await client.chat.completions.create({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Ekstrak item habit dari teks berikut:\n\n${rawText}` },
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.2,
+      max_tokens: 1000,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) throw new Error('Respons AI kosong.');
+
+    const parsed = JSON.parse(content);
+    const habits: ParsedHabitItem[] = Array.isArray(parsed.habits) ? parsed.habits : [];
+
+    const updatedSettings = await prisma.userSettings.update({
+      where: { userId },
+      data: { aiUsageThisMonth: { increment: 1 } },
+    });
+
+    const quotaRemaining = Math.max(0, updatedSettings.aiMonthlyQuota - updatedSettings.aiUsageThisMonth);
+
+    return {
+      success: true,
+      habits,
+      quotaRemaining,
+    };
+  } catch (error: any) {
+    console.error('Error in parseHabitsWithAi:', error);
+    return {
+      success: false,
+      message: error.message || 'Gagal memproses AI Smart Parsing habit.',
+    };
+  }
+}
+

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, Check, Trash2, Plus, Pencil, Clock, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import { Target, Check, Trash2, Plus, Pencil, Clock, GripVertical, ChevronUp, ChevronDown, ClipboardList } from 'lucide-react';
 import { HabitData } from '../../types';
 export type { HabitData };
 import { Card } from '../../components/ui/Card';
@@ -14,6 +14,7 @@ interface HabitPanelProps {
   onEditHabit?: (habit: HabitData) => void;
   onReorderHabits?: (orderedIds: string[]) => void;
   onOpenAddModal: () => void;
+  onOpenBulkModal?: () => void;
   showTitle?: boolean;
 }
 
@@ -24,6 +25,7 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
   onEditHabit,
   onReorderHabits,
   onOpenAddModal,
+  onOpenBulkModal,
   showTitle = true,
 }) => {
   const [habitTab, setHabitTab] = useState<'all' | 'pending' | 'completed'>('all');
@@ -157,6 +159,17 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
               activeTab={habitTab}
               onChange={(tabId) => setHabitTab(tabId as any)}
             />
+
+            {onOpenBulkModal && (
+              <button
+                onClick={onOpenBulkModal}
+                title="Paste checklist & impor banyak habit sekaligus"
+                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold rounded-lg transition shrink-0"
+              >
+                <ClipboardList className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Import Bulk</span>
+              </button>
+            )}
 
             {showTitle && (
               <button
