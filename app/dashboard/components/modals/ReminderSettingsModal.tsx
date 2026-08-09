@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Bell, Clock, ShieldCheck, Check, Flame, Moon, Sun, Sliders, AlertCircle } from 'lucide-react';
+import { X, Bell, Clock, ShieldCheck, Check, Flame, Moon, Sun, Sliders, AlertCircle, RotateCcw } from 'lucide-react';
 
 export interface UserSettingsData {
   id: string;
@@ -9,6 +9,8 @@ export interface UserSettingsData {
   eveningRecapTime: string;
   streakAlertTime: string;
   hourlyRemindersEnabled: boolean;
+  autoFollowUpEnabled: boolean;
+  autoFollowUpDelayHours: number;
   aiEnabled: boolean;
   aiGoalBreakdown: boolean;
   aiDailyCoach: boolean;
@@ -45,6 +47,8 @@ export const ReminderSettingsModal: React.FC<ReminderSettingsModalProps> = ({
   const [eveningRecapTime, setEveningRecapTime] = useState<string>('21:00');
   const [streakAlertTime, setStreakAlertTime] = useState<string>('22:00');
   const [hourlyRemindersEnabled, setHourlyRemindersEnabled] = useState<boolean>(true);
+  const [autoFollowUpEnabled, setAutoFollowUpEnabled] = useState<boolean>(true);
+  const [autoFollowUpDelayHours, setAutoFollowUpDelayHours] = useState<number>(2);
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -57,6 +61,8 @@ export const ReminderSettingsModal: React.FC<ReminderSettingsModalProps> = ({
       setEveningRecapTime(settings.eveningRecapTime || '21:00');
       setStreakAlertTime(settings.streakAlertTime || '22:00');
       setHourlyRemindersEnabled(settings.hourlyRemindersEnabled ?? true);
+      setAutoFollowUpEnabled(settings.autoFollowUpEnabled ?? true);
+      setAutoFollowUpDelayHours(settings.autoFollowUpDelayHours || 2);
     }
   }, [settings, isOpen]);
 
@@ -75,6 +81,8 @@ export const ReminderSettingsModal: React.FC<ReminderSettingsModalProps> = ({
         eveningRecapTime,
         streakAlertTime,
         hourlyRemindersEnabled,
+        autoFollowUpEnabled,
+        autoFollowUpDelayHours,
       });
 
       if (ok) {
@@ -261,6 +269,49 @@ export const ReminderSettingsModal: React.FC<ReminderSettingsModalProps> = ({
                   }`}
                 />
               </button>
+            </div>
+
+            {/* Auto Follow-Up Reminders Section */}
+            <div className="p-4 rounded-xl bg-zinc-800/30 border border-zinc-800/60 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                    <RotateCcw className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-200">Auto Follow-Up Pengingat</p>
+                    <p className="text-[11px] text-zinc-400">Kirim susulan jika target durasi tertunda belum dikerjakan</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAutoFollowUpEnabled(!autoFollowUpEnabled)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    autoFollowUpEnabled ? 'bg-indigo-600' : 'bg-zinc-700'
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      autoFollowUpEnabled ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {autoFollowUpEnabled && (
+                <div className="pt-2 border-t border-zinc-800/60 flex items-center justify-between">
+                  <span className="text-[11px] text-zinc-400 font-medium">Jeda Waktu Susulan (Delay):</span>
+                  <select
+                    value={autoFollowUpDelayHours}
+                    onChange={(e) => setAutoFollowUpDelayHours(Number(e.target.value))}
+                    className="bg-zinc-900 border border-zinc-700 rounded-lg text-xs font-medium text-zinc-200 px-3 py-1.5 focus:outline-none focus:border-indigo-500 transition-colors"
+                  >
+                    <option value={1}>1 Jam Setelahnya</option>
+                    <option value={2}>2 Jam Setelahnya</option>
+                    <option value={3}>3 Jam Setelahnya</option>
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 

@@ -405,6 +405,138 @@ export async function sendStreakAlertReminders(bot: Telegraf, targetHHMM?: strin
 }
 
 /**
+ * 5. Auto Follow-Up Reminders for Uncompleted Items
+ * Sends follow-up alerts for habits/tasks whose original scheduled time + autoFollowUpDelayHours matches current time
+ * and are still not completed today.
+ */
+export async function sendAutoFollowUpReminders(bot: Telegraf, targetHHMM?: string): Promise<number> {
+  let sentCount = 0;
+  try {
+    const activeLinks = await prisma.telegramLink.findMany({
+      where: { isActive: true },
+      include: {
+        user: {
+          include: { settings: true },
+        },
+      },
+    });
+
+    const nowHHMM = targetHHMM || getWibHHMM();
+    const [currentHourStr, currentMinStr] = nowHHMM.split(':');
+    const currentHour = parseInt(currentHourStr, 10);
+    const currentMin = parseInt(currentMinStr, 10);
+    const today = getTodayDate();
+
+    for (const link of activeLinks) {
+      const userSettings = link.user.settings;
+
+      // Skip if reminders or autoFollowUpEnabled disabled
+      if (userSettings && (!userSettings.remindersEnabled || !userSettings.autoFollowUpEnabled)) {
+        continue;
+      }
+
+      const delayHours = userSettings?.autoFollowUpDelayHours ?? 2;
+      // Scheduled hour that should trigger a follow-up right now
+      const targetScheduledHour = (currentHour - delayHours + 24) % 24;
+
+      const chatId = Number(link.telegramChatId);
+      const userId = link.userId;
+
+      // Find uncompleted habits with reminderTime matching targetScheduledHour
+      const habitsWithReminder = await prisma.habit.findMany({
+        where: { userId, isArchived: false, reminderTime: { not: null } },
+      });
+
+      const todayDoneLogs = await prisma.habitLog.findMany({
+        where: {
+          habitId: { in: habitsWithReminder.map((h) => h.id) },
+          date: today,
+          status: 'DONE',
+        },
+      });
+      const doneHabitIds = new Set(todayDoneLogs.map((l) => l.habitId));
+
+      const pendingFollowUpHabits = habitsWithReminder.filter((h) => {
+        if (!h.reminderTime || doneHabitIds.has(h.id)) return false;
+        const rDate = new Date(h.reminderTime);
+        const rHour = rDate.getUTCHours();
+        const rMin = rDate.getUTCMinutes();
+
+        if (rHour !== targetScheduledHour) return false;
+
+        if (currentMin === 0) {
+          return rMin === 0 || rMin > 50;
+        }
+        return rMin > currentMin - 10 && rMin <= currentMin;
+      });
+
+      // Find uncompleted tasks with dueTime matching targetScheduledHour
+      const tasksWithDueTime = await prisma.task.findMany({
+        where: {
+          userId,
+          status: { in: ['TODO', 'IN_PROGRESS'] },
+          dueTime: { not: null },
+        },
+        include: { goal: { select: { title: true } } },
+      });
+
+      const pendingFollowUpTasks = tasksWithDueTime.filter((t) => {
+        if (!t.dueTime) return false;
+        const tDate = new Date(t.dueTime);
+        const tHour = tDate.getUTCHours();
+        const tMin = tDate.getUTCMinutes();
+
+        if (tHour !== targetScheduledHour) return false;
+
+        if (currentMin === 0) {
+          return tMin === 0 || tMin > 50;
+        }
+        return tMin > currentMin - 10 && tMin <= currentMin;
+      });
+
+      if (pendingFollowUpHabits.length > 0 || pendingFollowUpTasks.length > 0) {
+        let habitSection = '';
+        if (pendingFollowUpHabits.length > 0) {
+          habitSection = `🎯 *Habits Tertunda (${delayHours} Jam Lalu):* \n` +
+            pendingFollowUpHabits.map((h) => {
+              const rDate = new Date(h.reminderTime!);
+              const hh = rDate.getUTCHours().toString().padStart(2, '0');
+              const mm = rDate.getUTCMinutes().toString().padStart(2, '0');
+              return `• ${h.name} _(dijadwalkan ${hh}:${mm})_`;
+            }).join('\n') + `\n\n`;
+        }
+
+        let taskSection = '';
+        if (pendingFollowUpTasks.length > 0) {
+          taskSection = `📋 *Tasks Tertunda (${delayHours} Jam Lalu):* \n` +
+            pendingFollowUpTasks.map((t) => {
+              const goalTag = t.goal ? `_[Goal: ${t.goal.title}]_ ` : '';
+              const tDate = new Date(t.dueTime!);
+              const hh = tDate.getUTCHours().toString().padStart(2, '0');
+              const mm = tDate.getUTCMinutes().toString().padStart(2, '0');
+              return `• ${goalTag}${t.title} _(dijadwalkan ${hh}:${mm})_`;
+            }).join('\n') + `\n\n`;
+        }
+
+        const message =
+          `🔔 *FOLLOW-UP PENGINGAT TERTUNDA* ⏰\n\n` +
+          `Halo ${link.user.name}! Berikut target yang telah diingatkan namun belum di-checkin:\n\n` +
+          `${habitSection}` +
+          `${taskSection}` +
+          `_Yuk selesaikan dan ketik /habits atau /tasks untuk melakukan check-in!_`;
+
+        await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+        sentCount++;
+        console.log(`[CRON ${getWibHHMM()} WIB] 🔔 Auto Follow-Up Reminder (+${delayHours}h) sent to ${link.user.name} (${chatId})`);
+      }
+    }
+  } catch (error: any) {
+    console.error(`[CRON ERROR ${getWibHHMM()} WIB] Auto Follow-Up Reminder failed:`, error.message || error);
+  }
+  return sentCount;
+}
+
+/**
  * Master Scheduled Check Handler
  * Evaluates current WIB time against user settings
  */
@@ -423,7 +555,10 @@ export async function checkAndRunScheduledReminders(bot: Telegraf) {
   // 4. Time-Specific Item Reminders (Habits & Tasks)
   const hourlyCount = await sendTimeSpecificReminders(bot, currentHHMM);
 
-  const totalSent = morningCount + eveningCount + streakCount + hourlyCount;
+  // 5. Auto Follow-Up Reminders for Uncompleted Items
+  const followUpCount = await sendAutoFollowUpReminders(bot, currentHHMM);
+
+  const totalSent = morningCount + eveningCount + streakCount + hourlyCount + followUpCount;
   if (totalSent > 0) {
     console.log(`[CRON ${currentHHMM} WIB] ✅ Dispatch complete. Sent total ${totalSent} push reminder(s).`);
   } else {

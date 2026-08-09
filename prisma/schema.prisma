@@ -88,6 +88,8 @@ model UserSettings {
   eveningRecapTime       String  @default("21:00") @map("evening_recap_time")
   streakAlertTime        String  @default("22:00") @map("streak_alert_time")
   hourlyRemindersEnabled Boolean @default(true) @map("hourly_reminders_enabled")
+  autoFollowUpEnabled    Boolean @default(true) @map("auto_followup_enabled")
+  autoFollowUpDelayHours Int     @default(2) @map("auto_followup_delay_hours")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
