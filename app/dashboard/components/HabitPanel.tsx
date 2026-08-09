@@ -149,7 +149,7 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
             </div>
           )}
 
-          <div className="flex items-center justify-between sm:justify-end gap-2">
+          <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap">
             <Tabs
               options={[
                 { id: 'all', label: 'Semua', count: habits.length },
@@ -160,26 +160,31 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
               onChange={(tabId) => setHabitTab(tabId as any)}
             />
 
-            {onOpenBulkModal && (
-              <button
-                onClick={onOpenBulkModal}
-                title="Paste checklist & impor banyak habit sekaligus"
-                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold rounded-lg transition shrink-0"
-              >
-                <ClipboardList className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Import Bulk</span>
-              </button>
-            )}
+            <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0">
+              {onOpenBulkModal && (
+                <button
+                  onClick={onOpenBulkModal}
+                  title="Paste checklist & impor banyak habit sekaligus"
+                  className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold rounded-lg transition shrink-0"
+                >
+                  <ClipboardList className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="hidden xs:inline">Import Bulk</span>
+                  <span className="xs:hidden">Bulk</span>
+                </button>
+              )}
 
-            {showTitle && (
-              <button
-                onClick={onOpenAddModal}
-                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition shadow-sm shadow-emerald-950/40 shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Habit Baru</span>
-              </button>
-            )}
+              {onOpenAddModal && (
+                <button
+                  onClick={onOpenAddModal}
+                  title="Tambah habit baru"
+                  className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition shadow-sm shadow-emerald-950/40 shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="hidden xs:inline">Habit Baru</span>
+                  <span className="xs:hidden">+ Habit</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
