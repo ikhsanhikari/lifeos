@@ -9,6 +9,7 @@ export default function TasksPage() {
     tasks,
     toggleTaskStatus,
     handleDeleteTask,
+    handleOpenEditTaskModal,
     handleAddNewTask,
   } = useDashboard();
 
@@ -18,6 +19,7 @@ export default function TasksPage() {
         tasks={tasks}
         onToggleTask={toggleTaskStatus}
         onDeleteTask={handleDeleteTask}
+        onEditTask={handleOpenEditTaskModal}
         onAddTask={handleAddNewTask}
         showTitle={false}
       />

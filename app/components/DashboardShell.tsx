@@ -7,6 +7,9 @@ import { LoadingSkeleton } from '../dashboard/components/LoadingSkeleton';
 import { GoalData } from '../dashboard/components/GoalPanel';
 import { AddGoalModal } from '../dashboard/components/modals/AddGoalModal';
 import { AddHabitModal } from '../dashboard/components/modals/AddHabitModal';
+import { EditGoalModal } from '../dashboard/components/modals/EditGoalModal';
+import { EditHabitModal } from '../dashboard/components/modals/EditHabitModal';
+import { EditTaskModal } from '../dashboard/components/modals/EditTaskModal';
 import { TelegramLinkModal } from '../dashboard/components/modals/TelegramLinkModal';
 import { AiGoalBreakdownModal } from '../dashboard/components/modals/AiGoalBreakdownModal';
 import { AiSummaryModal, WeeklySummaryData } from '../dashboard/components/modals/AiSummaryModal';
@@ -76,6 +79,13 @@ interface DashboardContextType {
   setIsAddHabitModalOpen: (open: boolean) => void;
   setIsAiSummaryModalOpen: (open: boolean) => void;
   setIsSettingsModalOpen: (open: boolean) => void;
+
+  handleOpenEditGoalModal: (goal: GoalData) => void;
+  handleOpenEditHabitModal: (habit: HabitData) => void;
+  handleOpenEditTaskModal: (task: TaskData) => void;
+  handleUpdateGoalSubmit: (goalId: string, updated: { title: string; description: string; deadline: string; status: 'ACTIVE' | 'COMPLETED' | 'PAUSED' | 'ABANDONED'; color: string }) => Promise<void>;
+  handleUpdateHabitSubmit: (habitId: string, updated: { name: string; description?: string; frequency: 'DAILY' | 'WEEKLY'; color: string; reminderTime?: string }) => Promise<void>;
+  handleUpdateTaskSubmit: (taskId: string, updated: { title: string; priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW'; status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'; goalId?: string | null }) => Promise<void>;
 }
 
 const DashboardContext = createContext<DashboardContextType | null>(null);
@@ -111,6 +121,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
   const [linkTokenData, setLinkTokenData] = useState<{ token: string; telegramUrl: string; expiresAt: number } | null>(null);
   const [isGeneratingToken, setIsGeneratingToken] = useState<boolean>(false);
+
+  // Edit Modals state
+  const [editingGoal, setEditingGoal] = useState<GoalData | null>(null);
+  const [editingHabit, setEditingHabit] = useState<HabitData | null>(null);
+  const [editingTask, setEditingTask] = useState<TaskData | null>(null);
 
   // AI Modals state
   const [isAiBreakdownModalOpen, setIsAiBreakdownModalOpen] = useState<boolean>(false);
@@ -564,6 +579,66 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleUpdateGoalSubmit = async (
+    goalId: string,
+    updated: { title: string; description: string; deadline: string; status: 'ACTIVE' | 'COMPLETED' | 'PAUSED' | 'ABANDONED'; color: string }
+  ) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/goals/${goalId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(updated),
+      });
+      const json = await res.json();
+      if (json.success && json.goal) {
+        setGoals((prev) => prev.map((g) => (g.id === goalId ? { ...g, ...json.goal } : g)));
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Error updating goal:', err);
+    }
+  };
+
+  const handleUpdateHabitSubmit = async (
+    habitId: string,
+    updated: { name: string; description?: string; frequency: 'DAILY' | 'WEEKLY'; color: string; reminderTime?: string }
+  ) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/habits/${habitId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(updated),
+      });
+      const json = await res.json();
+      if (json.success && json.habit) {
+        setHabits((prev) => prev.map((h) => (h.id === habitId ? { ...h, ...json.habit } : h)));
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Error updating habit:', err);
+    }
+  };
+
+  const handleUpdateTaskSubmit = async (
+    taskId: string,
+    updated: { title: string; priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW'; status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'; goalId?: string | null }
+  ) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(updated),
+      });
+      const json = await res.json();
+      if (json.success && json.task) {
+        setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...json.task } : t)));
+        fetchData();
+      }
+    } catch (err) {
+      console.error('Error updating task:', err);
+    }
+  };
+
   return (
     <DashboardContext.Provider
       value={{
@@ -605,6 +680,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         setIsAddHabitModalOpen,
         setIsAiSummaryModalOpen,
         setIsSettingsModalOpen,
+        handleOpenEditGoalModal: (goal: GoalData) => setEditingGoal(goal),
+        handleOpenEditHabitModal: (habit: HabitData) => setEditingHabit(habit),
+        handleOpenEditTaskModal: (task: TaskData) => setEditingTask(task),
+        handleUpdateGoalSubmit,
+        handleUpdateHabitSubmit,
+        handleUpdateTaskSubmit,
       }}
     >
       <div className="flex min-h-screen bg-[#09090b]">
@@ -647,6 +728,28 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           isOpen={isAddHabitModalOpen}
           onClose={() => setIsAddHabitModalOpen(false)}
           onSubmit={handleCreateHabitSubmit}
+        />
+
+        <EditGoalModal
+          isOpen={!!editingGoal}
+          onClose={() => setEditingGoal(null)}
+          goal={editingGoal}
+          onSubmit={handleUpdateGoalSubmit}
+        />
+
+        <EditHabitModal
+          isOpen={!!editingHabit}
+          onClose={() => setEditingHabit(null)}
+          habit={editingHabit}
+          onSubmit={handleUpdateHabitSubmit}
+        />
+
+        <EditTaskModal
+          isOpen={!!editingTask}
+          onClose={() => setEditingTask(null)}
+          task={editingTask}
+          goals={goals}
+          onSubmit={handleUpdateTaskSubmit}
         />
 
         <TelegramLinkModal

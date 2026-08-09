@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 
 export interface GoalData {
   id: string;
@@ -18,6 +18,7 @@ export interface GoalData {
 interface GoalPanelProps {
   goals: GoalData[];
   onDeleteGoal: (goalId: string, e: React.MouseEvent) => void;
+  onEditGoal?: (goal: GoalData) => void;
   onOpenAddModal: () => void;
   onAddTaskToGoal: (goalId: string, taskTitle: string) => Promise<void>;
   onOpenAiBreakdown?: (goal: GoalData) => void;
@@ -28,6 +29,7 @@ interface GoalPanelProps {
 export function GoalPanel({
   goals,
   onDeleteGoal,
+  onEditGoal,
   onOpenAddModal,
   onAddTaskToGoal,
   onOpenAiBreakdown,
@@ -218,7 +220,19 @@ export function GoalPanel({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    {onEditGoal && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditGoal(goal);
+                        }}
+                        className="text-zinc-400 hover:text-indigo-300 p-1.5 rounded-lg hover:bg-indigo-500/10 transition"
+                        title="Edit Goal"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     <button
                       onClick={(e) => onDeleteGoal(goal.id, e)}
                       className="text-zinc-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition"

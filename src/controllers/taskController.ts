@@ -128,6 +128,42 @@ export async function updateTaskStatus(taskId: string, status: TaskStatus): Prom
 }
 
 /**
+ * 3b. Update Full Task Details
+ */
+export async function updateTask(
+  taskId: string,
+  data: {
+    title?: string;
+    description?: string | null;
+    priority?: TaskPriority;
+    status?: TaskStatus;
+    goalId?: string | null;
+    dueDate?: Date | null;
+  }
+): Promise<TaskWithDetails> {
+  const updatedTask = await prisma.task.update({
+    where: { id: taskId },
+    data: {
+      ...(data.title && { title: data.title }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.priority && { priority: data.priority }),
+      ...(data.status && {
+        status: data.status,
+        completedAt: data.status === 'DONE' ? new Date() : null,
+      }),
+      ...(data.goalId !== undefined && { goalId: data.goalId }),
+      ...(data.dueDate !== undefined && { dueDate: data.dueDate }),
+    },
+    include: {
+      goal: {
+        select: { id: true, title: true },
+      },
+    },
+  });
+  return updatedTask as TaskWithDetails;
+}
+
+/**
  * 4. Hapus Task (Hard Delete)
  */
 export async function deleteTask(taskId: string): Promise<TaskWithDetails> {

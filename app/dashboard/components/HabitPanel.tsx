@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, Check, Trash2, Plus } from 'lucide-react';
+import { Target, Check, Trash2, Plus, Pencil } from 'lucide-react';
 import { HabitData } from '../../types';
 export type { HabitData };
 import { Card } from '../../components/ui/Card';
@@ -11,6 +11,7 @@ interface HabitPanelProps {
   habits: HabitData[];
   onToggleHabit: (id: string) => void;
   onDeleteHabit: (id: string, e: React.MouseEvent) => void;
+  onEditHabit?: (habit: HabitData) => void;
   onOpenAddModal: () => void;
   showTitle?: boolean;
 }
@@ -19,6 +20,7 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
   habits,
   onToggleHabit,
   onDeleteHabit,
+  onEditHabit,
   onOpenAddModal,
   showTitle = true,
 }) => {
@@ -121,6 +123,19 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
                 <Badge variant="neutral" size="sm">
                   {habit.frequency || 'DAILY'}
                 </Badge>
+                {onEditHabit && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditHabit(habit);
+                    }}
+                    title="Edit Habit"
+                    className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-1 hover:bg-indigo-500/10 text-zinc-400 hover:text-indigo-300 rounded-lg transition-all"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={(e) => onDeleteHabit(habit.id, e)}

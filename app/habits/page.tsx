@@ -13,6 +13,7 @@ export default function HabitsPage() {
     analytics,
     toggleHabit,
     handleDeleteHabit,
+    handleOpenEditHabitModal,
     handleCreateHabitSubmit,
     setIsAddHabitModalOpen,
   } = useDashboard();
@@ -103,6 +104,7 @@ export default function HabitsPage() {
             habits={habits}
             onToggleHabit={toggleHabit}
             onDeleteHabit={handleDeleteHabit}
+            onEditHabit={handleOpenEditHabitModal}
             onOpenAddModal={() => setIsAddHabitModalOpen(true)}
             showTitle={false}
           />

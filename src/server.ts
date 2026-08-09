@@ -15,6 +15,7 @@ import {
   getUserTasks,
   createTask,
   updateTaskStatus,
+  updateTask,
   deleteTask,
   handleTasksCommand,
   handleCreateTaskCommand,
@@ -836,8 +837,15 @@ app.patch('/api/tasks/:id', async (req: AuthenticatedRequest, res: Response) => 
     }
 
     const taskId = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-    const { status } = req.body;
-    const updatedTask = await updateTaskStatus(taskId, status);
+    const { title, description, priority, status, goalId, dueDate } = req.body;
+    const updatedTask = await updateTask(taskId, {
+      title,
+      description,
+      priority,
+      status,
+      goalId,
+      dueDate: dueDate !== undefined ? (dueDate ? new Date(dueDate) : null) : undefined,
+    });
     res.json({ success: true, task: updatedTask });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

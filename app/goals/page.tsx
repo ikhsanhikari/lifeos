@@ -9,6 +9,7 @@ export default function GoalsPage() {
     goals,
     aiStatus,
     handleDeleteGoal,
+    handleOpenEditGoalModal,
     setIsAddGoalModalOpen,
     handleAddTaskToGoal,
     handleOpenAiBreakdownModal,
@@ -19,6 +20,7 @@ export default function GoalsPage() {
       <GoalPanel
         goals={goals}
         onDeleteGoal={handleDeleteGoal}
+        onEditGoal={handleOpenEditGoalModal}
         onOpenAddModal={() => setIsAddGoalModalOpen(true)}
         onAddTaskToGoal={handleAddTaskToGoal}
         onOpenAiBreakdown={handleOpenAiBreakdownModal}

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CheckSquare, Check, Trash2, Plus, CornerDownLeft, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CheckSquare, Check, Trash2, Plus, CornerDownLeft, Search, Filter, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
 
 export interface TaskData {
   id: string;
@@ -23,6 +23,7 @@ interface TaskPanelProps {
   tasks: TaskData[];
   onToggleTask: (id: string, status: string) => void;
   onDeleteTask: (id: string, e: React.MouseEvent) => void;
+  onEditTask?: (task: TaskData) => void;
   onAddTask: (title: string, priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW') => Promise<void>;
   showTitle?: boolean;
 }
@@ -31,6 +32,7 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
   tasks,
   onToggleTask,
   onDeleteTask,
+  onEditTask,
   onAddTask,
   showTitle = true,
 }) => {
@@ -289,6 +291,19 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
                   </span>
                 )}
                 {renderPriorityBadge(task.priority)}
+                {onEditTask && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditTask(task);
+                    }}
+                    title="Edit Task"
+                    className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-1 hover:bg-indigo-500/10 text-zinc-400 hover:text-indigo-300 rounded-lg transition-all"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={(e) => onDeleteTask(task.id, e)}
