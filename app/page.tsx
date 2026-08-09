@@ -60,38 +60,8 @@ export default function OverviewPage() {
   });
 
   return (
-    <div className="space-y-6 sm:space-y-8 max-w-6xl mx-auto py-2">
-      {/* 1. Ambient Hero Welcome Banner */}
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-zinc-900/90 via-zinc-900/40 to-transparent p-6 sm:p-8 border border-zinc-800/80 backdrop-blur-xl">
-        <div className="absolute right-0 top-0 w-96 h-full bg-gradient-to-l from-indigo-500/10 via-violet-500/5 to-transparent pointer-events-none" />
-        
-        <div className="relative z-10 space-y-3">
-          <div className="flex items-center gap-2 text-xs font-medium text-zinc-400">
-            <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold">
-              📅 {currentDateFormatted}
-            </span>
-            <span>•</span>
-            <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              {currentUser ? `Sesi ${currentUser.name}` : 'Mode Tamu'}
-            </span>
-          </div>
-
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-zinc-50 tracking-tight leading-tight">
-            {currentUser ? (
-              <>Selamat Datang Kembali, <span className="bg-gradient-to-r from-indigo-400 via-violet-300 to-pink-400 bg-clip-text text-transparent">{currentUser.name}</span></>
-            ) : (
-              <>Selamat Datang di Life OS</>
-            )}
-          </h1>
-
-          <p className="text-xs sm:text-sm text-zinc-400 max-w-2xl leading-relaxed">
-            Fokus pada eksekusi hal-hal terpenting hari ini. Kelola tujuan besar, bangun rutinitas positif, dan catat evaluasi harian secara tenang.
-          </p>
-        </div>
-      </section>
-
-      {/* 2. Sleek KPI Metrics Strip */}
+    <div className="space-y-4 sm:space-y-6 max-w-6xl mx-auto">
+      {/* 1. Sleek KPI Metrics Strip */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Metric 1 */}
         <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-between">

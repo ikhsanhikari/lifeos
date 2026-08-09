@@ -1,4 +1,5 @@
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { Plus, Calendar, ShieldCheck, Sparkles, Send, Share2 } from 'lucide-react';
 import { UserAuthData } from '../../types';
 import { Button } from '../../components/ui/Button';
@@ -20,12 +21,55 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenShareModal,
   aiAvailable = true,
 }) => {
+  const pathname = usePathname();
+
   const currentDateFormatted = new Date().toLocaleDateString('id-ID', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   });
+
+  const getPageHeaderInfo = () => {
+    switch (pathname) {
+      case '/goals':
+        return {
+          title: <>Goals & Mimpi Besar</>,
+          subtitle: 'Breakdown tujuan besar kamu menjadi aksi harian',
+        };
+      case '/habits':
+        return {
+          title: <>Habit Tracker</>,
+          subtitle: 'Bangun kebiasaan positif dan rekam konsistensi harian',
+        };
+      case '/tasks':
+        return {
+          title: <>Daftar Tugas (Tasks)</>,
+          subtitle: 'Eksekusi tugas harian berdasarkan tingkat prioritas',
+        };
+      case '/journal':
+        return {
+          title: <>Jurnal Harian & Refleksi</>,
+          subtitle: 'Catat mood, energi fisik, dan dapatkan insight AI Coach',
+        };
+      case '/streaks':
+        return {
+          title: <>Analitik Streaks Habit</>,
+          subtitle: 'Rekam jejak konsistensi harian dari waktu ke waktu',
+        };
+      default:
+        return {
+          title: currentUser ? (
+            <>Selamat Datang, <span className="bg-gradient-to-r from-indigo-400 via-violet-300 to-pink-400 bg-clip-text text-transparent">{currentUser.name}</span></>
+          ) : (
+            <>Dashboard Life OS</>
+          ),
+          subtitle: 'Fokus pada eksekusi hal penting, kebiasaan harian, dan refleksi terpadu.',
+        };
+    }
+  };
+
+  const headerInfo = getPageHeaderInfo();
 
   return (
     <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-zinc-900/60 border border-zinc-800/80 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl backdrop-blur-md relative overflow-hidden">
@@ -44,14 +88,10 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         <h1 className="text-lg sm:text-2xl font-extrabold text-zinc-50 tracking-tight">
-          {currentUser ? (
-            <>Selamat Datang, <span className="bg-gradient-to-r from-indigo-400 via-violet-300 to-pink-400 bg-clip-text text-transparent">{currentUser.name}</span></>
-          ) : (
-            <>Dashboard Life OS</>
-          )}
+          {headerInfo.title}
         </h1>
         <p className="text-[11px] sm:text-xs text-zinc-400 mt-0.5 sm:mt-1">
-          Breakdown mimpi besar, kelola kebiasaan harian, dan refleksi jurnal secara terpadu.
+          {headerInfo.subtitle}
         </p>
       </div>
 
