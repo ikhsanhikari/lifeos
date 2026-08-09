@@ -35,8 +35,11 @@
 }
 
 /* ==========================================================
-   DAY MODE (LIGHT THEME) COMPREHENSIVE OVERRIDES
+   DAY MODE (LIGHT THEME) DESIGN SYSTEM OVERRIDES
+   Harmonious Slate, Indigo & Vibrant Accent Color Palette
    ========================================================== */
+
+/* 1. Body & Main Layout Canvas */
 html.light body,
 html.light main {
   background-color: #f8fafc !important;
@@ -55,7 +58,7 @@ html.light ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8 !important;
 }
 
-/* Primary Top-Level Card & Panel Surfaces */
+/* 2. Primary Top-Level Cards, Panels, & Containers */
 html.light .bg-\[\#121215\],
 html.light .bg-zinc-900,
 html.light .bg-zinc-900\/60,
@@ -64,11 +67,11 @@ html.light .bg-zinc-900\/80,
 html.light .bg-zinc-900\/90 {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
-  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04) !important;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.02) !important;
   color: #0f172a !important;
 }
 
-/* Sub-Cards, Inner Rows, Action Blocks, Select Dropdowns, & List Items */
+/* 3. Sub-Cards, Row Items, Action Blocks, Select Dropdowns, & List Rows */
 html.light .bg-\[\#18181b\],
 html.light .bg-zinc-950,
 html.light .bg-zinc-950\/60,
@@ -85,19 +88,19 @@ html.light .bg-zinc-800\/60,
 html.light .bg-zinc-800\/80,
 html.light .bg-zinc-800\/90,
 html.light .bg-indigo-950\/40 {
-  background-color: #f1f5f9 !important;
-  border-color: #cbd5e1 !important;
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
   color: #0f172a !important;
 }
 
-/* Hover States in Day Mode */
+/* 4. Interactive Hover States in Day Mode */
 html.light [class*="hover:bg-zinc-800"]:hover,
 html.light [class*="hover:bg-zinc-700"]:hover,
 html.light [class*="hover:bg-zinc-900"]:hover {
-  background-color: #e2e8f0 !important;
+  background-color: #f1f5f9 !important;
 }
 
-/* Text Color Overrides for Day Mode */
+/* 5. Typography & Text Hierarchy */
 html.light .text-zinc-50,
 html.light .text-zinc-100,
 html.light .text-zinc-200 {
@@ -113,16 +116,111 @@ html.light .text-zinc-500 {
   color: #64748b !important;
 }
 
+html.light .line-through,
 html.light .line-through.text-zinc-500 {
   color: #94a3b8 !important;
 }
 
-/* Universal Border Overrides for Day Mode */
-html.light [class*="border-zinc-"] {
-  border-color: #e2e8f0 !important;
+/* 6. Accent Colors & Badges (Matching Soft Pastels for Day Mode) */
+html.light .text-indigo-400,
+html.light .text-indigo-300 {
+  color: #4f46e5 !important;
 }
 
-/* Structural Navigation Components */
+html.light .bg-indigo-500\/10,
+html.light .bg-indigo-600\/10,
+html.light .bg-indigo-500\/20 {
+  background-color: #eef2ff !important;
+  border-color: #c7d2fe !important;
+}
+
+html.light .text-emerald-400,
+html.light .text-emerald-300 {
+  color: #059669 !important;
+}
+
+html.light .bg-emerald-500\/10,
+html.light .bg-emerald-600\/10,
+html.light .bg-emerald-500\/20 {
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+}
+
+html.light .text-amber-400,
+html.light .text-amber-300 {
+  color: #d97706 !important;
+}
+
+html.light .bg-amber-500\/10,
+html.light .bg-amber-600\/10,
+html.light .bg-amber-500\/20 {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+}
+
+html.light .text-violet-400,
+html.light .text-violet-300 {
+  color: #7c3aed !important;
+}
+
+html.light .bg-violet-500\/10,
+html.light .bg-violet-600\/10,
+html.light .bg-violet-500\/20 {
+  background-color: #f5f3ff !important;
+  border-color: #ddd6fe !important;
+}
+
+html.light .text-rose-400,
+html.light .text-rose-300 {
+  color: #e11d48 !important;
+}
+
+html.light .bg-rose-500\/10,
+html.light .bg-rose-600\/10,
+html.light .bg-rose-500\/20 {
+  background-color: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+}
+
+html.light .text-teal-400,
+html.light .text-teal-300 {
+  color: #0d9488 !important;
+}
+
+html.light .bg-teal-500\/10,
+html.light .bg-teal-500\/20 {
+  background-color: #f0fdfa !important;
+  border-color: #99f6e4 !important;
+}
+
+html.light .text-cyan-400,
+html.light .text-cyan-300 {
+  color: #0891b2 !important;
+}
+
+html.light .bg-cyan-500\/10,
+html.light .bg-cyan-500\/20 {
+  background-color: #ecfeff !important;
+  border-color: #a5f3fc !important;
+}
+
+/* 7. Buttons & Primary CTA Preservation */
+html.light button.bg-indigo-600,
+html.light button.bg-emerald-600,
+html.light button.bg-rose-600,
+html.light button.bg-sky-600,
+html.light a.bg-emerald-600 {
+  color: #ffffff !important;
+}
+
+html.light button.bg-indigo-600 *,
+html.light button.bg-emerald-600 *,
+html.light button.bg-rose-600 *,
+html.light button.bg-sky-600 * {
+  color: #ffffff !important;
+}
+
+/* 8. Structural Layout Components */
 html.light aside {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
@@ -141,7 +239,7 @@ html.light div.fixed.bottom-0 {
   box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.05) !important;
 }
 
-/* Form Controls, Inputs, Textareas, and Dropdown Options */
+/* 9. Form Controls, Inputs, Textareas, and Options */
 html.light input,
 html.light select,
 html.light textarea {
@@ -160,7 +258,7 @@ html.light textarea::placeholder {
   color: #94a3b8 !important;
 }
 
-/* Modal Backdrops & Overlays */
+/* 10. Modal Backdrops & Dialogs */
 html.light .bg-black\/70 {
   background-color: rgba(15, 23, 42, 0.45) !important;
 }
