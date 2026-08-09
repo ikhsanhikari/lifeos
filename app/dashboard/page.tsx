@@ -689,7 +689,7 @@ export default function DashboardPage() {
 
       {/* Main Content Viewport */}
       <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-8">
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-3.5 sm:space-y-6">
           {/* Top Header Bar */}
           <TopBar
             currentUser={currentUser}
@@ -731,7 +731,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Main Interactive Grid (Habit Tracker & Task Management) */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 sm:gap-6">
                 <div ref={habitsRef}>
                   <HabitPanel
                     habits={habits}

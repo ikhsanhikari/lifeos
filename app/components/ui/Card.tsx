@@ -12,7 +12,7 @@ export const Card: React.FC<CardProps> = ({
   className = '',
   ...props
 }) => {
-  const baseStyles = 'rounded-2xl border border-zinc-800/80 bg-zinc-900/70 backdrop-blur-md p-5 sm:p-6 transition-all duration-200';
+  const baseStyles = 'rounded-xl sm:rounded-2xl border border-zinc-800/80 bg-zinc-900/70 backdrop-blur-md p-3.5 sm:p-5 lg:p-6 transition-all duration-200';
 
   const variantStyles = {
     default: 'shadow-md',

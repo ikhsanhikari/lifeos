@@ -85,42 +85,42 @@ export const DailyJournal: React.FC<DailyJournalProps> = ({
 
   return (
     <Card className="relative overflow-hidden">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800/80 mb-5">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-            <BookOpen className="w-4 h-4" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 pb-3 sm:pb-4 border-b border-zinc-800/80 mb-3.5 sm:mb-5">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+            <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-zinc-100 tracking-tight">Jurnal Harian & Refleksi</h2>
-            <p className="text-[11px] text-zinc-400">Catat mood, energi fisik, dan jurnal singkat harian</p>
+            <h2 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight">Jurnal Harian & Refleksi</h2>
+            <p className="text-[10px] sm:text-[11px] text-zinc-400">Catat mood, energi fisik, dan jurnal singkat harian</p>
           </div>
         </div>
 
         {saveSuccess && (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold animate-in fade-in slide-in-from-top-1">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold animate-in fade-in slide-in-from-top-1 self-start sm:self-auto">
             <CheckCircle className="w-3.5 h-3.5" />
             <span>Jurnal Berhasil Disimpan</span>
           </div>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-5">
           {/* Mood Selector */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center justify-between">
+          <div className="space-y-1.5 sm:space-y-2">
+            <label className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center justify-between">
               <span>Suasana Hati (Mood)</span>
               <span className="text-indigo-400 font-bold">
                 {moodOptions.find((m) => m.value === mood)?.label}
               </span>
             </label>
-            <div className="grid grid-cols-5 gap-2 bg-zinc-900/90 p-1.5 rounded-xl border border-zinc-800">
+            <div className="grid grid-cols-5 gap-1 sm:gap-2 bg-zinc-900/90 p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-zinc-800">
               {moodOptions.map((m) => (
                 <button
                   key={m.value}
                   type="button"
                   onClick={() => setMood(m.value)}
-                  className={`py-2 rounded-lg text-lg transition-all duration-200 flex items-center justify-center ${
+                  className={`py-1.5 sm:py-2 rounded-md sm:rounded-lg text-base sm:text-lg transition-all duration-200 flex items-center justify-center ${
                     mood === m.value
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 scale-105 font-bold'
                       : 'hover:bg-zinc-800 text-zinc-400'
@@ -133,18 +133,18 @@ export const DailyJournal: React.FC<DailyJournalProps> = ({
           </div>
 
           {/* Energy Level Selector */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center justify-between">
+          <div className="space-y-1.5 sm:space-y-2">
+            <label className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center justify-between">
               <span>Tingkat Energi Fisik</span>
               <span className="text-amber-400 font-bold">{energy} / 5</span>
             </label>
-            <div className="grid grid-cols-5 gap-2 bg-zinc-900/90 p-1.5 rounded-xl border border-zinc-800">
+            <div className="grid grid-cols-5 gap-1 sm:gap-2 bg-zinc-900/90 p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-zinc-800">
               {energyOptions.map((e) => (
                 <button
                   key={e.value}
                   type="button"
                   onClick={() => setEnergy(e.value)}
-                  className={`py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                  className={`py-1.5 sm:py-2.5 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-semibold transition-all duration-200 ${
                     energy === e.value
                       ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300 scale-105'
                       : 'hover:bg-zinc-800 text-zinc-400'
@@ -158,16 +158,16 @@ export const DailyJournal: React.FC<DailyJournalProps> = ({
         </div>
 
         {/* Reflection Textarea */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
+        <div className="space-y-1.5 sm:space-y-2">
+          <label className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-zinc-300">
             Catatan Jurnal & Refleksi
           </label>
           <textarea
-            rows={3}
+            rows={2}
             placeholder="Apa pencapaian terbaik atau ide penting yang kamu dapatkan hari ini? Tulis di sini..."
             value={journal}
             onChange={(e) => setJournal(e.target.value)}
-            className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl p-3.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors resize-none leading-relaxed"
+            className="w-full bg-zinc-900/90 border border-zinc-800 rounded-lg sm:rounded-xl p-2.5 sm:p-3.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors resize-none leading-relaxed"
           />
         </div>
 

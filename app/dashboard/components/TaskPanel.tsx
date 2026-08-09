@@ -118,17 +118,17 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
   };
 
   return (
-    <Card className="flex flex-col justify-between space-y-5">
+    <Card className="flex flex-col justify-between space-y-3.5 sm:space-y-5">
       <div>
         {/* Panel Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-800/80">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-              <CheckSquare className="w-4 h-4" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 pb-3 sm:pb-4 border-b border-zinc-800/80">
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+              <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-zinc-100 tracking-tight">Daftar Tugas (Tasks)</h2>
-              <p className="text-[11px] text-zinc-400">Prioritas & eksekusi hari ini</p>
+              <h2 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight">Daftar Tugas (Tasks)</h2>
+              <p className="text-[10px] sm:text-[11px] text-zinc-400">Prioritas & eksekusi hari ini</p>
             </div>
           </div>
 
@@ -147,7 +147,7 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
         </div>
 
         {/* Search & Advanced Filters Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 my-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 my-2.5 sm:my-3">
           {/* Search Input */}
           <div className="relative">
             <input
@@ -158,70 +158,71 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
+              className="w-full bg-zinc-900/90 border border-zinc-800 rounded-lg sm:rounded-xl pl-8 pr-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
             <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
           </div>
 
-          {/* Priority Filter */}
-          <div className="relative">
-            <select
-              value={priorityFilter}
-              onChange={(e) => {
-                setPriorityFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500"
-            >
-              <option value="ALL">Semua Prioritas</option>
-              <option value="URGENT">🔴 Urgent</option>
-              <option value="HIGH">🟠 High</option>
-              <option value="MEDIUM">🟡 Medium</option>
-              <option value="LOW">⚪ Low</option>
-            </select>
-          </div>
+          {/* Priority & Goal Filters (Grid side-by-side on mobile) */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:col-span-2">
+            <div className="relative">
+              <select
+                value={priorityFilter}
+                onChange={(e) => {
+                  setPriorityFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full bg-zinc-900/90 border border-zinc-800 rounded-lg sm:rounded-xl px-2.5 sm:px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 truncate"
+              >
+                <option value="ALL">Semua Prioritas</option>
+                <option value="URGENT">🔴 Urgent</option>
+                <option value="HIGH">🟠 High</option>
+                <option value="MEDIUM">🟡 Medium</option>
+                <option value="LOW">⚪ Low</option>
+              </select>
+            </div>
 
-          {/* Goal Filter */}
-          <div className="relative">
-            <select
-              value={goalFilter}
-              onChange={(e) => {
-                setGoalFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 truncate"
-            >
-              <option value="ALL">Semua Goals</option>
-              <option value="NONE">Tanpa Goal (Standalone)</option>
-              {uniqueGoals.map((g) => (
-                <option key={g.id} value={g.id}>
-                  🌟 {g.title}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={goalFilter}
+                onChange={(e) => {
+                  setGoalFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full bg-zinc-900/90 border border-zinc-800 rounded-lg sm:rounded-xl px-2.5 sm:px-3 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 truncate"
+              >
+                <option value="ALL">Semua Goals</option>
+                <option value="NONE">Standalone</option>
+                {uniqueGoals.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    🌟 {g.title}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
         {/* Inline Add Task Form */}
-        <form onSubmit={handleFormSubmit} className="flex items-center gap-2 mb-4">
+        <form onSubmit={handleFormSubmit} className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
           <div className="relative flex-1">
             <input
               type="text"
-              placeholder="Tulis tugas baru lalu tekan Enter..."
+              placeholder="Tugas baru..."
               value={newTaskTitle}
               onChange={(e) => setNewTaskTitle(e.target.value)}
-              className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl pl-3.5 pr-8 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
+              className="w-full bg-zinc-900/90 border border-zinc-800 rounded-lg sm:rounded-xl pl-3 pr-7 sm:pl-3.5 sm:pr-8 py-1.5 sm:py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
-            <CornerDownLeft className="w-3.5 h-3.5 text-zinc-500 absolute right-3 top-1/2 -translate-y-1/2" />
+            <CornerDownLeft className="w-3.5 h-3.5 text-zinc-500 absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 hidden sm:block" />
           </div>
 
           <select
             value={newTaskPriority}
             onChange={(e) => setNewTaskPriority(e.target.value as any)}
-            className="bg-zinc-900/90 border border-zinc-800 rounded-xl px-2.5 py-2 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 font-medium"
+            className="bg-zinc-900/90 border border-zinc-800 rounded-lg sm:rounded-xl px-2 sm:px-2.5 py-1.5 sm:py-2 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 font-medium"
           >
-            <option value="MEDIUM">🟡 Medium</option>
-            <option value="URGENT">🔴 Urgent</option>
+            <option value="MEDIUM">🟡 Med</option>
+            <option value="URGENT">🔴 Urg</option>
             <option value="HIGH">🟠 High</option>
             <option value="LOW">⚪ Low</option>
           </select>
@@ -229,36 +230,36 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
           <button
             type="submit"
             disabled={isSubmitting || !newTaskTitle.trim()}
-            className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition-all disabled:opacity-50 flex items-center gap-1 shrink-0"
+            className="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg sm:rounded-xl transition-all disabled:opacity-50 flex items-center gap-1 shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Tambah</span>
+            <span className="hidden sm:inline">Tambah</span>
           </button>
         </form>
 
         {/* Tasks List */}
-        <div className="space-y-2.5">
+        <div className="space-y-2 sm:space-y-2.5">
           {paginatedTasks.map((task) => (
             <div
               key={task.id}
               onClick={() => onToggleTask(task.id, task.status)}
-              className={`flex items-center justify-between p-3.5 rounded-xl border transition-all duration-200 cursor-pointer group ${
+              className={`flex items-center justify-between py-2.5 px-3 sm:p-3.5 rounded-lg sm:rounded-xl border transition-all duration-200 cursor-pointer group ${
                 task.status === 'DONE'
                   ? 'bg-zinc-900/40 border-zinc-800/60 opacity-75'
                   : 'bg-zinc-900/80 border-zinc-800/80 hover:border-indigo-500/40 hover:bg-zinc-800/50 shadow-sm'
               }`}
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                 <button
                   type="button"
                   aria-label={`Toggle task ${task.title}`}
-                  className={`w-5 h-5 rounded-md flex items-center justify-center transition-all duration-200 shrink-0 ${
+                  className={`w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-md flex items-center justify-center transition-all duration-200 shrink-0 ${
                     task.status === 'DONE'
                       ? 'bg-emerald-500 text-zinc-950 shadow-sm'
                       : 'border border-zinc-600 bg-zinc-800/60 group-hover:border-indigo-400'
                   }`}
                 >
-                  {task.status === 'DONE' && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                  {task.status === 'DONE' && <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" />}
                 </button>
 
                 <span
@@ -270,9 +271,9 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
                 </span>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 {task.goal && (
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 max-w-[120px] truncate">
+                  <span className="text-[9px] sm:text-[10px] font-medium px-1.5 sm:px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 max-w-[80px] sm:max-w-[120px] truncate">
                     🌟 {task.goal.title}
                   </span>
                 )}
@@ -281,7 +282,7 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
                   type="button"
                   onClick={(e) => onDeleteTask(task.id, e)}
                   title="Hapus Task"
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-500/10 text-zinc-400 hover:text-rose-400 rounded-lg transition-all"
+                  className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-1 hover:bg-rose-500/10 text-zinc-400 hover:text-rose-400 rounded-lg transition-all"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

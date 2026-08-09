@@ -86,26 +86,26 @@ export function GoalPanel({
   };
 
   return (
-    <div className="bg-[#121215] border border-zinc-800/80 rounded-2xl p-5 shadow-xl space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-sm">
+    <div className="bg-[#121215] border border-zinc-800/80 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 shadow-xl space-y-3.5 sm:space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-xs sm:text-sm shrink-0">
             🌟
           </div>
           <div>
-            <h2 className="text-base font-bold text-zinc-100 flex items-center gap-2">
+            <h2 className="text-sm sm:text-base font-bold text-zinc-100 flex items-center gap-1.5 sm:gap-2">
               Goals (Mimpi Besar)
-              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+              <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
                 {goals.length} Total
               </span>
             </h2>
-            <p className="text-xs text-zinc-400">Breakdown tujuan besar kamu menjadi langkah-langkah harian</p>
+            <p className="text-[11px] sm:text-xs text-zinc-400">Breakdown tujuan besar kamu menjadi langkah-langkah harian</p>
           </div>
         </div>
 
         <button
           onClick={onOpenAddModal}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-md shadow-emerald-950/40 self-start sm:self-auto"
+          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg sm:rounded-xl transition shadow-md shadow-emerald-950/40 self-start sm:self-auto"
         >
           <span>+</span> Buat Goal
         </button>
@@ -171,34 +171,34 @@ export function GoalPanel({
             return (
               <div
                 key={goal.id}
-                className="bg-[#18181b] border border-zinc-800/90 hover:border-zinc-700/80 rounded-xl p-4 transition space-y-3"
+                className="bg-[#18181b] border border-zinc-800/90 hover:border-zinc-700/80 rounded-xl p-3 sm:p-4 transition space-y-2.5 sm:space-y-3"
               >
                 <div
                   className="flex items-start justify-between cursor-pointer select-none"
                   onClick={() => toggleExpand(goal.id)}
                 >
-                  <div className="space-y-1 flex-1 pr-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-bold text-zinc-100">{goal.title}</span>
+                  <div className="space-y-1 flex-1 pr-2 sm:pr-4">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                      <span className="text-sm sm:text-base font-bold text-zinc-100">{goal.title}</span>
                       {formattedDeadline && (
-                        <span className="text-[11px] px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700/60 font-medium">
+                        <span className="text-[10px] sm:text-[11px] px-1.5 sm:px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700/60 font-medium">
                           📅 {formattedDeadline}
                         </span>
                       )}
                     </div>
 
                     {goal.description && (
-                      <p className="text-xs text-zinc-400 line-clamp-1">{goal.description}</p>
+                      <p className="text-[11px] sm:text-xs text-zinc-400 line-clamp-1">{goal.description}</p>
                     )}
 
-                    <div className="pt-2">
+                    <div className="pt-1.5 sm:pt-2">
                       <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="text-zinc-400 text-[11px]">
+                        <span className="text-zinc-400 text-[10px] sm:text-[11px]">
                           Task Progress: <strong className="text-zinc-200">{goal.completedTasks}/{goal.totalTasks}</strong>
                         </span>
-                        <span className="text-emerald-400 font-bold">{goal.progress}%</span>
+                        <span className="text-emerald-400 font-bold text-[11px] sm:text-xs">{goal.progress}%</span>
                       </div>
-                      <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+                      <div className="w-full bg-zinc-800 h-1.5 sm:h-2 rounded-full overflow-hidden">
                         <div
                           className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500"
                           style={{ width: `${goal.progress}%` }}
