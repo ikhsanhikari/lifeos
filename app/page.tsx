@@ -183,9 +183,11 @@ export default function OverviewPage() {
                   </button>
                   <span title={nextHabit.name} className="text-xs font-bold text-zinc-100 break-words whitespace-normal leading-snug">{nextHabit.name}</span>
                 </div>
-                <Badge variant="neutral" size="sm" className="shrink-0 self-start">
-                  {nextHabit.frequency || 'DAILY'}
-                </Badge>
+                {nextHabit.frequency && nextHabit.frequency !== 'DAILY' && (
+                  <Badge variant="neutral" size="sm" className="shrink-0 self-start">
+                    {nextHabit.frequency}
+                  </Badge>
+                )}
               </div>
             ) : (
               <div className="p-3 text-center text-xs text-emerald-400 bg-emerald-500/10 rounded-xl border border-emerald-500/20 font-semibold">

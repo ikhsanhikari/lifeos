@@ -256,9 +256,11 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
                     <span>{habit.reminderTime}</span>
                   </Badge>
                 )}
-                <Badge variant="neutral" size="sm">
-                  {habit.frequency || 'DAILY'}
-                </Badge>
+                {habit.frequency && habit.frequency !== 'DAILY' && (
+                  <Badge variant="neutral" size="sm">
+                    {habit.frequency}
+                  </Badge>
+                )}
                 {onEditHabit && (
                   <button
                     type="button"
