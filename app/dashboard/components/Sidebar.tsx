@@ -9,7 +9,8 @@ import {
   Send, 
   Sparkles,
   ShieldCheck,
-  Share2
+  Share2,
+  Sliders
 } from 'lucide-react';
 import { UserAuthData, TelegramStatusData } from '../page';
 
@@ -20,6 +21,7 @@ interface SidebarProps {
   setActiveSection: (section: string) => void;
   onOpenLinkModal: () => void;
   onOpenShareModal?: () => void;
+  onOpenSettingsModal?: () => void;
   onLogout: () => void;
   isMobileOpen: boolean;
   setIsMobileOpen: (open: boolean) => void;
@@ -32,6 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setActiveSection,
   onOpenLinkModal,
   onOpenShareModal,
+  onOpenSettingsModal,
   onLogout,
   isMobileOpen,
   setIsMobileOpen,
@@ -96,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
 
           {/* Telegram Sync Widget */}
-          <div className="pt-4 border-t border-zinc-800/60">
+          <div className="pt-4 border-t border-zinc-800/60 space-y-2">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 px-3 mb-2">Integrasi Bot</p>
             {telegramStatus.isLinked ? (
               <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-1.5">
@@ -122,6 +125,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <p className="text-[10px] text-zinc-400">Sync habit via chat</p>
                   </div>
                 </div>
+              </button>
+            )}
+
+            {onOpenSettingsModal && (
+              <button
+                onClick={onOpenSettingsModal}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-zinc-300 hover:text-zinc-100 bg-zinc-800/40 hover:bg-zinc-800/80 border border-zinc-800 transition-all"
+              >
+                <Sliders className="w-4 h-4 text-indigo-400" />
+                <span>Pengaturan Reminder</span>
               </button>
             )}
           </div>

@@ -77,6 +77,7 @@ import {
   handleAiWeeklySummary,
 } from './controllers/aiController';
 import { getShareCardData, sendShareCardToTelegram, fetchCardDataInternal } from './controllers/shareController';
+import { handleGetUserSettings, handleUpdateUserSettings } from './controllers/settingsController';
 import { generateWeeklySummary, isAiGloballyEnabled } from './services/aiService';
 import { authMiddleware, AuthenticatedRequest } from './middleware/authMiddleware';
 
@@ -943,6 +944,10 @@ app.get('/api/telegram-users', async (req: Request, res: Response) => {
 // SHARE CARD & TELEGRAM FLEX API ENDPOINTS
 app.get('/api/share/daily-card', authMiddleware, getShareCardData);
 app.post('/api/share/send-telegram', authMiddleware, sendShareCardToTelegram);
+
+// USER SETTINGS REST API ENDPOINTS
+app.get('/api/settings', authMiddleware, handleGetUserSettings);
+app.put('/api/settings', authMiddleware, handleUpdateUserSettings);
 
 // TELEGRAM BOT COMMAND: /flex or /share
 bot.command(['flex', 'share'], async (ctx) => {

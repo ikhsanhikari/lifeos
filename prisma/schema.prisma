@@ -83,6 +83,12 @@ model UserSettings {
   aiMonthlyQuota   Int     @default(50) @map("ai_monthly_quota")
   aiUsageThisMonth Int     @default(0) @map("ai_usage_this_month")
 
+  remindersEnabled       Boolean @default(true) @map("reminders_enabled")
+  morningReminderTime    String  @default("07:00") @map("morning_reminder_time")
+  eveningRecapTime       String  @default("21:00") @map("evening_recap_time")
+  streakAlertTime        String  @default("22:00") @map("streak_alert_time")
+  hourlyRemindersEnabled Boolean @default(true) @map("hourly_reminders_enabled")
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_settings")

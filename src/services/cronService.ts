@@ -5,20 +5,57 @@ import { getTodayDate } from '../controllers/habitController';
 import { getAnalyticsSummary } from '../controllers/analyticsController';
 
 /**
- * 1. Morning Reminder (Default 07:00 AM)
- * Send daily habit list, goal-contextual tasks, and deadline alerts to all Telegram linked users.
+ * Get current time formatted as "HH:mm" in Asia/Jakarta (WIB) timezone
  */
-export async function sendMorningReminders(bot: Telegraf) {
-  console.log('⏰ Running Morning Reminder Cron Job...');
+export function getWibHHMM(): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jakarta',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date());
+
+  const hour = parts.find((p) => p.type === 'hour')?.value || '00';
+  const minute = parts.find((p) => p.type === 'minute')?.value || '00';
+
+  return `${hour}:${minute}`;
+}
+
+/**
+ * 1. Morning Reminder
+ * Send daily habit list, goal-contextual tasks, and deadline alerts to Telegram linked users.
+ * If targetHHMM is provided, filters users whose morningReminderTime matches targetHHMM.
+ */
+export async function sendMorningReminders(bot: Telegraf, targetHHMM?: string) {
+  console.log(`⏰ Running Morning Reminder Check (Target Time: ${targetHHMM || 'ALL'})...`);
   try {
     const activeLinks = await prisma.telegramLink.findMany({
       where: { isActive: true },
-      include: { user: true },
+      include: {
+        user: {
+          include: { settings: true },
+        },
+      },
     });
 
     const today = getTodayDate();
 
     for (const link of activeLinks) {
+      const userSettings = link.user.settings;
+
+      // Skip if user explicitly disabled reminders
+      if (userSettings && !userSettings.remindersEnabled) {
+        continue;
+      }
+
+      // If targetHHMM is supplied, verify time match
+      if (targetHHMM) {
+        const userMorningTime = userSettings?.morningReminderTime || '07:00';
+        if (userMorningTime !== targetHHMM) {
+          continue;
+        }
+      }
+
       const chatId = Number(link.telegramChatId);
       const userId = link.userId;
 
@@ -119,6 +156,7 @@ export async function sendMorningReminders(bot: Telegraf) {
         `_Ketik /focus untuk melihat fokus utama, atau /goals untuk melihat daftar mimpi kamu!_`;
 
       await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+      console.log(`✅ Sent Morning Reminder to ${link.user.name} (${chatId})`);
     }
   } catch (error) {
     console.error('Error in sendMorningReminders:', error);
@@ -130,11 +168,15 @@ export async function sendMorningReminders(bot: Telegraf) {
  * Check habits & tasks scheduled for the current hour and push Telegram alerts.
  */
 export async function sendTimeSpecificReminders(bot: Telegraf) {
-  console.log('⏰ Running Hourly Time-Specific Reminder Cron Job...');
+  console.log('⏰ Running Hourly Time-Specific Reminder Check...');
   try {
     const activeLinks = await prisma.telegramLink.findMany({
       where: { isActive: true },
-      include: { user: true },
+      include: {
+        user: {
+          include: { settings: true },
+        },
+      },
     });
 
     // Get current hour in Asia/Jakarta (WIB) timezone
@@ -149,6 +191,13 @@ export async function sendTimeSpecificReminders(bot: Telegraf) {
     const today = getTodayDate();
 
     for (const link of activeLinks) {
+      const userSettings = link.user.settings;
+
+      // Skip if reminders or hourlyRemindersEnabled disabled
+      if (userSettings && (!userSettings.remindersEnabled || !userSettings.hourlyRemindersEnabled)) {
+        continue;
+      }
+
       const chatId = Number(link.telegramChatId);
       const userId = link.userId;
 
@@ -214,6 +263,7 @@ export async function sendTimeSpecificReminders(bot: Telegraf) {
           `_Ketik /habits atau /tasks untuk melakukan check-in!_`;
 
         await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+        console.log(`✅ Sent Hourly Time-Specific Reminder to ${link.user.name} (${chatId})`);
       }
     }
   } catch (error) {
@@ -222,20 +272,37 @@ export async function sendTimeSpecificReminders(bot: Telegraf) {
 }
 
 /**
- * 3. Evening Recap (Default 21:00 PM)
+ * 3. Evening Recap
  * Prompt user to submit Daily Log & Mood journal if not filled today.
  */
-export async function sendEveningRecapReminders(bot: Telegraf) {
-  console.log('⏰ Running Evening Recap Cron Job...');
+export async function sendEveningRecapReminders(bot: Telegraf, targetHHMM?: string) {
+  console.log(`⏰ Running Evening Recap Check (Target Time: ${targetHHMM || 'ALL'})...`);
   try {
     const activeLinks = await prisma.telegramLink.findMany({
       where: { isActive: true },
-      include: { user: true },
+      include: {
+        user: {
+          include: { settings: true },
+        },
+      },
     });
 
     const today = getTodayDate();
 
     for (const link of activeLinks) {
+      const userSettings = link.user.settings;
+
+      if (userSettings && !userSettings.remindersEnabled) {
+        continue;
+      }
+
+      if (targetHHMM) {
+        const userEveningTime = userSettings?.eveningRecapTime || '21:00';
+        if (userEveningTime !== targetHHMM) {
+          continue;
+        }
+      }
+
       const chatId = Number(link.telegramChatId);
       const userId = link.userId;
 
@@ -251,6 +318,7 @@ export async function sendEveningRecapReminders(bot: Telegraf) {
           `*Ketik /log sekarang untuk mencatat mood & energi kamu!*`;
 
         await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+        console.log(`✅ Sent Evening Recap Reminder to ${link.user.name} (${chatId})`);
       }
     }
   } catch (error) {
@@ -259,18 +327,35 @@ export async function sendEveningRecapReminders(bot: Telegraf) {
 }
 
 /**
- * 4. Streak Alert (Default 22:00 PM)
+ * 4. Streak Alert
  * Warning alert for habits with active streak > 0 that are still unchecked today.
  */
-export async function sendStreakAlertReminders(bot: Telegraf) {
-  console.log('⏰ Running Streak Alert Cron Job...');
+export async function sendStreakAlertReminders(bot: Telegraf, targetHHMM?: string) {
+  console.log(`⏰ Running Streak Alert Check (Target Time: ${targetHHMM || 'ALL'})...`);
   try {
     const activeLinks = await prisma.telegramLink.findMany({
       where: { isActive: true },
-      include: { user: true },
+      include: {
+        user: {
+          include: { settings: true },
+        },
+      },
     });
 
     for (const link of activeLinks) {
+      const userSettings = link.user.settings;
+
+      if (userSettings && !userSettings.remindersEnabled) {
+        continue;
+      }
+
+      if (targetHHMM) {
+        const userStreakTime = userSettings?.streakAlertTime || '22:00';
+        if (userStreakTime !== targetHHMM) {
+          continue;
+        }
+      }
+
       const summary = await getAnalyticsSummary(link.telegramChatId);
 
       const endangeredStreaks = summary.habitStreaks.filter(
@@ -290,6 +375,7 @@ export async function sendStreakAlertReminders(bot: Telegraf) {
           `Jangan biarkan konsistensi kamu sia-sia! Ketik /habits untuk check-in sekarang. 🔥`;
 
         await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+        console.log(`✅ Sent Streak Alert Reminder to ${link.user.name} (${chatId})`);
       }
     }
   } catch (error) {
@@ -298,31 +384,39 @@ export async function sendStreakAlertReminders(bot: Telegraf) {
 }
 
 /**
- * Initialize all Cron Job schedules
+ * Master Scheduled Check Handler
+ * Evaluates current WIB time against user settings
+ */
+export async function checkAndRunScheduledReminders(bot: Telegraf) {
+  const currentHHMM = getWibHHMM();
+  console.log(`⏱️ Cron Ticker fired at WIB: ${currentHHMM}`);
+
+  // 1. Morning Reminders matching current time
+  await sendMorningReminders(bot, currentHHMM);
+
+  // 2. Evening Recap Reminders matching current time
+  await sendEveningRecapReminders(bot, currentHHMM);
+
+  // 3. Streak Alert Reminders matching current time
+  await sendStreakAlertReminders(bot, currentHHMM);
+
+  // 4. Hourly Time-Specific Reminders (Run at the top of every hour: XX:00)
+  if (currentHHMM.endsWith(':00')) {
+    await sendTimeSpecificReminders(bot);
+  }
+}
+
+/**
+ * Initialize Cron Scheduler Service based on env config
  */
 export function initCronScheduler(bot: Telegraf) {
-  console.log('⚙️ Initializing Cron Scheduler Service (Timezone: Asia/Jakarta)...');
+  const scheduleExp = process.env.CRON_SCHEDULE_EXPRESSION || '*/10 * * * *';
+  console.log(`⚙️ Initializing Cron Scheduler Service (Schedule: "${scheduleExp}", Timezone: Asia/Jakarta)...`);
   const cronOptions = { timezone: 'Asia/Jakarta' };
 
-  // Morning Reminder at 07:00 AM WIB every day
-  cron.schedule('0 7 * * *', () => {
-    sendMorningReminders(bot);
+  cron.schedule(scheduleExp, () => {
+    checkAndRunScheduledReminders(bot);
   }, cronOptions);
 
-  // Hourly Time-Specific Reminder at top of every hour (:00)
-  cron.schedule('0 * * * *', () => {
-    sendTimeSpecificReminders(bot);
-  }, cronOptions);
-
-  // Evening Recap at 21:00 PM (9:00 PM) WIB every day
-  cron.schedule('0 21 * * *', () => {
-    sendEveningRecapReminders(bot);
-  }, cronOptions);
-
-  // Streak Alert at 22:00 PM (10:00 PM) WIB every day
-  cron.schedule('0 22 * * *', () => {
-    sendStreakAlertReminders(bot);
-  }, cronOptions);
-
-  console.log('✅ Cron Jobs scheduled: Morning (07:00 WIB), Hourly Time-Specific (:00 WIB), Evening (21:00 WIB), Streak Alert (22:00 WIB)');
+  console.log(`✅ Cron Scheduler initialized successfully with schedule "${scheduleExp}"`);
 }

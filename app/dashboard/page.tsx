@@ -16,6 +16,7 @@ import { TelegramLinkModal } from './components/modals/TelegramLinkModal';
 import { AiGoalBreakdownModal } from './components/modals/AiGoalBreakdownModal';
 import { AiSummaryModal, WeeklySummaryData } from './components/modals/AiSummaryModal';
 import { ShareCardModal } from './components/modals/ShareCardModal';
+import { ReminderSettingsModal, UserSettingsData } from './components/modals/ReminderSettingsModal';
 
 export interface AiStatusData {
   aiAvailable: boolean;
@@ -102,6 +103,7 @@ export default function DashboardPage() {
   const [analytics, setAnalytics] = useState<AnalyticsSummaryData | null>(null);
   const [telegramStatus, setTelegramStatus] = useState<TelegramStatusData>({ isLinked: false });
   const [aiStatus, setAiStatus] = useState<AiStatusData | null>(null);
+  const [userSettings, setUserSettings] = useState<UserSettingsData | null>(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,6 +116,7 @@ export default function DashboardPage() {
   const [isAddGoalModalOpen, setIsAddGoalModalOpen] = useState<boolean>(false);
   const [isAddHabitModalOpen, setIsAddHabitModalOpen] = useState<boolean>(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState<boolean>(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
   const [linkTokenData, setLinkTokenData] = useState<{ token: string; telegramUrl: string; expiresAt: number } | null>(null);
   const [isGeneratingToken, setIsGeneratingToken] = useState<boolean>(false);
 
@@ -185,7 +188,7 @@ export default function DashboardPage() {
         }
       }
 
-      const [goalsRes, habitsRes, tasksRes, logRes, analyticsRes, tgRes, aiRes] = await Promise.all([
+      const [goalsRes, habitsRes, tasksRes, logRes, analyticsRes, tgRes, aiRes, settingsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/goals`, { headers }),
         fetch(`${API_BASE_URL}/api/habits`, { headers }),
         fetch(`${API_BASE_URL}/api/tasks`, { headers }),
@@ -193,13 +196,14 @@ export default function DashboardPage() {
         fetch(`${API_BASE_URL}/api/analytics/summary`, { headers }),
         fetch(`${API_BASE_URL}/api/telegram/status`, { headers }),
         fetch(`${API_BASE_URL}/api/ai/status`, { headers }),
+        fetch(`${API_BASE_URL}/api/settings`, { headers }),
       ]);
 
       if (!habitsRes.ok || !tasksRes.ok) {
         throw new Error('Gagal terhubung ke backend API server');
       }
 
-      const [goalsJson, habitsJson, tasksJson, logJson, analyticsJson, tgJson, aiJson] = await Promise.all([
+      const [goalsJson, habitsJson, tasksJson, logJson, analyticsJson, tgJson, aiJson, settingsJson] = await Promise.all([
         goalsRes.json(),
         habitsRes.json(),
         tasksRes.json(),
@@ -207,6 +211,7 @@ export default function DashboardPage() {
         analyticsRes.json(),
         tgRes.json(),
         aiRes.json(),
+        settingsRes.json(),
       ]);
 
       if (goalsJson.success && Array.isArray(goalsJson.goals)) {
@@ -238,6 +243,10 @@ export default function DashboardPage() {
 
       if (aiJson.success) {
         setAiStatus(aiJson);
+      }
+
+      if (settingsJson.success && settingsJson.data) {
+        setUserSettings(settingsJson.data);
       }
     } catch (err: any) {
       console.error('Error fetching dashboard data:', err);
@@ -641,6 +650,27 @@ export default function DashboardPage() {
     }
   };
 
+  // Save user settings (Reminders & AI preferences)
+  const handleSaveSettings = async (updated: Partial<UserSettingsData>): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(updated),
+      });
+
+      const json = await res.json();
+      if (json.success && json.data) {
+        setUserSettings(json.data);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Error updating user settings:', err);
+      return false;
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-[#09090b]">
       {/* Sidebar Component */}
@@ -651,6 +681,7 @@ export default function DashboardPage() {
         setActiveSection={handleSelectSection}
         onOpenLinkModal={handleOpenLinkModal}
         onOpenShareModal={handleOpenShareModal}
+        onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
         onLogout={handleLogout}
         isMobileOpen={isMobileOpen}
         setIsMobileOpen={setIsMobileOpen}
@@ -756,6 +787,14 @@ export default function DashboardPage() {
         onClose={() => setIsLinkModalOpen(false)}
         isGeneratingToken={isGeneratingToken}
         linkTokenData={linkTokenData}
+      />
+
+      <ReminderSettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        settings={userSettings}
+        onSaveSettings={handleSaveSettings}
+        isTelegramLinked={telegramStatus.isLinked}
       />
 
       {selectedAiGoal && (
