@@ -16,6 +16,7 @@ export interface HabitWithStatus {
   description: string | null;
   frequency: string;
   color: string | null;
+  reminderTime?: string | null;
   isDoneToday: boolean;
   logId?: string;
 }
@@ -97,12 +98,22 @@ export async function getUserDailyHabits(telegramChatId?: bigint | null): Promis
   const habitsWithStatus: HabitWithStatus[] = habits.map((habit: any) => {
     const log: any = logsMap.get(habit.id);
     const isDoneToday = log?.status === 'DONE';
+
+    let reminderTimeString: string | null = null;
+    if (habit.reminderTime) {
+      const d = new Date(habit.reminderTime);
+      const hh = d.getUTCHours().toString().padStart(2, '0');
+      const mm = d.getUTCMinutes().toString().padStart(2, '0');
+      reminderTimeString = `${hh}:${mm}`;
+    }
+
     return {
       id: habit.id,
       name: habit.name,
       description: habit.description,
       frequency: habit.frequency,
       color: habit.color,
+      reminderTime: reminderTimeString,
       isDoneToday,
       logId: log?.id,
     };

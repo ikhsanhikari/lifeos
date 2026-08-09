@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, Check, Trash2, Plus, Pencil } from 'lucide-react';
+import { Target, Check, Trash2, Plus, Pencil, Clock } from 'lucide-react';
 import { HabitData } from '../../types';
 export type { HabitData };
 import { Card } from '../../components/ui/Card';
@@ -120,6 +120,12 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
               </div>
 
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                {habit.reminderTime && (
+                  <Badge variant="indigo" size="sm" className="gap-1 font-mono">
+                    <Clock className="w-3 h-3" />
+                    <span>{habit.reminderTime}</span>
+                  </Badge>
+                )}
                 <Badge variant="neutral" size="sm">
                   {habit.frequency || 'DAILY'}
                 </Badge>

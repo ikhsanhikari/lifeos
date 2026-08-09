@@ -35,8 +35,8 @@
 }
 
 /* ==========================================================
-   DAY MODE (LIGHT THEME) DESIGN SYSTEM OVERRIDES
-   Harmonious Slate, Indigo & Vibrant Solid Accent Color Palette
+   DAY MODE (LIGHT THEME) - SOLID FILL DESIGN SYSTEM
+   High Contrast Solid Colors for Badges, Buttons & Icon Tags
    ========================================================== */
 
 /* 1. Body & Main Layout Canvas */
@@ -119,157 +119,146 @@ html.light .line-through.text-zinc-500 {
   color: #94a3b8 !important;
 }
 
-/* 5. Icons (SVG) Solid High Contrast in Day Mode */
-html.light svg {
-  color: currentColor;
-}
+/* 5. SOLID FILL ACCENT BADGES, CHIPS & PILLS IN DAY MODE */
 
-html.light .text-indigo-400 svg,
-html.light svg.text-indigo-400,
-html.light .text-indigo-300 svg,
-html.light svg.text-indigo-300 {
-  color: #4f46e5 !important;
-}
-
-html.light .text-emerald-400 svg,
-html.light svg.text-emerald-400,
-html.light .text-emerald-300 svg,
-html.light svg.text-emerald-300 {
-  color: #059669 !important;
-}
-
-html.light .text-amber-400 svg,
-html.light svg.text-amber-400,
-html.light .text-amber-300 svg,
-html.light svg.text-amber-300 {
-  color: #d97706 !important;
-}
-
-html.light .text-rose-400 svg,
-html.light svg.text-rose-400,
-html.light .text-rose-300 svg,
-html.light svg.text-rose-300 {
-  color: #e11d48 !important;
-}
-
-html.light .text-violet-400 svg,
-html.light svg.text-violet-400,
-html.light .text-violet-300 svg,
-html.light svg.text-violet-300 {
-  color: #7c3aed !important;
-}
-
-html.light .text-teal-400 svg,
-html.light svg.text-teal-400,
-html.light .text-teal-300 svg,
-html.light svg.text-teal-300 {
-  color: #0d9488 !important;
-}
-
-html.light .text-cyan-400 svg,
-html.light svg.text-cyan-400,
-html.light .text-cyan-300 svg,
-html.light svg.text-cyan-300 {
-  color: #0891b2 !important;
-}
-
-html.light .text-zinc-400 svg,
-html.light svg.text-zinc-400,
-html.light .text-zinc-500 svg,
-html.light svg.text-zinc-500 {
-  color: #475569 !important;
-}
-
-/* 6. Accent Colors & Badges (Soft Pastel BG + Solid Text) */
-html.light .text-indigo-400,
-html.light .text-indigo-300 {
-  color: #4f46e5 !important;
-}
-
+/* Solid Indigo Accent Badges & Pills */
 html.light .bg-indigo-500\/10,
 html.light .bg-indigo-600\/10,
-html.light .bg-indigo-500\/20 {
-  background-color: #eef2ff !important;
-  border-color: #c7d2fe !important;
+html.light .bg-indigo-500\/20,
+html.light .bg-indigo-500\/40 {
+  background-color: #4f46e5 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.25) !important;
 }
 
-html.light .text-emerald-400,
-html.light .text-emerald-300 {
-  color: #059669 !important;
+html.light .bg-indigo-500\/10 *,
+html.light .bg-indigo-600\/10 *,
+html.light .bg-indigo-500\/20 * {
+  color: #ffffff !important;
 }
 
+/* Solid Emerald Accent Badges & Pills */
 html.light .bg-emerald-500\/10,
 html.light .bg-emerald-600\/10,
-html.light .bg-emerald-500\/20 {
-  background-color: #ecfdf5 !important;
-  border-color: #a7f3d0 !important;
+html.light .bg-emerald-500\/20,
+html.light .bg-emerald-500\/30 {
+  background-color: #059669 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(5, 150, 105, 0.25) !important;
 }
 
-html.light .text-amber-400,
-html.light .text-amber-300 {
-  color: #d97706 !important;
+html.light .bg-emerald-500\/10 *,
+html.light .bg-emerald-600\/10 *,
+html.light .bg-emerald-500\/20 * {
+  color: #ffffff !important;
 }
 
+/* Solid Amber Accent Badges & Pills */
 html.light .bg-amber-500\/10,
 html.light .bg-amber-600\/10,
-html.light .bg-amber-500\/20 {
-  background-color: #fffbeb !important;
-  border-color: #fde68a !important;
+html.light .bg-amber-500\/20,
+html.light .bg-amber-500\/30 {
+  background-color: #d97706 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.25) !important;
 }
 
-html.light .text-violet-400,
-html.light .text-violet-300 {
-  color: #7c3aed !important;
+html.light .bg-amber-500\/10 *,
+html.light .bg-amber-600\/10 *,
+html.light .bg-amber-500\/20 * {
+  color: #ffffff !important;
 }
 
-html.light .bg-violet-500\/10,
-html.light .bg-violet-600\/10,
-html.light .bg-violet-500\/20 {
-  background-color: #f5f3ff !important;
-  border-color: #ddd6fe !important;
-}
-
-html.light .text-rose-400,
-html.light .text-rose-300 {
-  color: #e11d48 !important;
-}
-
+/* Solid Rose Accent Badges & Pills */
 html.light .bg-rose-500\/10,
 html.light .bg-rose-600\/10,
-html.light .bg-rose-500\/20 {
-  background-color: #fff1f2 !important;
-  border-color: #fecdd3 !important;
+html.light .bg-rose-500\/20,
+html.light .bg-rose-500\/30 {
+  background-color: #e11d48 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(225, 29, 72, 0.25) !important;
 }
 
-html.light .text-teal-400,
-html.light .text-teal-300 {
-  color: #0d9488 !important;
+html.light .bg-rose-500\/10 *,
+html.light .bg-rose-600\/10 *,
+html.light .bg-rose-500\/20 * {
+  color: #ffffff !important;
 }
 
+/* Solid Violet Accent Badges & Pills */
+html.light .bg-violet-500\/10,
+html.light .bg-violet-600\/10,
+html.light .bg-violet-500\/20,
+html.light .bg-violet-500\/30 {
+  background-color: #7c3aed !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.25) !important;
+}
+
+html.light .bg-violet-500\/10 *,
+html.light .bg-violet-600\/10 *,
+html.light .bg-violet-500\/20 * {
+  color: #ffffff !important;
+}
+
+/* Solid Teal Accent Badges & Pills */
 html.light .bg-teal-500\/10,
 html.light .bg-teal-500\/20 {
-  background-color: #f0fdfa !important;
-  border-color: #99f6e4 !important;
+  background-color: #0d9488 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(13, 148, 136, 0.25) !important;
 }
 
-html.light .text-cyan-400,
-html.light .text-cyan-300 {
-  color: #0891b2 !important;
+html.light .bg-teal-500\/10 *,
+html.light .bg-teal-500\/20 * {
+  color: #ffffff !important;
 }
 
+/* Solid Cyan Accent Badges & Pills */
 html.light .bg-cyan-500\/10,
 html.light .bg-cyan-500\/20 {
-  background-color: #ecfeff !important;
-  border-color: #a5f3fc !important;
+  background-color: #0891b2 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 3px rgba(8, 145, 178, 0.25) !important;
 }
 
-/* 7. Buttons (Primary CTA Preservation & Secondary/Icon Action Solid Buttons) */
+html.light .bg-cyan-500\/10 *,
+html.light .bg-cyan-500\/20 * {
+  color: #ffffff !important;
+}
+
+/* Neutral / Low Priority Badges in Day Mode */
+html.light span[class*="bg-zinc-800"] {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  border: none !important;
+  font-weight: 600 !important;
+}
+
+/* 6. SOLID ACTION BUTTONS & ACTION TRIGGERS IN DAY MODE */
+
+/* Primary CTA Buttons */
 html.light button.bg-indigo-600,
 html.light button.bg-emerald-600,
 html.light button.bg-rose-600,
 html.light button.bg-sky-600,
 html.light a.bg-emerald-600 {
   color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25) !important;
 }
 
 html.light button.bg-indigo-600 *,
@@ -279,38 +268,50 @@ html.light button.bg-sky-600 * {
   color: #ffffff !important;
 }
 
-/* Pencil Edit Trigger Button */
+/* Solid Pencil Edit Button */
 html.light button[title="Edit Goal"],
 html.light button[title="Edit Habit"],
 html.light button[title="Edit Task"] {
-  background-color: #eef2ff !important;
-  border: 1px solid #c7d2fe !important;
-  color: #4f46e5 !important;
+  background-color: #4f46e5 !important;
+  color: #ffffff !important;
+  border: none !important;
   opacity: 1 !important;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3) !important;
+}
+
+html.light button[title="Edit Goal"] *,
+html.light button[title="Edit Habit"] *,
+html.light button[title="Edit Task"] * {
+  color: #ffffff !important;
 }
 
 html.light button[title="Edit Goal"]:hover,
 html.light button[title="Edit Habit"]:hover,
 html.light button[title="Edit Task"]:hover {
-  background-color: #e0e7ff !important;
-  color: #4338ca !important;
+  background-color: #4338ca !important;
 }
 
-/* Trash Delete Trigger Button */
+/* Solid Trash Delete Button */
 html.light button[title="Hapus Goal"],
 html.light button[title="Hapus Habit"],
 html.light button[title="Hapus Task"] {
-  background-color: #fff1f2 !important;
-  border: 1px solid #fecdd3 !important;
-  color: #e11d48 !important;
+  background-color: #e11d48 !important;
+  color: #ffffff !important;
+  border: none !important;
   opacity: 1 !important;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.3) !important;
+}
+
+html.light button[title="Hapus Goal"] *,
+html.light button[title="Hapus Habit"] *,
+html.light button[title="Hapus Task"] * {
+  color: #ffffff !important;
 }
 
 html.light button[title="Hapus Goal"]:hover,
 html.light button[title="Hapus Habit"]:hover,
 html.light button[title="Hapus Task"]:hover {
-  background-color: #ffe4e6 !important;
-  color: #be123c !important;
+  background-color: #be123c !important;
 }
 
 /* Secondary Action Buttons & Ghost Triggers */
@@ -334,7 +335,7 @@ html.light button[class*="bg-zinc-950"]:hover {
 
 /* Checkboxes (Habit & Task Checkboxes in Un-done State) */
 html.light button[class*="border-zinc-60"][class*="bg-zinc-800"] {
-  border-color: #94a3b8 !important;
+  border: 2px solid #94a3b8 !important;
   background-color: #ffffff !important;
 }
 
@@ -347,7 +348,7 @@ html.light button.bg-zinc-700 {
   background-color: #cbd5e1 !important;
 }
 
-/* 8. Structural Layout Components */
+/* 7. Structural Layout Components */
 html.light aside {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
@@ -356,10 +357,16 @@ html.light aside {
 
 html.light nav a[class*="bg-indigo-600"],
 html.light nav a.bg-indigo-600\/10 {
-  background-color: #eef2ff !important;
-  border-color: #c7d2fe !important;
-  color: #4f46e5 !important;
+  background-color: #4f46e5 !important;
+  border: none !important;
+  color: #ffffff !important;
   font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25) !important;
+}
+
+html.light nav a[class*="bg-indigo-600"] *,
+html.light nav a.bg-indigo-600\/10 * {
+  color: #ffffff !important;
 }
 
 html.light header {
@@ -374,7 +381,7 @@ html.light div.fixed.bottom-0 {
   box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.05) !important;
 }
 
-/* 9. Form Controls, Inputs, Textareas, and Options */
+/* 8. Form Controls, Inputs, Textareas, and Options */
 html.light input,
 html.light select,
 html.light textarea {
@@ -393,7 +400,7 @@ html.light textarea::placeholder {
   color: #94a3b8 !important;
 }
 
-/* 10. Modal Backdrops & Dialogs */
+/* 9. Modal Backdrops & Dialogs */
 html.light .bg-black\/70 {
   background-color: rgba(15, 23, 42, 0.45) !important;
 }

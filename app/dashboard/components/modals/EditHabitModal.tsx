@@ -29,6 +29,7 @@ export const EditHabitModal: React.FC<EditHabitModalProps> = ({
       setDescription(habit.description || '');
       setFrequency((habit.frequency as any) || 'DAILY');
       setColor(habit.color || 'emerald');
+      setReminderTime(habit.reminderTime || '');
     }
   }, [habit, isOpen]);
 

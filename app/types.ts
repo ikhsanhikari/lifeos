@@ -18,6 +18,7 @@ export interface HabitData {
   description: string | null;
   frequency: string;
   color: string | null;
+  reminderTime?: string | null;
   isDoneToday: boolean;
   logId?: string;
 }

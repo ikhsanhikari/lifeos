@@ -21,6 +21,7 @@ export default function HabitsPage() {
   const [name, setName] = useState<string>('');
   const [frequency, setFrequency] = useState<'DAILY' | 'WEEKLY'>('DAILY');
   const [color, setColor] = useState<string>('emerald');
+  const [reminderTime, setReminderTime] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handleQuickAddHabit = async (e: React.FormEvent) => {
@@ -29,8 +30,9 @@ export default function HabitsPage() {
 
     setIsSubmitting(true);
     try {
-      await handleCreateHabitSubmit(name.trim(), frequency, color);
+      await handleCreateHabitSubmit(name.trim(), frequency, color, reminderTime || undefined);
       setName('');
+      setReminderTime('');
     } finally {
       setIsSubmitting(false);
     }
@@ -64,6 +66,16 @@ export default function HabitsPage() {
             onChange={(e) => setName(e.target.value)}
             className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors"
           />
+
+          <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded-xl px-2.5 py-1.5" title="Jam Pengingat Telegram">
+            <Clock className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <input
+              type="time"
+              value={reminderTime}
+              onChange={(e) => setReminderTime(e.target.value)}
+              className="bg-transparent text-xs text-zinc-100 focus:outline-none w-20 font-mono"
+            />
+          </div>
 
           <select
             value={frequency}
