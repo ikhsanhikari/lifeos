@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, ClipboardList, Check, Sparkles, Trash2, AlertCircle, Bot, Clock, RefreshCw } from 'lucide-react';
-import { parseBulkHabitText } from '../../../../src/controllers/habitController';
+import { parseBulkHabitText } from '../../../../src/utils/habitParser';
 
 export interface ParsedHabitObject {
   name: string;
