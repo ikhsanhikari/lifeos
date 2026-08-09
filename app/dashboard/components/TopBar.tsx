@@ -1,9 +1,10 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Plus, Calendar, ShieldCheck, Sparkles, Send, Share2, Sliders } from 'lucide-react';
+import { Plus, Calendar, ShieldCheck, Sparkles, Send, Share2, Sliders, Sun, Moon } from 'lucide-react';
 import { UserAuthData } from '../../types';
 import { Button } from '../../components/ui/Button';
+import { useDashboard } from '../../components/DashboardShell';
 
 interface TopBarProps {
   currentUser: UserAuthData | null;
@@ -23,6 +24,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   aiAvailable = true,
 }) => {
   const pathname = usePathname();
+  const { theme, toggleTheme } = useDashboard();
 
   const currentDateFormatted = new Date().toLocaleDateString('id-ID', {
     weekday: 'long',
@@ -137,6 +139,23 @@ export const TopBar: React.FC<TopBarProps> = ({
           <Sliders className="w-3.5 h-3.5 text-indigo-400" />
           <span>Settings</span>
         </Link>
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-lg transition-all"
+          title={theme === 'dark' ? 'Ganti ke Mode Day (Terang)' : 'Ganti ke Mode Night (Gelap)'}
+        >
+          {theme === 'dark' ? (
+            <>
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+              <span>Day Mode ☀️</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-3.5 h-3.5 text-amber-400" />
+              <span>Night Mode 🌙</span>
+            </>
+          )}
+        </button>
       </div>
     </header>
   );

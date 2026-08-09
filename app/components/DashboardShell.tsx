@@ -50,6 +50,9 @@ interface DashboardContextType {
   isLoading: boolean;
   error: string | null;
 
+  theme: 'dark' | 'light';
+  toggleTheme: () => void;
+
   shareCardData: any;
   isShareLoading: boolean;
   fetchShareCardData: () => Promise<void>;
@@ -110,6 +113,28 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [telegramStatus, setTelegramStatus] = useState<TelegramStatusData>({ isLinked: false });
   const [aiStatus, setAiStatus] = useState<AiStatusData | null>(null);
   const [userSettings, setUserSettings] = useState<UserSettingsData | null>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('lifeos_theme') as 'dark' | 'light' | null;
+      if (saved === 'light' || saved === 'dark') {
+        setTheme(saved);
+        document.documentElement.classList.toggle('light', saved === 'light');
+      }
+    }
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('lifeos_theme', next);
+        document.documentElement.classList.toggle('light', next === 'light');
+      }
+      return next;
+    });
+  }, []);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -653,6 +678,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         userSettings,
         isLoading,
         error,
+        theme,
+        toggleTheme,
         shareCardData,
         isShareLoading,
         fetchShareCardData,
