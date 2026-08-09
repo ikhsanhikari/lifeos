@@ -323,8 +323,16 @@ async function updateHabitsMessage(ctx: Context) {
     `📊 *Progres:* ${completedCount}/${habits.length} Selesai\n\n` +
     `Klik tombol di bawah untuk mencatat check-in habit hari ini:`;
 
-  await ctx.editMessageText(messageText, {
-    parse_mode: 'Markdown',
-    ...buildHabitsInlineKeyboard(habits),
-  });
+  try {
+    await ctx.editMessageText(messageText, {
+      parse_mode: 'Markdown',
+      ...buildHabitsInlineKeyboard(habits),
+    });
+  } catch (error: any) {
+    if (error?.description?.includes('message is not modified')) {
+      // Ignore Telegram 400 error when message content hasn't changed
+      return;
+    }
+    throw error;
+  }
 }
