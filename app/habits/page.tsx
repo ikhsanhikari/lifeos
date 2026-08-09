@@ -15,6 +15,7 @@ export default function HabitsPage() {
     handleDeleteHabit,
     handleOpenEditHabitModal,
     handleCreateHabitSubmit,
+    handleReorderHabits,
     setIsAddHabitModalOpen,
   } = useDashboard();
 
@@ -117,6 +118,7 @@ export default function HabitsPage() {
             onToggleHabit={toggleHabit}
             onDeleteHabit={handleDeleteHabit}
             onEditHabit={handleOpenEditHabitModal}
+            onReorderHabits={handleReorderHabits}
             onOpenAddModal={() => setIsAddHabitModalOpen(true)}
             showTitle={false}
           />

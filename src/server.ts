@@ -10,6 +10,7 @@ import {
   toggleHabitStatus,
   createHabit,
   deleteHabit,
+  reorderHabits,
 } from './controllers/habitController';
 import {
   getUserTasks,
@@ -602,6 +603,27 @@ app.post('/api/habits', async (req: AuthenticatedRequest, res: Response) => {
 
     const newHabit = await createHabit({ name, description, frequency, color, reminderTime, userId: req.user.id });
     res.json({ success: true, habit: newHabit });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Route to reorder habits (Drag and Drop sortOrder update)
+app.post('/api/habits/reorder', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) {
+      res.status(400).json({ success: false, message: 'orderedIds array is required' });
+      return;
+    }
+
+    await reorderHabits(orderedIds);
+    res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

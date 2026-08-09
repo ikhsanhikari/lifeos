@@ -63,6 +63,7 @@ interface DashboardContextType {
   handleAddTaskToGoal: (goalId: string, taskTitle: string) => Promise<void>;
   handleDeleteHabit: (habitId: string, e: React.MouseEvent) => Promise<void>;
   handleCreateHabitSubmit: (name: string, frequency: 'DAILY' | 'WEEKLY', color: string, reminderTime?: string) => Promise<void>;
+  handleReorderHabits: (orderedIds: string[]) => Promise<void>;
   toggleHabit: (id: string) => Promise<void>;
   toggleTaskStatus: (taskId: string, currentStatus: string) => Promise<void>;
   handleDeleteTask: (taskId: string, e: React.MouseEvent) => Promise<void>;
@@ -522,6 +523,32 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleReorderHabits = async (orderedIds: string[]) => {
+    setHabits((prev) => {
+      const map = new Map(prev.map((h) => [h.id, h]));
+      const next: HabitData[] = [];
+      orderedIds.forEach((id) => {
+        const item = map.get(id);
+        if (item) next.push(item);
+      });
+      prev.forEach((h) => {
+        if (!orderedIds.includes(h.id)) next.push(h);
+      });
+      return next;
+    });
+
+    try {
+      await fetch(`${API_BASE_URL}/api/habits/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ orderedIds }),
+      });
+    } catch (err) {
+      console.error('Error reordering habits:', err);
+      fetchData();
+    }
+  };
+
   const toggleHabit = async (id: string) => {
     setHabits((prev) =>
       prev.map((h) => (h.id === id ? { ...h, isDoneToday: !h.isDoneToday } : h))
@@ -689,6 +716,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         handleAddTaskToGoal,
         handleDeleteHabit,
         handleCreateHabitSubmit,
+        handleReorderHabits,
         toggleHabit,
         toggleTaskStatus,
         handleDeleteTask,

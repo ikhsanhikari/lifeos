@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, Check, Trash2, Plus, Pencil, Clock } from 'lucide-react';
+import { Target, Check, Trash2, Plus, Pencil, Clock, GripVertical } from 'lucide-react';
 import { HabitData } from '../../types';
 export type { HabitData };
 import { Card } from '../../components/ui/Card';
@@ -12,6 +12,7 @@ interface HabitPanelProps {
   onToggleHabit: (id: string) => void;
   onDeleteHabit: (id: string, e: React.MouseEvent) => void;
   onEditHabit?: (habit: HabitData) => void;
+  onReorderHabits?: (orderedIds: string[]) => void;
   onOpenAddModal: () => void;
   showTitle?: boolean;
 }
@@ -21,10 +22,12 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
   onToggleHabit,
   onDeleteHabit,
   onEditHabit,
+  onReorderHabits,
   onOpenAddModal,
   showTitle = true,
 }) => {
   const [habitTab, setHabitTab] = useState<'all' | 'pending' | 'completed'>('all');
+  const [draggedId, setDraggedId] = useState<string | null>(null);
 
   const completedCount = habits.filter((h) => h.isDoneToday).length;
   const pendingCount = habits.filter((h) => !h.isDoneToday).length;
@@ -34,6 +37,33 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
     if (habitTab === 'completed') return h.isDoneToday;
     return true;
   });
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', id);
+    setDraggedId(id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData('text/plain') || draggedId;
+    if (!sourceId || sourceId === targetId) return;
+
+    const allIds = habits.map((h) => h.id);
+    const from = allIds.indexOf(sourceId);
+    const to = allIds.indexOf(targetId);
+
+    if (from !== -1 && to !== -1) {
+      const next = [...allIds];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      onReorderHabits?.(next);
+    }
+    setDraggedId(null);
+  };
 
   return (
     <Card className="flex flex-col justify-between space-y-3.5 sm:space-y-5">
@@ -48,7 +78,7 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
                 </div>
                 <div>
                   <h2 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight">Habit Tracker</h2>
-                  <p className="text-[10px] sm:text-[11px] text-zinc-400">Konsistensi harian kamu hari ini</p>
+                  <p className="text-[10px] sm:text-[11px] text-zinc-400">Geser (drag & drop) untuk ubah urutan habit</p>
                 </div>
               </div>
             </div>
@@ -89,14 +119,30 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
           {filteredHabits.map((habit) => (
             <div
               key={habit.id}
+              draggable={Boolean(onReorderHabits)}
+              onDragStart={(e) => handleDragStart(e, habit.id)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, habit.id)}
+              onDragEnd={() => setDraggedId(null)}
               onClick={() => onToggleHabit(habit.id)}
               className={`flex items-center justify-between py-2.5 px-3 sm:p-3.5 rounded-lg sm:rounded-xl border transition-all duration-200 cursor-pointer group ${
+                draggedId === habit.id ? 'opacity-40 border-indigo-500 scale-[0.99]' : ''
+              } ${
                 habit.isDoneToday
                   ? 'bg-zinc-900/40 border-zinc-800/60 opacity-75'
                   : 'bg-zinc-900/80 border-zinc-800/80 hover:border-indigo-500/40 hover:bg-zinc-800/50 shadow-sm'
               }`}
             >
-              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                {onReorderHabits && (
+                  <div
+                    className="cursor-grab active:cursor-grabbing p-0.5 text-zinc-500 hover:text-zinc-300 opacity-60 group-hover:opacity-100 transition-opacity shrink-0"
+                    title="Geser untuk ubah urutan"
+                  >
+                    <GripVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </div>
+                )}
+
                 {/* Circular Toggle */}
                 <button
                   type="button"
@@ -157,24 +203,19 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
           {filteredHabits.length === 0 && (
             <EmptyState
               icon={Target}
-              title="Tidak ada habit pada filter ini"
-              description="Buat habit harian baru untuk mulai membangun rutinitas produktif kamu."
-              actionLabel="+ Tambah Habit Baru"
+              title="Belum ada habit"
+              description={
+                habitTab === 'completed'
+                  ? 'Belum ada habit yang diselesaikan hari ini.'
+                  : habitTab === 'pending'
+                  ? 'Semua habit harian kamu sudah selesai!'
+                  : 'Mulai dengan menambahkan habit baru pertama kamu.'
+              }
+              actionLabel="Tambah Habit"
               onAction={onOpenAddModal}
             />
           )}
         </div>
-      </div>
-
-      {/* Quick Add Habit Trigger */}
-      <div className="pt-3 border-t border-zinc-800/80 flex justify-end">
-        <button
-          onClick={onOpenAddModal}
-          className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Tambah Habit</span>
-        </button>
       </div>
     </Card>
   );

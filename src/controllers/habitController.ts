@@ -319,6 +319,20 @@ export async function deleteHabit(habitId: string) {
 }
 
 /**
+ * Core function untuk mengubah urutan habit (Reorder sortOrder)
+ */
+export async function reorderHabits(orderedIds: string[]): Promise<boolean> {
+  const updates = orderedIds.map((id, index) =>
+    prisma.habit.update({
+      where: { id },
+      data: { sortOrder: index + 1 },
+    })
+  );
+  await prisma.$transaction(updates);
+  return true;
+}
+
+/**
  * Helper to edit the message UI after toggle/refresh
  */
 async function updateHabitsMessage(ctx: Context) {
