@@ -44,6 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { href: '/tasks', label: 'Tugas & Task', icon: CheckSquare },
     { href: '/journal', label: 'Jurnal Harian', icon: BookOpen },
     { href: '/streaks', label: 'Habit Streaks', icon: Flame },
+    { href: '/share', label: 'Share Card 📤', icon: Share2 },
   ];
 
   return (
@@ -85,15 +86,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </Link>
               );
             })}
-            {onOpenShareModal && (
-              <button
-                onClick={onOpenShareModal}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold bg-violet-600/10 text-violet-300 border border-violet-500/20 hover:bg-violet-600/20 transition-all shadow-sm mt-2"
-              >
-                <Share2 className="w-4 h-4 text-violet-400" />
-                <span>Share Card (Flex) 📤</span>
-              </button>
-            )}
           </nav>
 
           {/* Telegram Sync Widget */}
@@ -126,15 +118,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             )}
 
-            {onOpenSettingsModal && (
-              <button
-                onClick={onOpenSettingsModal}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-zinc-300 hover:text-zinc-100 bg-zinc-800/40 hover:bg-zinc-800/80 border border-zinc-800 transition-all"
-              >
-                <Sliders className="w-4 h-4 text-indigo-400" />
-                <span>Pengaturan Reminder</span>
-              </button>
-            )}
+            <Link
+              href="/settings"
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all border border-zinc-800 ${
+                pathname === '/settings'
+                  ? 'bg-indigo-600/10 text-indigo-400 font-semibold border-indigo-500/20'
+                  : 'text-zinc-300 hover:text-zinc-100 bg-zinc-800/40 hover:bg-zinc-800/80'
+              }`}
+            >
+              <Sliders className="w-4 h-4 text-indigo-400" />
+              <span>Pengaturan Reminder</span>
+            </Link>
           </div>
         </div>
 
@@ -169,32 +163,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </aside>
 
       {/* Mobile Bottom Navigation Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 border-t border-zinc-800/80 backdrop-blur-xl px-2 py-2 flex items-center justify-around">
-        {navItems.slice(0, 5).map((item) => {
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 border-t border-zinc-800/80 backdrop-blur-xl px-1.5 py-1.5 flex items-center justify-around">
+        {[
+          { href: '/', label: 'Home', icon: LayoutDashboard },
+          { href: '/goals', label: 'Goals', icon: Sparkles },
+          { href: '/habits', label: 'Habits', icon: Target },
+          { href: '/tasks', label: 'Tasks', icon: CheckSquare },
+          { href: '/share', label: 'Share', icon: Share2 },
+          { href: '/settings', label: 'Setting', icon: Sliders },
+        ].map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition-all ${
+              className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl transition-all ${
                 isActive ? 'text-indigo-400 font-semibold' : 'text-zinc-400'
               }`}
             >
-              <Icon className="w-5 h-5" />
-              <span className="text-[10px]">{item.label.split(' ')[0]}</span>
+              <Icon className="w-4.5 h-4.5" />
+              <span className="text-[10px]">{item.label}</span>
             </Link>
           );
         })}
-        {onOpenShareModal && (
-          <button
-            onClick={onOpenShareModal}
-            className="flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl text-violet-400 font-semibold"
-          >
-            <Share2 className="w-5 h-5" />
-            <span className="text-[10px]">Share</span>
-          </button>
-        )}
       </div>
     </>
   );

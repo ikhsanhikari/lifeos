@@ -47,6 +47,10 @@ interface DashboardContextType {
   isLoading: boolean;
   error: string | null;
 
+  shareCardData: any;
+  isShareLoading: boolean;
+  fetchShareCardData: () => Promise<void>;
+
   fetchData: () => Promise<void>;
   handleDeleteGoal: (goalId: string, e: React.MouseEvent) => Promise<void>;
   handleCreateGoalSubmit: (title: string, description: string, deadline: string, color: string) => Promise<void>;
@@ -574,6 +578,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         userSettings,
         isLoading,
         error,
+        shareCardData,
+        isShareLoading,
+        fetchShareCardData,
         fetchData,
         handleDeleteGoal,
         handleCreateGoalSubmit,

@@ -1,6 +1,7 @@
 import React from 'react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Plus, Calendar, ShieldCheck, Sparkles, Send, Share2 } from 'lucide-react';
+import { Plus, Calendar, ShieldCheck, Sparkles, Send, Share2, Sliders } from 'lucide-react';
 import { UserAuthData } from '../../types';
 import { Button } from '../../components/ui/Button';
 
@@ -57,6 +58,16 @@ export const TopBar: React.FC<TopBarProps> = ({
           title: <>Analitik Streaks Habit</>,
           subtitle: 'Rekam jejak konsistensi harian dari waktu ke waktu',
         };
+      case '/share':
+        return {
+          title: <>Share Card Studio 📤</>,
+          subtitle: 'Bagikan pencapaian produktivitas harian kamu ke media sosial dengan style estetik',
+        };
+      case '/settings':
+        return {
+          title: <>Pengaturan Telegram Reminder ⏰</>,
+          subtitle: 'Atur jadwal notifikasi push harian, pengingat habit, dan recap malam',
+        };
       default:
         return {
           title: currentUser ? (
@@ -95,7 +106,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         </p>
       </div>
 
-      <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+      <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
         {aiAvailable && onOpenAiSummaryModal && (
           <button
             onClick={onOpenAiSummaryModal}
@@ -106,16 +117,26 @@ export const TopBar: React.FC<TopBarProps> = ({
             <span>AI Summary</span>
           </button>
         )}
-        {onOpenShareModal && (
-          <button
-            onClick={onOpenShareModal}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 rounded-lg transition-all"
-            title="Bagikan Kartu Pencapaian Harian"
-          >
-            <Share2 className="w-3.5 h-3.5 text-violet-400" />
-            <span>Share</span>
-          </button>
-        )}
+        <Link
+          href="/share"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 rounded-lg transition-all"
+          title="Bagikan Kartu Pencapaian Harian"
+        >
+          <Share2 className="w-3.5 h-3.5 text-violet-400" />
+          <span>Share</span>
+        </Link>
+        <Link
+          href="/settings"
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all border ${
+            pathname === '/settings'
+              ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+              : 'text-zinc-300 bg-zinc-800/60 hover:bg-zinc-800 border-zinc-700/80'
+          }`}
+          title="Pengaturan Telegram Reminder"
+        >
+          <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+          <span>Settings</span>
+        </Link>
       </div>
     </header>
   );
