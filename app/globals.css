@@ -34,8 +34,11 @@
   }
 }
 
-/* Day Mode (Light Theme) Overrides */
-html.light body {
+/* ==========================================================
+   DAY MODE (LIGHT THEME) COMPREHENSIVE OVERRIDES
+   ========================================================== */
+html.light body,
+html.light main {
   background-color: #f8fafc !important;
   color: #0f172a !important;
 }
@@ -52,37 +55,49 @@ html.light ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8 !important;
 }
 
-/* Background overrides for Day Mode */
-html.light .bg-\[\#09090b\],
-html.light .bg-zinc-950 {
-  background-color: #f8fafc !important;
-}
-
-html.light .bg-zinc-900\/60,
-html.light .bg-zinc-900\/80,
-html.light .bg-zinc-900\/90,
+/* Primary Top-Level Card & Panel Surfaces */
+html.light .bg-\[\#121215\],
 html.light .bg-zinc-900,
-html.light .bg-\[\#121215\] {
+html.light .bg-zinc-900\/60,
+html.light .bg-zinc-900\/70,
+html.light .bg-zinc-900\/80,
+html.light .bg-zinc-900\/90 {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04) !important;
+  color: #0f172a !important;
 }
 
+/* Sub-Cards, Inner Rows, Action Blocks, Select Dropdowns, & List Items */
 html.light .bg-\[\#18181b\],
+html.light .bg-zinc-950,
+html.light .bg-zinc-950\/60,
+html.light .bg-zinc-950\/80,
+html.light .bg-zinc-950\/90,
+html.light .bg-zinc-900\/30,
+html.light .bg-zinc-900\/40,
+html.light .bg-zinc-900\/50,
+html.light .bg-zinc-800,
 html.light .bg-zinc-800\/30,
 html.light .bg-zinc-800\/40,
 html.light .bg-zinc-800\/50,
 html.light .bg-zinc-800\/60,
 html.light .bg-zinc-800\/80,
-html.light .bg-zinc-800,
-html.light .bg-zinc-950\/60,
-html.light .bg-zinc-950\/80,
-html.light .bg-zinc-950\/90 {
+html.light .bg-zinc-800\/90,
+html.light .bg-indigo-950\/40 {
   background-color: #f1f5f9 !important;
   border-color: #cbd5e1 !important;
+  color: #0f172a !important;
 }
 
-/* Text color overrides for Day Mode */
+/* Hover States in Day Mode */
+html.light [class*="hover:bg-zinc-800"]:hover,
+html.light [class*="hover:bg-zinc-700"]:hover,
+html.light [class*="hover:bg-zinc-900"]:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Text Color Overrides for Day Mode */
 html.light .text-zinc-50,
 html.light .text-zinc-100,
 html.light .text-zinc-200 {
@@ -98,35 +113,35 @@ html.light .text-zinc-500 {
   color: #64748b !important;
 }
 
-/* Border overrides for Day Mode */
-html.light .border-zinc-800\/60,
-html.light .border-zinc-800\/80,
-html.light .border-zinc-800\/90,
-html.light .border-zinc-800,
-html.light .border-zinc-700,
-html.light .border-zinc-700\/80,
-html.light .border-zinc-700\/60 {
+html.light .line-through.text-zinc-500 {
+  color: #94a3b8 !important;
+}
+
+/* Universal Border Overrides for Day Mode */
+html.light [class*="border-zinc-"] {
   border-color: #e2e8f0 !important;
 }
 
-/* Structural elements in Day Mode */
+/* Structural Navigation Components */
 html.light aside {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.03) !important;
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.04) !important;
 }
 
 html.light header {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03) !important;
 }
 
 html.light div.fixed.bottom-0 {
   background-color: rgba(255, 255, 255, 0.95) !important;
   border-color: #e2e8f0 !important;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.05) !important;
 }
 
+/* Form Controls, Inputs, Textareas, and Dropdown Options */
 html.light input,
 html.light select,
 html.light textarea {
@@ -135,13 +150,19 @@ html.light textarea {
   border-color: #cbd5e1 !important;
 }
 
+html.light select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
 html.light input::placeholder,
 html.light textarea::placeholder {
   color: #94a3b8 !important;
 }
 
+/* Modal Backdrops & Overlays */
 html.light .bg-black\/70 {
-  background-color: rgba(15, 23, 42, 0.5) !important;
+  background-color: rgba(15, 23, 42, 0.45) !important;
 }
 
 /* Glassmorphism & UI Utilities */
