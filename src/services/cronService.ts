@@ -166,11 +166,11 @@ export async function sendMorningReminders(bot: Telegraf, targetHHMM?: string): 
 }
 
 /**
- * 2. Time-Specific Reminder (Hourly Cron Runner)
- * Check habits & tasks scheduled for the current hour and push Telegram alerts.
+ * 2. Time-Specific Reminder (Hourly/Windowed Cron Runner)
+ * Check habits & tasks scheduled for the current time window and push Telegram alerts.
  * Returns count of reminders sent.
  */
-export async function sendTimeSpecificReminders(bot: Telegraf): Promise<number> {
+export async function sendTimeSpecificReminders(bot: Telegraf, targetHHMM?: string): Promise<number> {
   let sentCount = 0;
   try {
     const activeLinks = await prisma.telegramLink.findMany({
@@ -182,14 +182,10 @@ export async function sendTimeSpecificReminders(bot: Telegraf): Promise<number> 
       },
     });
 
-    const currentHour = parseInt(
-      new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Asia/Jakarta',
-        hour: 'numeric',
-        hour12: false,
-      }).format(new Date()),
-      10
-    );
+    const nowHHMM = targetHHMM || getWibHHMM();
+    const [currentHourStr, currentMinStr] = nowHHMM.split(':');
+    const currentHour = parseInt(currentHourStr, 10);
+    const currentMin = parseInt(currentMinStr, 10);
     const today = getTodayDate();
 
     for (const link of activeLinks) {
@@ -203,7 +199,7 @@ export async function sendTimeSpecificReminders(bot: Telegraf): Promise<number> 
       const chatId = Number(link.telegramChatId);
       const userId = link.userId;
 
-      // Find habits with reminderTime matching current hour
+      // Find habits with reminderTime matching current hour & minute window
       const habitsWithReminder = await prisma.habit.findMany({
         where: { userId, isArchived: false, reminderTime: { not: null } },
       });
@@ -221,10 +217,17 @@ export async function sendTimeSpecificReminders(bot: Telegraf): Promise<number> 
         if (!h.reminderTime || doneHabitIds.has(h.id)) return false;
         const rDate = new Date(h.reminderTime);
         const rHour = rDate.getUTCHours();
-        return rHour === currentHour;
+        const rMin = rDate.getUTCMinutes();
+
+        if (rHour !== currentHour) return false;
+
+        if (currentMin === 0) {
+          return rMin === 0 || rMin > 50;
+        }
+        return rMin > currentMin - 10 && rMin <= currentMin;
       });
 
-      // Find tasks with dueTime matching current hour
+      // Find tasks with dueTime matching current hour & minute window
       const tasksWithDueTime = await prisma.task.findMany({
         where: {
           userId,
@@ -238,7 +241,14 @@ export async function sendTimeSpecificReminders(bot: Telegraf): Promise<number> 
         if (!t.dueTime) return false;
         const tDate = new Date(t.dueTime);
         const tHour = tDate.getUTCHours();
-        return tHour === currentHour;
+        const tMin = tDate.getUTCMinutes();
+
+        if (tHour !== currentHour) return false;
+
+        if (currentMin === 0) {
+          return tMin === 0 || tMin > 50;
+        }
+        return tMin > currentMin - 10 && tMin <= currentMin;
       });
 
       if (dueHabits.length > 0 || dueTasks.length > 0) {
@@ -257,8 +267,9 @@ export async function sendTimeSpecificReminders(bot: Telegraf): Promise<number> 
             }).join('\n') + `\n\n`;
         }
 
+        const formattedTimeHeader = `${currentHourStr}:${currentMinStr}`;
         const message =
-          `⏰ *PENGINGAT WAKTU TIBA (${currentHour}:00)* 🔔\n\n` +
+          `⏰ *PENGINGAT WAKTU TIBA (${formattedTimeHeader})* 🔔\n\n` +
           `Halo ${link.user.name}! Waktunya menyelesaikan target kamu sekarang:\n\n` +
           `${habitSection}` +
           `${taskSection}` +
@@ -266,7 +277,7 @@ export async function sendTimeSpecificReminders(bot: Telegraf): Promise<number> 
 
         await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
         sentCount++;
-        console.log(`[CRON ${getWibHHMM()} WIB] ⏰ Hourly Task/Habit Reminder sent to ${link.user.name} (${chatId})`);
+        console.log(`[CRON ${getWibHHMM()} WIB] ⏰ Item Reminder (${formattedTimeHeader}) sent to ${link.user.name} (${chatId})`);
       }
     }
   } catch (error: any) {
@@ -409,11 +420,8 @@ export async function checkAndRunScheduledReminders(bot: Telegraf) {
   // 3. Streak Alert Reminders matching current time
   const streakCount = await sendStreakAlertReminders(bot, currentHHMM);
 
-  // 4. Hourly Time-Specific Reminders (Run at the top of every hour: XX:00)
-  let hourlyCount = 0;
-  if (currentHHMM.endsWith(':00')) {
-    hourlyCount = await sendTimeSpecificReminders(bot);
-  }
+  // 4. Time-Specific Item Reminders (Habits & Tasks)
+  const hourlyCount = await sendTimeSpecificReminders(bot, currentHHMM);
 
   const totalSent = morningCount + eveningCount + streakCount + hourlyCount;
   if (totalSent > 0) {
