@@ -24,10 +24,10 @@ export function getWibHHMM(): string {
 /**
  * 1. Morning Reminder
  * Send daily habit list, goal-contextual tasks, and deadline alerts to Telegram linked users.
- * If targetHHMM is provided, filters users whose morningReminderTime matches targetHHMM.
+ * Returns count of reminders sent.
  */
-export async function sendMorningReminders(bot: Telegraf, targetHHMM?: string) {
-  console.log(`⏰ Running Morning Reminder Check (Target Time: ${targetHHMM || 'ALL'})...`);
+export async function sendMorningReminders(bot: Telegraf, targetHHMM?: string): Promise<number> {
+  let sentCount = 0;
   try {
     const activeLinks = await prisma.telegramLink.findMany({
       where: { isActive: true },
@@ -156,19 +156,22 @@ export async function sendMorningReminders(bot: Telegraf, targetHHMM?: string) {
         `_Ketik /focus untuk melihat fokus utama, atau /goals untuk melihat daftar mimpi kamu!_`;
 
       await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-      console.log(`✅ Sent Morning Reminder to ${link.user.name} (${chatId})`);
+      sentCount++;
+      console.log(`[CRON ${getWibHHMM()} WIB] ☀️ Morning Reminder sent to ${link.user.name} (${chatId})`);
     }
-  } catch (error) {
-    console.error('Error in sendMorningReminders:', error);
+  } catch (error: any) {
+    console.error(`[CRON ERROR ${getWibHHMM()} WIB] Morning Reminder failed:`, error.message || error);
   }
+  return sentCount;
 }
 
 /**
  * 2. Time-Specific Reminder (Hourly Cron Runner)
  * Check habits & tasks scheduled for the current hour and push Telegram alerts.
+ * Returns count of reminders sent.
  */
-export async function sendTimeSpecificReminders(bot: Telegraf) {
-  console.log('⏰ Running Hourly Time-Specific Reminder Check...');
+export async function sendTimeSpecificReminders(bot: Telegraf): Promise<number> {
+  let sentCount = 0;
   try {
     const activeLinks = await prisma.telegramLink.findMany({
       where: { isActive: true },
@@ -179,7 +182,6 @@ export async function sendTimeSpecificReminders(bot: Telegraf) {
       },
     });
 
-    // Get current hour in Asia/Jakarta (WIB) timezone
     const currentHour = parseInt(
       new Intl.DateTimeFormat('en-US', {
         timeZone: 'Asia/Jakarta',
@@ -263,20 +265,23 @@ export async function sendTimeSpecificReminders(bot: Telegraf) {
           `_Ketik /habits atau /tasks untuk melakukan check-in!_`;
 
         await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-        console.log(`✅ Sent Hourly Time-Specific Reminder to ${link.user.name} (${chatId})`);
+        sentCount++;
+        console.log(`[CRON ${getWibHHMM()} WIB] ⏰ Hourly Task/Habit Reminder sent to ${link.user.name} (${chatId})`);
       }
     }
-  } catch (error) {
-    console.error('Error in sendTimeSpecificReminders:', error);
+  } catch (error: any) {
+    console.error(`[CRON ERROR ${getWibHHMM()} WIB] Hourly Time-Specific Reminder failed:`, error.message || error);
   }
+  return sentCount;
 }
 
 /**
  * 3. Evening Recap
  * Prompt user to submit Daily Log & Mood journal if not filled today.
+ * Returns count of reminders sent.
  */
-export async function sendEveningRecapReminders(bot: Telegraf, targetHHMM?: string) {
-  console.log(`⏰ Running Evening Recap Check (Target Time: ${targetHHMM || 'ALL'})...`);
+export async function sendEveningRecapReminders(bot: Telegraf, targetHHMM?: string): Promise<number> {
+  let sentCount = 0;
   try {
     const activeLinks = await prisma.telegramLink.findMany({
       where: { isActive: true },
@@ -318,20 +323,23 @@ export async function sendEveningRecapReminders(bot: Telegraf, targetHHMM?: stri
           `*Ketik /log sekarang untuk mencatat mood & energi kamu!*`;
 
         await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-        console.log(`✅ Sent Evening Recap Reminder to ${link.user.name} (${chatId})`);
+        sentCount++;
+        console.log(`[CRON ${getWibHHMM()} WIB] 🌙 Evening Recap Reminder sent to ${link.user.name} (${chatId})`);
       }
     }
-  } catch (error) {
-    console.error('Error in sendEveningRecapReminders:', error);
+  } catch (error: any) {
+    console.error(`[CRON ERROR ${getWibHHMM()} WIB] Evening Recap failed:`, error.message || error);
   }
+  return sentCount;
 }
 
 /**
  * 4. Streak Alert
  * Warning alert for habits with active streak > 0 that are still unchecked today.
+ * Returns count of reminders sent.
  */
-export async function sendStreakAlertReminders(bot: Telegraf, targetHHMM?: string) {
-  console.log(`⏰ Running Streak Alert Check (Target Time: ${targetHHMM || 'ALL'})...`);
+export async function sendStreakAlertReminders(bot: Telegraf, targetHHMM?: string): Promise<number> {
+  let sentCount = 0;
   try {
     const activeLinks = await prisma.telegramLink.findMany({
       where: { isActive: true },
@@ -375,12 +383,14 @@ export async function sendStreakAlertReminders(bot: Telegraf, targetHHMM?: strin
           `Jangan biarkan konsistensi kamu sia-sia! Ketik /habits untuk check-in sekarang. 🔥`;
 
         await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-        console.log(`✅ Sent Streak Alert Reminder to ${link.user.name} (${chatId})`);
+        sentCount++;
+        console.log(`[CRON ${getWibHHMM()} WIB] 🚨 Streak Alert Reminder sent to ${link.user.name} (${chatId})`);
       }
     }
-  } catch (error) {
-    console.error('Error in sendStreakAlertReminders:', error);
+  } catch (error: any) {
+    console.error(`[CRON ERROR ${getWibHHMM()} WIB] Streak Alert failed:`, error.message || error);
   }
+  return sentCount;
 }
 
 /**
@@ -389,20 +399,27 @@ export async function sendStreakAlertReminders(bot: Telegraf, targetHHMM?: strin
  */
 export async function checkAndRunScheduledReminders(bot: Telegraf) {
   const currentHHMM = getWibHHMM();
-  console.log(`⏱️ Cron Ticker fired at WIB: ${currentHHMM}`);
 
   // 1. Morning Reminders matching current time
-  await sendMorningReminders(bot, currentHHMM);
+  const morningCount = await sendMorningReminders(bot, currentHHMM);
 
   // 2. Evening Recap Reminders matching current time
-  await sendEveningRecapReminders(bot, currentHHMM);
+  const eveningCount = await sendEveningRecapReminders(bot, currentHHMM);
 
   // 3. Streak Alert Reminders matching current time
-  await sendStreakAlertReminders(bot, currentHHMM);
+  const streakCount = await sendStreakAlertReminders(bot, currentHHMM);
 
   // 4. Hourly Time-Specific Reminders (Run at the top of every hour: XX:00)
+  let hourlyCount = 0;
   if (currentHHMM.endsWith(':00')) {
-    await sendTimeSpecificReminders(bot);
+    hourlyCount = await sendTimeSpecificReminders(bot);
+  }
+
+  const totalSent = morningCount + eveningCount + streakCount + hourlyCount;
+  if (totalSent > 0) {
+    console.log(`[CRON ${currentHHMM} WIB] ✅ Dispatch complete. Sent total ${totalSent} push reminder(s).`);
+  } else {
+    console.log(`[CRON ${currentHHMM} WIB] 💤 Ticker checked. No reminders due.`);
   }
 }
 
