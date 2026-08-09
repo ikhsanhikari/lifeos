@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, Check, Trash2, Plus, Pencil, Clock, GripVertical } from 'lucide-react';
+import { Target, Check, Trash2, Plus, Pencil, Clock, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import { HabitData } from '../../types';
 export type { HabitData };
 import { Card } from '../../components/ui/Card';
@@ -28,6 +28,7 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
 }) => {
   const [habitTab, setHabitTab] = useState<'all' | 'pending' | 'completed'>('all');
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [touchSourceId, setTouchSourceId] = useState<string | null>(null);
 
   const completedCount = habits.filter((h) => h.isDoneToday).length;
   const pendingCount = habits.filter((h) => !h.isDoneToday).length;
@@ -65,6 +66,61 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
     setDraggedId(null);
   };
 
+  const handleMoveUp = (e: React.MouseEvent, habitId: string) => {
+    e.stopPropagation();
+    const currentIds = habits.map((h) => h.id);
+    const index = currentIds.indexOf(habitId);
+    if (index > 0) {
+      const next = [...currentIds];
+      const [moved] = next.splice(index, 1);
+      next.splice(index - 1, 0, moved);
+      onReorderHabits?.(next);
+    }
+  };
+
+  const handleMoveDown = (e: React.MouseEvent, habitId: string) => {
+    e.stopPropagation();
+    const currentIds = habits.map((h) => h.id);
+    const index = currentIds.indexOf(habitId);
+    if (index !== -1 && index < currentIds.length - 1) {
+      const next = [...currentIds];
+      const [moved] = next.splice(index, 1);
+      next.splice(index + 1, 0, moved);
+      onReorderHabits?.(next);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent, habitId: string) => {
+    setTouchSourceId(habitId);
+    setDraggedId(habitId);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchSourceId) return;
+    const touch = e.touches[0];
+    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+    const itemElement = targetElement?.closest('[data-habit-id]') as HTMLElement | null;
+    if (itemElement) {
+      const targetId = itemElement.getAttribute('data-habit-id');
+      if (targetId && targetId !== touchSourceId) {
+        const allIds = habits.map((h) => h.id);
+        const from = allIds.indexOf(touchSourceId);
+        const to = allIds.indexOf(targetId);
+        if (from !== -1 && to !== -1) {
+          const next = [...allIds];
+          const [moved] = next.splice(from, 1);
+          next.splice(to, 0, moved);
+          onReorderHabits?.(next);
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setTouchSourceId(null);
+    setDraggedId(null);
+  };
+
   return (
     <Card className="flex flex-col justify-between space-y-3.5 sm:space-y-5">
       <div>
@@ -78,7 +134,7 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
                 </div>
                 <div>
                   <h2 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight">Habit Tracker</h2>
-                  <p className="text-[10px] sm:text-[11px] text-zinc-400">Geser (drag & drop) untuk ubah urutan habit</p>
+                  <p className="text-[10px] sm:text-[11px] text-zinc-400">Geser (drag) atau gunakan tombol 🔼🔽 untuk ubah urutan</p>
                 </div>
               </div>
             </div>
@@ -119,6 +175,7 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
           {filteredHabits.map((habit) => (
             <div
               key={habit.id}
+              data-habit-id={habit.id}
               draggable={Boolean(onReorderHabits)}
               onDragStart={(e) => handleDragStart(e, habit.id)}
               onDragOver={handleDragOver}
@@ -135,11 +192,37 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
             >
               <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
                 {onReorderHabits && (
-                  <div
-                    className="cursor-grab active:cursor-grabbing p-0.5 text-zinc-500 hover:text-zinc-300 opacity-60 group-hover:opacity-100 transition-opacity shrink-0"
-                    title="Geser untuk ubah urutan"
-                  >
-                    <GripVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    {/* Touch / Desktop Drag Grip Handle */}
+                    <div
+                      onTouchStart={(e) => handleTouchStart(e, habit.id)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                      className="cursor-grab active:cursor-grabbing p-1 text-zinc-400 hover:text-zinc-200 opacity-80 sm:opacity-60 group-hover:opacity-100 transition-opacity"
+                      title="Geser jari / mouse untuk ubah urutan"
+                    >
+                      <GripVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400" />
+                    </div>
+
+                    {/* Quick Up / Down Arrows for Mobile Touch & Desktop Click */}
+                    <div className="flex flex-col gap-0.5 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={(e) => handleMoveUp(e, habit.id)}
+                        title="Geser Ke Atas"
+                        className="p-0.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors"
+                      >
+                        <ChevronUp className="w-3 h-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleMoveDown(e, habit.id)}
+                        title="Geser Ke Bawah"
+                        className="p-0.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors"
+                      >
+                        <ChevronDown className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 )}
 
