@@ -36,7 +36,7 @@
 
 /* ==========================================================
    DAY MODE (LIGHT THEME) DESIGN SYSTEM OVERRIDES
-   Harmonious Slate, Indigo & Vibrant Accent Color Palette
+   Harmonious Slate, Indigo & Vibrant Solid Accent Color Palette
    ========================================================== */
 
 /* 1. Body & Main Layout Canvas */
@@ -71,7 +71,7 @@ html.light .bg-zinc-900\/90 {
   color: #0f172a !important;
 }
 
-/* 3. Sub-Cards, Row Items, Action Blocks, Select Dropdowns, & List Rows */
+/* 3. Sub-Cards, Inner Rows, Action Blocks, Select Dropdowns, & List Rows */
 html.light .bg-\[\#18181b\],
 html.light .bg-zinc-950,
 html.light .bg-zinc-950\/60,
@@ -93,14 +93,12 @@ html.light .bg-indigo-950\/40 {
   color: #0f172a !important;
 }
 
-/* 4. Interactive Hover States in Day Mode */
-html.light [class*="hover:bg-zinc-800"]:hover,
-html.light [class*="hover:bg-zinc-700"]:hover,
-html.light [class*="hover:bg-zinc-900"]:hover {
-  background-color: #f1f5f9 !important;
+/* Progress Bars in Day Mode */
+html.light [class*="bg-zinc-800"][class*="h-"] {
+  background-color: #e2e8f0 !important;
 }
 
-/* 5. Typography & Text Hierarchy */
+/* 4. Typography & Text Hierarchy */
 html.light .text-zinc-50,
 html.light .text-zinc-100,
 html.light .text-zinc-200 {
@@ -121,7 +119,68 @@ html.light .line-through.text-zinc-500 {
   color: #94a3b8 !important;
 }
 
-/* 6. Accent Colors & Badges (Matching Soft Pastels for Day Mode) */
+/* 5. Icons (SVG) Solid High Contrast in Day Mode */
+html.light svg {
+  color: currentColor;
+}
+
+html.light .text-indigo-400 svg,
+html.light svg.text-indigo-400,
+html.light .text-indigo-300 svg,
+html.light svg.text-indigo-300 {
+  color: #4f46e5 !important;
+}
+
+html.light .text-emerald-400 svg,
+html.light svg.text-emerald-400,
+html.light .text-emerald-300 svg,
+html.light svg.text-emerald-300 {
+  color: #059669 !important;
+}
+
+html.light .text-amber-400 svg,
+html.light svg.text-amber-400,
+html.light .text-amber-300 svg,
+html.light svg.text-amber-300 {
+  color: #d97706 !important;
+}
+
+html.light .text-rose-400 svg,
+html.light svg.text-rose-400,
+html.light .text-rose-300 svg,
+html.light svg.text-rose-300 {
+  color: #e11d48 !important;
+}
+
+html.light .text-violet-400 svg,
+html.light svg.text-violet-400,
+html.light .text-violet-300 svg,
+html.light svg.text-violet-300 {
+  color: #7c3aed !important;
+}
+
+html.light .text-teal-400 svg,
+html.light svg.text-teal-400,
+html.light .text-teal-300 svg,
+html.light svg.text-teal-300 {
+  color: #0d9488 !important;
+}
+
+html.light .text-cyan-400 svg,
+html.light svg.text-cyan-400,
+html.light .text-cyan-300 svg,
+html.light svg.text-cyan-300 {
+  color: #0891b2 !important;
+}
+
+html.light .text-zinc-400 svg,
+html.light svg.text-zinc-400,
+html.light .text-zinc-500 svg,
+html.light svg.text-zinc-500 {
+  color: #475569 !important;
+}
+
+/* 6. Accent Colors & Badges (Soft Pastel BG + Solid Text) */
 html.light .text-indigo-400,
 html.light .text-indigo-300 {
   color: #4f46e5 !important;
@@ -204,7 +263,7 @@ html.light .bg-cyan-500\/20 {
   border-color: #a5f3fc !important;
 }
 
-/* 7. Buttons & Primary CTA Preservation */
+/* 7. Buttons (Primary CTA Preservation & Secondary/Icon Action Solid Buttons) */
 html.light button.bg-indigo-600,
 html.light button.bg-emerald-600,
 html.light button.bg-rose-600,
@@ -220,11 +279,87 @@ html.light button.bg-sky-600 * {
   color: #ffffff !important;
 }
 
+/* Pencil Edit Trigger Button */
+html.light button[title="Edit Goal"],
+html.light button[title="Edit Habit"],
+html.light button[title="Edit Task"] {
+  background-color: #eef2ff !important;
+  border: 1px solid #c7d2fe !important;
+  color: #4f46e5 !important;
+  opacity: 1 !important;
+}
+
+html.light button[title="Edit Goal"]:hover,
+html.light button[title="Edit Habit"]:hover,
+html.light button[title="Edit Task"]:hover {
+  background-color: #e0e7ff !important;
+  color: #4338ca !important;
+}
+
+/* Trash Delete Trigger Button */
+html.light button[title="Hapus Goal"],
+html.light button[title="Hapus Habit"],
+html.light button[title="Hapus Task"] {
+  background-color: #fff1f2 !important;
+  border: 1px solid #fecdd3 !important;
+  color: #e11d48 !important;
+  opacity: 1 !important;
+}
+
+html.light button[title="Hapus Goal"]:hover,
+html.light button[title="Hapus Habit"]:hover,
+html.light button[title="Hapus Task"]:hover {
+  background-color: #ffe4e6 !important;
+  color: #be123c !important;
+}
+
+/* Secondary Action Buttons & Ghost Triggers */
+html.light button.bg-zinc-800,
+html.light button.bg-zinc-900,
+html.light button.bg-zinc-950,
+html.light button[class*="bg-zinc-800"],
+html.light button[class*="bg-zinc-900"],
+html.light button[class*="bg-zinc-950"] {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.light button[class*="bg-zinc-800"]:hover,
+html.light button[class*="bg-zinc-900"]:hover,
+html.light button[class*="bg-zinc-950"]:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Checkboxes (Habit & Task Checkboxes in Un-done State) */
+html.light button[class*="border-zinc-60"][class*="bg-zinc-800"] {
+  border-color: #94a3b8 !important;
+  background-color: #ffffff !important;
+}
+
+html.light button[class*="border-zinc-60"][class*="bg-zinc-800"]:hover {
+  border-color: #4f46e5 !important;
+}
+
+/* Master Toggle Switch Off State */
+html.light button.bg-zinc-700 {
+  background-color: #cbd5e1 !important;
+}
+
 /* 8. Structural Layout Components */
 html.light aside {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
   box-shadow: 4px 0 24px rgba(15, 23, 42, 0.04) !important;
+}
+
+html.light nav a[class*="bg-indigo-600"],
+html.light nav a.bg-indigo-600\/10 {
+  background-color: #eef2ff !important;
+  border-color: #c7d2fe !important;
+  color: #4f46e5 !important;
+  font-weight: 600 !important;
 }
 
 html.light header {
