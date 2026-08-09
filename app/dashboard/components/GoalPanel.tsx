@@ -87,27 +87,27 @@ export function GoalPanel({
 
   return (
     <div className="bg-[#121215] border border-zinc-800/80 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 shadow-xl space-y-3.5 sm:space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
-        <div className="flex items-center gap-2 sm:gap-2.5">
+      <div className="flex items-center justify-between gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-xs sm:text-sm shrink-0">
             🌟
           </div>
-          <div>
-            <h2 className="text-sm sm:text-base font-bold text-zinc-100 flex items-center gap-1.5 sm:gap-2">
-              Goals (Mimpi Besar)
-              <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
-                {goals.length} Total
+          <div className="min-w-0">
+            <h2 className="text-sm sm:text-base font-bold text-zinc-100 flex items-center gap-1.5 sm:gap-2 truncate">
+              Goals <span className="hidden sm:inline">(Mimpi Besar)</span>
+              <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold shrink-0">
+                {goals.length}
               </span>
             </h2>
-            <p className="text-[11px] sm:text-xs text-zinc-400">Breakdown tujuan besar kamu menjadi langkah-langkah harian</p>
+            <p className="text-[10px] sm:text-xs text-zinc-400 truncate">Breakdown tujuan besar kamu</p>
           </div>
         </div>
 
         <button
           onClick={onOpenAddModal}
-          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg sm:rounded-xl transition shadow-md shadow-emerald-950/40 self-start sm:self-auto"
+          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg sm:rounded-xl transition shadow-md shadow-emerald-950/40 shrink-0"
         >
-          <span>+</span> Buat Goal
+          <span>+</span> <span className="hidden sm:inline">Buat </span>Goal
         </button>
       </div>
 

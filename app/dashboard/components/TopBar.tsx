@@ -55,46 +55,27 @@ export const TopBar: React.FC<TopBarProps> = ({
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
-        {onOpenShareModal && (
-          <Button
-            variant="ghost"
-            size="md"
-            className="bg-gradient-to-r from-violet-600/30 to-indigo-600/30 hover:from-violet-600/40 hover:to-indigo-600/40 text-violet-200 border border-violet-500/40 shadow-lg shadow-violet-950/40 font-bold"
-            leftIcon={<Share2 className="w-4 h-4 text-violet-300" />}
-            onClick={onOpenShareModal}
-          >
-            Share Card 📤
-          </Button>
-        )}
+      <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
         {aiAvailable && onOpenAiSummaryModal && (
-          <Button
-            variant="secondary"
-            size="md"
-            className="bg-teal-600/20 hover:bg-teal-600/30 text-teal-300 border border-teal-500/30"
-            leftIcon={<Sparkles className="w-4 h-4 text-teal-400" />}
+          <button
             onClick={onOpenAiSummaryModal}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-teal-300 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 rounded-lg transition-all"
+            title="Ringkasan Mingguan AI"
           >
-            AI Summary
-          </Button>
+            <Sparkles className="w-3.5 h-3.5 text-teal-400" />
+            <span>AI Summary</span>
+          </button>
         )}
-        <Button
-          variant="secondary"
-          size="md"
-          className="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30"
-          leftIcon={<Sparkles className="w-4 h-4 text-emerald-400" />}
-          onClick={onOpenAddGoalModal}
-        >
-          Goal Baru
-        </Button>
-        <Button
-          variant="primary"
-          size="md"
-          leftIcon={<Plus className="w-4 h-4" />}
-          onClick={onOpenAddHabitModal}
-        >
-          Habit Baru
-        </Button>
+        {onOpenShareModal && (
+          <button
+            onClick={onOpenShareModal}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 rounded-lg transition-all"
+            title="Bagikan Kartu Pencapaian Harian"
+          >
+            <Share2 className="w-3.5 h-3.5 text-violet-400" />
+            <span>Share</span>
+          </button>
+        )}
       </div>
     </header>
   );

@@ -35,25 +35,45 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
       <div>
         {/* Panel Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 pb-3 sm:pb-4 border-b border-zinc-800/80">
-          <div className="flex items-center gap-2 sm:gap-2.5">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-              <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-2.5">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight">Habit Tracker</h2>
+                <p className="text-[10px] sm:text-[11px] text-zinc-400">Konsistensi harian kamu hari ini</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight">Habit Tracker</h2>
-              <p className="text-[10px] sm:text-[11px] text-zinc-400">Konsistensi harian kamu hari ini</p>
-            </div>
+
+            <button
+              onClick={onOpenAddModal}
+              className="flex sm:hidden items-center gap-1 px-2 py-1 bg-emerald-600/90 hover:bg-emerald-500 text-white text-[11px] font-semibold rounded-lg transition"
+            >
+              <Plus className="w-3 h-3" />
+              <span>Habit</span>
+            </button>
           </div>
 
-          <Tabs
-            options={[
-              { id: 'all', label: 'Semua', count: habits.length },
-              { id: 'pending', label: 'Belum', count: pendingCount },
-              { id: 'completed', label: 'Selesai', count: completedCount },
-            ]}
-            activeTab={habitTab}
-            onChange={(tabId) => setHabitTab(tabId as any)}
-          />
+          <div className="flex items-center justify-between sm:justify-end gap-2">
+            <Tabs
+              options={[
+                { id: 'all', label: 'Semua', count: habits.length },
+                { id: 'pending', label: 'Belum', count: pendingCount },
+                { id: 'completed', label: 'Selesai', count: completedCount },
+              ]}
+              activeTab={habitTab}
+              onChange={(tabId) => setHabitTab(tabId as any)}
+            />
+
+            <button
+              onClick={onOpenAddModal}
+              className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition shadow-sm shadow-emerald-950/40 shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Habit Baru</span>
+            </button>
+          </div>
         </div>
 
         {/* Habits List */}
