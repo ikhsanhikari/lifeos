@@ -262,11 +262,11 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
                   : 'bg-zinc-900/80 border-zinc-800/80 hover:border-indigo-500/40 hover:bg-zinc-800/50 shadow-sm'
               }`}
             >
-              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0 flex-1 pr-2">
                 <button
                   type="button"
                   aria-label={`Toggle task ${task.title}`}
-                  className={`w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-md flex items-center justify-center transition-all duration-200 shrink-0 ${
+                  className={`w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-md flex items-center justify-center transition-all duration-200 shrink-0 mt-0.5 sm:mt-0 ${
                     task.status === 'DONE'
                       ? 'bg-emerald-500 text-zinc-950 shadow-sm'
                       : 'border border-zinc-600 bg-zinc-800/60 group-hover:border-indigo-400'
@@ -276,7 +276,8 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
                 </button>
 
                 <span
-                  className={`text-xs font-semibold truncate ${
+                  title={task.title}
+                  className={`text-xs font-semibold break-words whitespace-normal leading-snug ${
                     task.status === 'DONE' ? 'line-through text-zinc-500 font-normal' : 'text-zinc-100'
                   }`}
                 >
@@ -284,9 +285,12 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
                 </span>
               </div>
 
-              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-start sm:self-center">
                 {task.goal && (
-                  <span className="text-[9px] sm:text-[10px] font-medium px-1.5 sm:px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 max-w-[80px] sm:max-w-[120px] truncate">
+                  <span
+                    title={task.goal.title}
+                    className="text-[9px] sm:text-[10px] font-medium px-1.5 sm:px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 max-w-[110px] sm:max-w-[160px] truncate"
+                  >
                     🌟 {task.goal.title}
                   </span>
                 )}

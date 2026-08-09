@@ -190,9 +190,9 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
                   : 'bg-zinc-900/80 border-zinc-800/80 hover:border-indigo-500/40 hover:bg-zinc-800/50 shadow-sm'
               }`}
             >
-              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+              <div className="flex items-start sm:items-center gap-2 sm:gap-2.5 min-w-0 flex-1 pr-2">
                 {onReorderHabits && (
-                  <div className="flex items-center gap-0.5 shrink-0">
+                  <div className="flex items-center gap-0.5 shrink-0 pt-0.5 sm:pt-0">
                     {/* Touch / Desktop Drag Grip Handle */}
                     <div
                       onTouchStart={(e) => handleTouchStart(e, habit.id)}
@@ -230,7 +230,7 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
                 <button
                   type="button"
                   aria-label={`Toggle habit ${habit.name}`}
-                  className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center transition-all duration-200 shrink-0 ${
+                  className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center transition-all duration-200 shrink-0 mt-0.5 sm:mt-0 ${
                     habit.isDoneToday
                       ? 'bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/30'
                       : 'border-2 border-zinc-600 bg-zinc-800/60 group-hover:border-indigo-400'
@@ -240,7 +240,8 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
                 </button>
 
                 <span
-                  className={`text-xs font-semibold truncate ${
+                  title={habit.name}
+                  className={`text-xs font-semibold break-words whitespace-normal leading-snug ${
                     habit.isDoneToday ? 'line-through text-zinc-500 font-normal' : 'text-zinc-100'
                   }`}
                 >
@@ -248,7 +249,7 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
                 </span>
               </div>
 
-              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-start sm:self-center">
                 {habit.reminderTime && (
                   <Badge variant="indigo" size="sm" className="gap-1 font-mono">
                     <Clock className="w-3 h-3" />

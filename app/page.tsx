@@ -139,16 +139,16 @@ export default function OverviewPage() {
                 onClick={() => toggleTaskStatus(topTask.id, topTask.status)}
                 className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-indigo-500/40 cursor-pointer transition-all group"
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-start gap-3 min-w-0 flex-1 pr-2">
                   <button
                     type="button"
-                    className="w-5 h-5 rounded-md border border-zinc-600 bg-zinc-800 group-hover:border-indigo-400 flex items-center justify-center shrink-0 transition-colors"
+                    className="w-5 h-5 rounded-md border border-zinc-600 bg-zinc-800 group-hover:border-indigo-400 flex items-center justify-center shrink-0 transition-colors mt-0.5"
                   >
                     <Check className="w-3.5 h-3.5 text-transparent group-hover:text-indigo-400" />
                   </button>
-                  <span className="text-xs font-bold text-zinc-100 truncate">{topTask.title}</span>
+                  <span title={topTask.title} className="text-xs font-bold text-zinc-100 break-words whitespace-normal leading-snug">{topTask.title}</span>
                 </div>
-                <Badge variant={topTask.priority === 'URGENT' ? 'urgent' : 'high'} size="sm">
+                <Badge variant={topTask.priority === 'URGENT' ? 'urgent' : 'high'} size="sm" className="shrink-0 self-start">
                   {topTask.priority}
                 </Badge>
               </div>
@@ -174,16 +174,16 @@ export default function OverviewPage() {
                 onClick={() => toggleHabit(nextHabit.id)}
                 className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-emerald-500/40 cursor-pointer transition-all group"
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-start gap-3 min-w-0 flex-1 pr-2">
                   <button
                     type="button"
-                    className="w-5 h-5 rounded-full border-2 border-zinc-600 bg-zinc-800 group-hover:border-emerald-400 flex items-center justify-center shrink-0 transition-colors"
+                    className="w-5 h-5 rounded-full border-2 border-zinc-600 bg-zinc-800 group-hover:border-emerald-400 flex items-center justify-center shrink-0 transition-colors mt-0.5"
                   >
                     <Check className="w-3.5 h-3.5 text-transparent group-hover:text-emerald-400" />
                   </button>
-                  <span className="text-xs font-bold text-zinc-100 truncate">{nextHabit.name}</span>
+                  <span title={nextHabit.name} className="text-xs font-bold text-zinc-100 break-words whitespace-normal leading-snug">{nextHabit.name}</span>
                 </div>
-                <Badge variant="neutral" size="sm">
+                <Badge variant="neutral" size="sm" className="shrink-0 self-start">
                   {nextHabit.frequency || 'DAILY'}
                 </Badge>
               </div>

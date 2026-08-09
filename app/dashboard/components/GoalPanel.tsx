@@ -201,7 +201,7 @@ export function GoalPanel({
                     </div>
 
                     {goal.description && (
-                      <p className="text-[11px] sm:text-xs text-zinc-400 line-clamp-1">{goal.description}</p>
+                      <p className="text-[11px] sm:text-xs text-zinc-400 break-words whitespace-pre-line leading-relaxed">{goal.description}</p>
                     )}
 
                     <div className="pt-1.5 sm:pt-2">
