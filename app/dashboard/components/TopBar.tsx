@@ -1,15 +1,12 @@
 import React from 'react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Plus, Calendar, ShieldCheck, Sparkles, Send, Share2, Sliders, Sun, Moon } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { UserAuthData } from '../../types';
-import { Button } from '../../components/ui/Button';
-import { useDashboard } from '../../components/DashboardShell';
 
 interface TopBarProps {
   currentUser: UserAuthData | null;
-  onOpenAddGoalModal: () => void;
-  onOpenAddHabitModal: () => void;
+  onOpenAddGoalModal?: () => void;
+  onOpenAddHabitModal?: () => void;
   onOpenAiSummaryModal?: () => void;
   onOpenShareModal?: () => void;
   aiAvailable?: boolean;
@@ -17,14 +14,8 @@ interface TopBarProps {
 
 export const TopBar: React.FC<TopBarProps> = ({
   currentUser,
-  onOpenAddGoalModal,
-  onOpenAddHabitModal,
-  onOpenAiSummaryModal,
-  onOpenShareModal,
-  aiAvailable = true,
 }) => {
   const pathname = usePathname();
-  const { theme, toggleTheme } = useDashboard();
 
   const currentDateFormatted = new Date().toLocaleDateString('id-ID', {
     weekday: 'long',
@@ -108,55 +99,6 @@ export const TopBar: React.FC<TopBarProps> = ({
         </p>
       </div>
 
-      <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
-        {aiAvailable && onOpenAiSummaryModal && (
-          <button
-            onClick={onOpenAiSummaryModal}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-teal-300 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 rounded-lg transition-all"
-            title="Ringkasan Mingguan AI"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-teal-400" />
-            <span>AI Summary</span>
-          </button>
-        )}
-        <Link
-          href="/share"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 rounded-lg transition-all"
-          title="Bagikan Kartu Pencapaian Harian"
-        >
-          <Share2 className="w-3.5 h-3.5 text-violet-400" />
-          <span>Share</span>
-        </Link>
-        <Link
-          href="/settings"
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all border ${
-            pathname === '/settings'
-              ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
-              : 'text-zinc-300 bg-zinc-800/60 hover:bg-zinc-800 border-zinc-700/80'
-          }`}
-          title="Pengaturan Telegram Reminder"
-        >
-          <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Settings</span>
-        </Link>
-        <button
-          onClick={toggleTheme}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-lg transition-all"
-          title={theme === 'dark' ? 'Ganti ke Mode Day (Terang)' : 'Ganti ke Mode Night (Gelap)'}
-        >
-          {theme === 'dark' ? (
-            <>
-              <Sun className="w-3.5 h-3.5 text-amber-400" />
-              <span>Day Mode ☀️</span>
-            </>
-          ) : (
-            <>
-              <Moon className="w-3.5 h-3.5 text-amber-400" />
-              <span>Night Mode 🌙</span>
-            </>
-          )}
-        </button>
-      </div>
     </header>
   );
 };

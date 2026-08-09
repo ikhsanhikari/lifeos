@@ -202,7 +202,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           if (meJson.success && meJson.user) {
             setCurrentUser(meJson.user);
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const [goalsRes, habitsRes, tasksRes, logRes, analyticsRes, tgRes, aiRes, settingsRes] = await Promise.all([
@@ -275,7 +275,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           const stRes = await fetch(`${API_BASE_URL}/api/ai/status`, { headers: getAuthHeaders() });
           const stJson = await stRes.json();
           if (stJson.success) setAiStatus(stJson);
-        } catch (e) {}
+        } catch (e) { }
         return { tasks: json.data.tasks, advice: json.data.advice };
       } else {
         throw new Error(json.message || 'Gagal membuat breakdown.');
@@ -311,7 +311,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           const stRes = await fetch(`${API_BASE_URL}/api/ai/status`, { headers: getAuthHeaders() });
           const stJson = await stRes.json();
           if (stJson.success) setAiStatus(stJson);
-        } catch (e) {}
+        } catch (e) { }
         return json.data;
       } else {
         throw new Error(json.message || 'Gagal memuat summary.');
@@ -339,7 +339,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           const stRes = await fetch(`${API_BASE_URL}/api/ai/status`, { headers: getAuthHeaders() });
           const stJson = await stRes.json();
           if (stJson.success) setAiStatus(stJson);
-        } catch (e) {}
+        } catch (e) { }
         return json.data;
       } else {
         throw new Error(json.message || 'Gagal memuat insight.');
@@ -493,7 +493,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           setIsLinkModalOpen(false);
           setLinkTokenData(null);
         }
-      } catch (err) {}
+      } catch (err) { }
     }, 3000);
     return () => clearInterval(interval);
   }, [isLinkModalOpen]);

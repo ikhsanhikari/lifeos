@@ -12,9 +12,12 @@ import {
   Sparkles,
   ShieldCheck,
   Share2,
-  Sliders
+  Sliders,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { UserAuthData, TelegramStatusData } from '../../types';
+import { useDashboard } from '../../components/DashboardShell';
 
 interface SidebarProps {
   currentUser: UserAuthData | null;
@@ -23,8 +26,6 @@ interface SidebarProps {
   onOpenShareModal?: () => void;
   onOpenSettingsModal?: () => void;
   onLogout: () => void;
-  isMobileOpen?: boolean;
-  setIsMobileOpen?: (open: boolean) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -36,6 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
 }) => {
   const pathname = usePathname();
+  const { theme, toggleTheme } = useDashboard();
 
   const navItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -44,7 +46,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { href: '/tasks', label: 'Tugas & Task', icon: CheckSquare },
     { href: '/journal', label: 'Jurnal Harian', icon: BookOpen },
     { href: '/streaks', label: 'Habit Streaks', icon: Flame },
-    { href: '/share', label: 'Share Card 📤', icon: Share2 },
   ];
 
   return (
@@ -53,8 +54,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside className="hidden md:flex flex-col w-64 bg-zinc-900/80 border-r border-zinc-800/80 backdrop-blur-xl h-screen sticky top-0 p-5 z-30 justify-between">
         <div className="space-y-6">
           {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-3 px-2 group">
-            <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-lg shadow-indigo-500/25 overflow-hidden p-1 group-hover:border-indigo-500/50 transition-colors">
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-lg shadow-indigo-500/25 overflow-hidden p-1">
               <img src="/icon.svg" alt="Life OS Logo" className="w-full h-full object-contain" />
             </div>
             <div>
@@ -63,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </h1>
               <p className="text-[11px] text-zinc-400">Calm Productivity</p>
             </div>
-          </Link>
+          </div>
 
           {/* Navigation Links */}
           <nav className="space-y-1">
@@ -88,35 +89,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
             })}
           </nav>
 
-          {/* Telegram Sync Widget */}
-          <div className="pt-4 border-t border-zinc-800/60 space-y-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 px-3 mb-2">Integrasi Bot</p>
+          {/* Secondary Quick Links */}
+          <div className="pt-4 border-t border-zinc-800/80 space-y-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 px-3 mb-1">Pengaturan & Tools</p>
+            
+            {/* Telegram Link Status Card */}
             {telegramStatus.isLinked ? (
-              <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 space-y-1.5">
-                <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold">
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                <span className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>Telegram Linked</span>
-                </div>
-                <p className="text-[11px] text-zinc-400">
-                  {telegramStatus.telegramLink?.telegramUsername
-                    ? `@${telegramStatus.telegramLink.telegramUsername}`
-                    : 'Terhubung Aktif'}
-                </p>
+                  <span>Telegram Active</span>
+                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               </div>
             ) : (
               <button
                 onClick={onOpenLinkModal}
-                className="w-full flex items-center justify-between p-3 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/15 border border-indigo-500/20 transition-all text-left group"
+                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-300 text-xs font-medium transition-all group"
               >
-                <div className="flex items-center gap-2.5">
-                  <Send className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
-                  <div>
-                    <p className="text-xs font-semibold text-indigo-300">Hubungkan Telegram</p>
-                    <p className="text-[10px] text-zinc-400">Sync habit via chat</p>
-                  </div>
-                </div>
+                <span className="flex items-center gap-2">
+                  <Send className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                  <span>Hubungkan Bot</span>
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 font-bold">Connect</span>
               </button>
             )}
+
+            <Link
+              href="/share"
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all border border-zinc-800 ${
+                pathname === '/share'
+                  ? 'bg-violet-600/10 text-violet-400 font-semibold border-violet-500/20'
+                  : 'text-zinc-300 hover:text-zinc-100 bg-zinc-800/40 hover:bg-zinc-800/80'
+              }`}
+            >
+              <Share2 className="w-4 h-4 text-violet-400" />
+              <span>Share Studio</span>
+            </Link>
 
             <Link
               href="/settings"
@@ -129,6 +138,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Sliders className="w-4 h-4 text-indigo-400" />
               <span>Pengaturan Reminder</span>
             </Link>
+
+            <button
+              onClick={toggleTheme}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 transition-all"
+              title={theme === 'dark' ? 'Ganti ke Mode Day (Terang)' : 'Ganti ke Mode Night (Gelap)'}
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="w-4 h-4 text-amber-400" />
+                  <span>Mode Terang (Day ☀️)</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4 text-amber-400" />
+                  <span>Mode Gelap (Night 🌙)</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
