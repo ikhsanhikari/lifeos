@@ -24,6 +24,7 @@ interface TaskPanelProps {
   onToggleTask: (id: string, status: string) => void;
   onDeleteTask: (id: string, e: React.MouseEvent) => void;
   onAddTask: (title: string, priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW') => Promise<void>;
+  showTitle?: boolean;
 }
 
 export const TaskPanel: React.FC<TaskPanelProps> = ({
@@ -31,6 +32,7 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
   onToggleTask,
   onDeleteTask,
   onAddTask,
+  showTitle = true,
 }) => {
   const [taskTab, setTaskTab] = useState<'all' | 'todo' | 'done'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -122,15 +124,24 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
       <div>
         {/* Panel Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 pb-3 sm:pb-4 border-b border-zinc-800/80">
-          <div className="flex items-center gap-2 sm:gap-2.5">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
-              <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          {showTitle ? (
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight">Daftar Tugas (Tasks)</h2>
+                <p className="text-[10px] sm:text-[11px] text-zinc-400">Prioritas & eksekusi hari ini</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight">Daftar Tugas (Tasks)</h2>
-              <p className="text-[10px] sm:text-[11px] text-zinc-400">Prioritas & eksekusi hari ini</p>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-zinc-200">Daftar Tugas</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold">
+                {tasks.length} Total
+              </span>
             </div>
-          </div>
+          )}
 
           <Tabs
             options={[

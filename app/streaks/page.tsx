@@ -9,7 +9,7 @@ export default function StreaksPage() {
 
   return (
     <div className="space-y-4">
-      <StreakInsights analytics={analytics} />
+      <StreakInsights analytics={analytics} showTitle={false} />
     </div>
   );
 }

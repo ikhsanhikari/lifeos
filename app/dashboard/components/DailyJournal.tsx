@@ -10,6 +10,7 @@ interface DailyJournalProps {
   onSaveDailyLog: (mood: number, energy: number, journal: string) => Promise<void>;
   onFetchDailyCoachInsight?: (journal: string, mood: number, energy: number) => Promise<{ insight: string; pattern: string; recommendation: string } | null>;
   aiAvailable?: boolean;
+  showTitle?: boolean;
 }
 
 export const DailyJournal: React.FC<DailyJournalProps> = ({
@@ -17,6 +18,7 @@ export const DailyJournal: React.FC<DailyJournalProps> = ({
   onSaveDailyLog,
   onFetchDailyCoachInsight,
   aiAvailable = true,
+  showTitle = true,
 }) => {
   const [mood, setMood] = useState<number>(4);
   const [energy, setEnergy] = useState<number>(4);
@@ -87,15 +89,24 @@ export const DailyJournal: React.FC<DailyJournalProps> = ({
   return (
     <Card className="relative overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4 pb-3 sm:pb-4 border-b border-zinc-800/80 mb-3.5 sm:mb-5">
-        <div className="flex items-center gap-2 sm:gap-2.5">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-            <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        {showTitle ? (
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+              <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight">Jurnal Harian & Refleksi</h2>
+              <p className="text-[10px] sm:text-[11px] text-zinc-400">Catat mood, energi fisik, dan jurnal singkat harian</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight">Jurnal Harian & Refleksi</h2>
-            <p className="text-[10px] sm:text-[11px] text-zinc-400">Catat mood, energi fisik, dan jurnal singkat harian</p>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-zinc-200">Refleksi Hari Ini</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold">
+              {dailyLog ? 'Sudah Diisi' : 'Belum Diisi'}
+            </span>
           </div>
-        </div>
+        )}
 
         {saveSuccess && (
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold animate-in fade-in slide-in-from-top-1 self-start sm:self-auto">

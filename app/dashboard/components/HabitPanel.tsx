@@ -12,6 +12,7 @@ interface HabitPanelProps {
   onToggleHabit: (id: string) => void;
   onDeleteHabit: (id: string, e: React.MouseEvent) => void;
   onOpenAddModal: () => void;
+  showTitle?: boolean;
 }
 
 export const HabitPanel: React.FC<HabitPanelProps> = ({
@@ -19,6 +20,7 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
   onToggleHabit,
   onDeleteHabit,
   onOpenAddModal,
+  showTitle = true,
 }) => {
   const [habitTab, setHabitTab] = useState<'all' | 'pending' | 'completed'>('all');
 
@@ -36,25 +38,26 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
       <div>
         {/* Panel Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 pb-3 sm:pb-4 border-b border-zinc-800/80">
-          <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-2.5">
-            <div className="flex items-center gap-2 sm:gap-2.5">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-                <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </div>
-              <div>
-                <h2 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight">Habit Tracker</h2>
-                <p className="text-[10px] sm:text-[11px] text-zinc-400">Konsistensi harian kamu hari ini</p>
+          {showTitle ? (
+            <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-2.5">
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                  <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight">Habit Tracker</h2>
+                  <p className="text-[10px] sm:text-[11px] text-zinc-400">Konsistensi harian kamu hari ini</p>
+                </div>
               </div>
             </div>
-
-            <button
-              onClick={onOpenAddModal}
-              className="flex sm:hidden items-center gap-1 px-2 py-1 bg-emerald-600/90 hover:bg-emerald-500 text-white text-[11px] font-semibold rounded-lg transition"
-            >
-              <Plus className="w-3 h-3" />
-              <span>Habit</span>
-            </button>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-zinc-200">Daftar Rutinitas</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                {habits.length} Total
+              </span>
+            </div>
+          )}
 
           <div className="flex items-center justify-between sm:justify-end gap-2">
             <Tabs
@@ -67,13 +70,15 @@ export const HabitPanel: React.FC<HabitPanelProps> = ({
               onChange={(tabId) => setHabitTab(tabId as any)}
             />
 
-            <button
-              onClick={onOpenAddModal}
-              className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition shadow-sm shadow-emerald-950/40 shrink-0"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Habit Baru</span>
-            </button>
+            {showTitle && (
+              <button
+                onClick={onOpenAddModal}
+                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition shadow-sm shadow-emerald-950/40 shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Habit Baru</span>
+              </button>
+            )}
           </div>
         </div>
 

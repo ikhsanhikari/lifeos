@@ -23,6 +23,7 @@ export default function GoalsPage() {
         onAddTaskToGoal={handleAddTaskToGoal}
         onOpenAiBreakdown={handleOpenAiBreakdownModal}
         aiAvailable={aiStatus?.features?.goalBreakdown ?? aiStatus?.aiAvailable}
+        showTitle={false}
       />
     </div>
   );

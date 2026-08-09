@@ -6,26 +6,29 @@ import { Badge } from '../../components/ui/Badge';
 
 interface StreakInsightsProps {
   analytics: AnalyticsSummaryData | null;
+  showTitle?: boolean;
 }
 
-export const StreakInsights: React.FC<StreakInsightsProps> = ({ analytics }) => {
+export const StreakInsights: React.FC<StreakInsightsProps> = ({ analytics, showTitle = true }) => {
   if (!analytics || !analytics.habitStreaks || analytics.habitStreaks.length === 0) {
     return null;
   }
 
   return (
     <Card className="space-y-3 sm:space-y-4">
-      <div className="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-zinc-800/80">
-        <div className="flex items-center gap-2 sm:gap-2.5">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-            <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          </div>
-          <div>
-            <h2 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight">Analitik Streak Habit</h2>
-            <p className="text-[10px] sm:text-[11px] text-zinc-400">Rekam jejak konsistensi harian dari database</p>
+      {showTitle && (
+        <div className="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-zinc-800/80">
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+              <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-zinc-100 tracking-tight">Analitik Streak Habit</h2>
+              <p className="text-[10px] sm:text-[11px] text-zinc-400">Rekam jejak konsistensi harian dari database</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
         {analytics.habitStreaks.map((item) => (

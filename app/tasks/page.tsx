@@ -19,6 +19,7 @@ export default function TasksPage() {
         onToggleTask={toggleTaskStatus}
         onDeleteTask={handleDeleteTask}
         onAddTask={handleAddNewTask}
+        showTitle={false}
       />
     </div>
   );

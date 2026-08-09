@@ -19,6 +19,7 @@ export default function JournalPage() {
         onSaveDailyLog={handleSaveDailyLog}
         onFetchDailyCoachInsight={handleFetchDailyCoachInsight}
         aiAvailable={aiStatus?.features?.dailyCoach ?? aiStatus?.aiAvailable}
+        showTitle={false}
       />
     </div>
   );
