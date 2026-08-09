@@ -44,7 +44,7 @@ interface ShareCardModalProps {
 }
 
 type FormatType = 'square' | 'story' | 'carousel';
-type ThemeType = 'strava' | 'cyber' | 'purple' | 'ocean' | 'dark' | 'sunset' | 'cyberpunk';
+type ThemeType = 'strava' | 'cyber' | 'purple' | 'ocean' | 'dark' | 'sunset' | 'cyberpunk' | 'paper';
 
 const FORMAT_OPTIONS: { key: FormatType; label: string; icon: React.ReactNode; size: string }[] = [
   { key: 'square', label: 'Square (Post)', icon: <Image className="w-4 h-4" />, size: '1080×1080' },
@@ -55,6 +55,7 @@ const FORMAT_OPTIONS: { key: FormatType; label: string; icon: React.ReactNode; s
 const THEME_OPTIONS: { key: ThemeType; label: string; colors: string[]; vibe: string }[] = [
   { key: 'strava', label: 'Strava Kinetic', colors: ['#0d0705', '#1f0d07', '#FC4C02'], vibe: 'Fitness Flex 🔥' },
   { key: 'cyber', label: 'Cyber Mint', colors: ['#03140e', '#082b1d', '#00E676'], vibe: 'Tech Neon ⚡' },
+  { key: 'paper', label: 'Natural Kraft', colors: ['#f2e8d5', '#fffdf7', '#2e5a3c'], vibe: 'Natural Paper & Ink 📜' },
   { key: 'purple', label: 'Neon Violet', colors: ['#0f051d', '#1f0a3b', '#C084FC'], vibe: 'Spotify Wrapped 🎧' },
   { key: 'ocean', label: 'Sapphire Cyan', colors: ['#04101e', '#08213d', '#38BDF8'], vibe: 'Clean & Cool 🌊' },
   { key: 'dark', label: 'Obsidian Lime', colors: ['#09090b', '#18181b', '#A3E635'], vibe: 'Minimal Dark 🖤' },
@@ -139,8 +140,8 @@ async function mergeBgAndCardImages(bgUrl: string, cardUrl: string, width: numbe
 }
 
 export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCardModalProps) {
-  const [selectedFormat, setSelectedFormat] = useState<FormatType>('square');
-  const [selectedTheme, setSelectedTheme] = useState<ThemeType>('strava');
+  const [selectedFormat, setSelectedFormat] = useState<FormatType>('story');
+  const [selectedTheme, setSelectedTheme] = useState<ThemeType>('cyber');
   const [customBgUrl, setCustomBgUrl] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRecordingVideo, setIsRecordingVideo] = useState(false);

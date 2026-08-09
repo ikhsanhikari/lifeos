@@ -33,6 +33,8 @@ export default function ReminderSettingsPage() {
     handleSaveSettings,
     telegramStatus,
     handleOpenLinkModal,
+    theme,
+    toggleTheme,
   } = useDashboard();
 
   const [remindersEnabled, setRemindersEnabled] = useState<boolean>(true);
@@ -93,21 +95,48 @@ export default function ReminderSettingsPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
-      <Card className="p-5 sm:p-6 space-y-6">
-        {/* Header Summary */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-800/80">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold shrink-0">
-              <Sliders className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-zinc-100 tracking-tight">Pengaturan Telegram Reminder</h2>
-              <p className="text-xs text-zinc-400">Konfigurasi jadwal waktu notifikasi push & bot telegram harian kamu</p>
-            </div>
-          </div>
+      {/* 1. Theme Mode Setting Card */}
+      <Card className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-900/80 border border-zinc-800/80">
+        <div className="space-y-0.5">
+          <h3 className="text-xs font-bold text-zinc-100 flex items-center gap-2">
+            {theme === 'dark' ? (
+              <Moon className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Sun className="w-4 h-4 text-amber-400" />
+            )}
+            <span>Tema Tampilan Sistem ({theme === 'dark' ? 'Mode Gelap / Night 🌙' : 'Mode Terang / Day ☀️'})</span>
+          </h3>
+          <p className="text-[11px] text-zinc-400">Pilih antara tampilan gelap kontras tinggi (Night) atau tampilan terang bersih (Day).</p>
+        </div>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm shrink-0 self-start sm:self-auto ${
+            theme === 'dark'
+              ? 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/20'
+              : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-indigo-600/20'
+          }`}
+        >
+          {theme === 'dark' ? (
+            <>
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+              <span>Ganti ke Mode Terang (Day ☀️)</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-3.5 h-3.5" />
+              <span>Ganti ke Mode Gelap (Night 🌙)</span>
+            </>
+          )}
+        </button>
+      </Card>
 
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 self-start sm:self-auto">
-            WIB Timezone (Asia/Jakarta)
+      {/* 2. Telegram Reminder Settings Form */}
+      <Card className="p-5 sm:p-6 space-y-5">
+        <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
+          <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider">Jadwal Notifikasi Telegram</span>
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono">
+            WIB (Asia/Jakarta)
           </span>
         </div>
 

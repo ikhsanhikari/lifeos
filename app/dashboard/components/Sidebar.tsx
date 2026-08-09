@@ -12,12 +12,9 @@ import {
   Sparkles,
   ShieldCheck,
   Share2,
-  Sliders,
-  Sun,
-  Moon
+  Sliders
 } from 'lucide-react';
 import { UserAuthData, TelegramStatusData } from '../../types';
-import { useDashboard } from '../../components/DashboardShell';
 
 interface SidebarProps {
   currentUser: UserAuthData | null;
@@ -37,7 +34,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
 }) => {
   const pathname = usePathname();
-  const { theme, toggleTheme } = useDashboard();
 
   const navItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -138,24 +134,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Sliders className="w-4 h-4 text-indigo-400" />
               <span>Pengaturan Reminder</span>
             </Link>
-
-            <button
-              onClick={toggleTheme}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 transition-all"
-              title={theme === 'dark' ? 'Ganti ke Mode Day (Terang)' : 'Ganti ke Mode Night (Gelap)'}
-            >
-              {theme === 'dark' ? (
-                <>
-                  <Sun className="w-4 h-4 text-amber-400" />
-                  <span>Mode Terang (Day ☀️)</span>
-                </>
-              ) : (
-                <>
-                  <Moon className="w-4 h-4 text-amber-400" />
-                  <span>Mode Gelap (Night 🌙)</span>
-                </>
-              )}
-            </button>
           </div>
         </div>
 

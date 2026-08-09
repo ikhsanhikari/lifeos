@@ -75,6 +75,15 @@ const THEMES: Record<string, {
     badgeBg: 'rgba(0, 240, 255, 0.25)', badgeText: '#5CE6FF',
     mapRoadMain: '#2c174d', mapRoadSub: '#1c0d33', mapWater: '#0d0621', mapPark: '#290b2e',
   },
+  paper: {
+    name: 'Natural Kraft Journal',
+    bg1: '#f2e8d5', bg2: '#ede4ce', bg3: '#e2d5b7',
+    primary: '#2e5a3c', secondary: '#a84e2e', glow: '#c27e38',
+    textPrimary: '#2b231d', textSecondary: '#4a3b2c', textMuted: '#7a6855',
+    cardBg: '#fffdf7', cardBorder: '#d9c7a7',
+    badgeBg: '#e6d7bc', badgeText: '#544232',
+    mapRoadMain: '#b8a686', mapRoadSub: '#d6c6a7', mapWater: '#b5c9d6', mapPark: '#c2d6be',
+  },
 };
 
 function getMoodEmoji(mood: number | null): string {
@@ -120,6 +129,155 @@ export async function GET(request: NextRequest) {
     const taskList: string[] = cardData.completedTaskTitles && cardData.completedTaskTitles.length > 0
       ? cardData.completedTaskTitles
       : ['Productivity Sprint', 'Code Review'];
+
+    // DEDICATED NATURAL KRAFT PAPER & HANDWRITING JOURNAL LAYOUT
+    if (themeKey === 'paper') {
+      return new ImageResponse(
+        (
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              padding: format === 'story' ? '80px 65px' : '60px 65px',
+              backgroundColor: '#f2e8d5',
+              backgroundImage: 'radial-gradient(#d5c4a1 1.5px, transparent 1.5px)',
+              backgroundSize: '28px 28px',
+              fontFamily: 'Georgia, serif',
+              position: 'relative',
+              overflow: 'hidden',
+              color: '#2b231d',
+            }}
+          >
+            {bgImage && (
+              <img
+                src={bgImage}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  opacity: 0.3,
+                }}
+              />
+            )}
+
+            {/* Top Washi Tape & Kraft Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 2 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 24px', borderRadius: '16px', background: '#e6d7bc', border: '1.5px dashed #a69171' }}>
+                <span style={{ fontSize: '24px' }}>📜</span>
+                <span style={{ fontSize: '20px', fontWeight: 800, color: '#544232', letterSpacing: '2px', textTransform: 'uppercase' }}>NATURAL KRAFT JOURNAL</span>
+              </div>
+              <span style={{ fontSize: '22px', fontStyle: 'italic', color: '#735f49', fontWeight: 700 }}>{cardData.dateShort || cardData.date}</span>
+            </div>
+
+            {/* Main Notebook Sheet */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                padding: '45px 50px',
+                borderRadius: '28px',
+                background: '#fffdf7',
+                border: '2px solid #d9c7a7',
+                boxShadow: '0 25px 50px rgba(84,66,50,0.14)',
+                gap: '20px',
+                position: 'relative',
+                zIndex: 2,
+              }}
+            >
+              {/* Decorative Tape Graphic */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '-16px',
+                  left: '42%',
+                  width: '140px',
+                  height: '32px',
+                  background: 'rgba(217, 183, 143, 0.75)',
+                  transform: 'rotate(-2deg)',
+                  border: '1px dashed #b89874',
+                }}
+              />
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '46px', fontWeight: 800, color: '#2b231d', letterSpacing: '-0.5px' }}>
+                    ✍️ {cardData.userName}&rsquo;s Daily Journal
+                  </span>
+                  <span style={{ fontSize: '22px', fontStyle: 'italic', color: '#7a6855' }}>
+                    Personal reflection & productivity log
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 22px', borderRadius: '22px', background: '#f0e4cf', border: '1px solid #cbb898', fontSize: '20px', fontWeight: 700, color: '#423326' }}>
+                  <span>{getMoodEmoji(cardData.mood)}</span>
+                </div>
+              </div>
+
+              {/* Stats Notebook Grid */}
+              <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px', borderRadius: '20px', background: '#f7f1e3', border: '1.5px solid #ded0b6', gap: '4px' }}>
+                  <span style={{ fontSize: '15px', color: '#7a6855', fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase' }}>FOCUS SCORE</span>
+                  <span style={{ fontSize: '64px', fontWeight: 900, color: '#2e5a3c', lineHeight: 1 }}>{focusPercent}%</span>
+                  <span style={{ fontSize: '16px', color: '#594939', fontStyle: 'italic' }}>High Productivity</span>
+                </div>
+
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px', borderRadius: '20px', background: '#f7f1e3', border: '1.5px solid #ded0b6', gap: '4px' }}>
+                  <span style={{ fontSize: '15px', color: '#7a6855', fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase' }}>HABIT STREAK</span>
+                  <span style={{ fontSize: '64px', fontWeight: 900, color: '#a84e2e', lineHeight: 1 }}>🔥 {cardData.topStreak ? cardData.topStreak.streak : 7}d</span>
+                  <span style={{ fontSize: '16px', color: '#594939', fontStyle: 'italic' }}>{cardData.topStreak ? cardData.topStreak.name : 'Daily Habits'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Handwriting Checklist Cards */}
+            <div style={{ display: 'flex', gap: '20px', position: 'relative', zIndex: 2 }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '28px 32px', borderRadius: '24px', background: '#fffdf7', border: '1.5px solid #d9c7a7', gap: '14px' }}>
+                <span style={{ fontSize: '20px', fontWeight: 800, color: '#3d3024', borderBottom: '1.5px solid #e8dbbf', paddingBottom: '10px' }}>🌱 Habit Tracker ({cardData.habitsCompleted}/{cardData.habitsTotal})</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {habitList.slice(0, 4).map((hName, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '19px', color: '#4a3b2c', fontStyle: 'italic' }}>
+                      <span style={{ color: '#2e5a3c', fontWeight: 900, fontSize: '22px' }}>☑</span> {hName}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '28px 32px', borderRadius: '24px', background: '#fffdf7', border: '1.5px solid #d9c7a7', gap: '14px' }}>
+                <span style={{ fontSize: '20px', fontWeight: 800, color: '#3d3024', borderBottom: '1.5px solid #e8dbbf', paddingBottom: '10px' }}>📝 Finished Tasks ({cardData.tasksCompleted}/{cardData.tasksTotal})</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {taskList.slice(0, 4).map((tTitle, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '19px', color: '#4a3b2c', fontStyle: 'italic' }}>
+                      <span style={{ color: '#a84e2e', fontWeight: 900, fontSize: '22px' }}>☑</span> {tTitle}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Reflection Note */}
+            <div style={{ display: 'flex', flexDirection: 'column', padding: '26px 32px', borderRadius: '22px', background: '#f5edd8', border: '1.5px dashed #bfae93', gap: '8px', position: 'relative', zIndex: 2 }}>
+              <span style={{ fontSize: '15px', color: '#6e5a47', fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase' }}>📜 REFLEKSI HARIAN</span>
+              <span style={{ fontSize: '22px', color: '#2b231d', fontStyle: 'italic', lineHeight: 1.3 }}>&ldquo;{cardData.journalSnippet || cardData.quote || 'Setiap langkah kecil konsisten membawa perubahan besar.'}&rdquo;</span>
+            </div>
+
+            {/* Footer Stamp */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 2 }}>
+              <span style={{ fontSize: '18px', color: '#7a6855', fontStyle: 'italic', fontWeight: 600 }}>Captured with Life OS Kraft Journal</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 20px', borderRadius: '18px', background: '#e6d7bc', border: '1px solid #c4b091', fontSize: '16px', fontWeight: 800, color: '#423326' }}>
+                <span>🌿</span>
+                <span>Natural Paper Edition</span>
+              </div>
+            </div>
+          </div>
+        ),
+        { width, height }
+      );
+    }
 
     // CAROUSEL SLIDES HANDLING (4 DISTINCT SLIDES)
     if (format === 'carousel') {
