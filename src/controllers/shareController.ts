@@ -128,6 +128,7 @@ export async function fetchCardDataInternal(userId: string): Promise<ShareCardDa
   const doneHabitIds = new Set(todayHabitLogs.map((l: any) => l.habitId));
   const completedHabitNames = habits
     .filter((h: any) => doneHabitIds.has(h.id))
+    .slice(0, 5)
     .map((h: any) => h.name);
 
   // Get today's completed task titles

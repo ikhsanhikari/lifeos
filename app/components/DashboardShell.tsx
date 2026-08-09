@@ -184,7 +184,27 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         setIsShareLoading(false);
 
         if (typeof window !== 'undefined') {
-          const encData = encodeURIComponent(JSON.stringify(json.data));
+          const minimalData = {
+            date: json.data.date,
+            dateShort: json.data.dateShort,
+            userName: json.data.userName,
+            habitsCompleted: json.data.habitsCompleted || 0,
+            habitsTotal: json.data.habitsTotal || 0,
+            tasksCompleted: json.data.tasksCompleted || 0,
+            tasksTotal: json.data.tasksTotal || 0,
+            focusScore: json.data.focusScore || 0,
+            topStreak: json.data.topStreak ? { name: json.data.topStreak.name, streak: json.data.topStreak.streak } : null,
+            mood: json.data.mood,
+            energy: json.data.energy,
+            achievements: Array.isArray(json.data.achievements) ? json.data.achievements.slice(0, 4) : [],
+            highlights: Array.isArray(json.data.highlights) ? json.data.highlights.slice(0, 2) : [],
+            completedHabitNames: Array.isArray(json.data.completedHabitNames) ? json.data.completedHabitNames.slice(0, 5) : [],
+            completedTaskTitles: Array.isArray(json.data.completedTaskTitles) ? json.data.completedTaskTitles.slice(0, 5) : [],
+            journalSnippet: json.data.journalSnippet ? String(json.data.journalSnippet).substring(0, 100) : null,
+            activeGoalsCount: json.data.activeGoalsCount || 0,
+            quote: json.data.quote || '',
+          };
+          const encData = encodeURIComponent(JSON.stringify(minimalData));
           const defaultUrl = `/og/daily-card?format=square&theme=strava&data=${encData}`;
           const img = new window.Image();
           img.src = defaultUrl;

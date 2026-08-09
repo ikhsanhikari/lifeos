@@ -52,8 +52,28 @@ const PRESET_WALLPAPERS = [
 ];
 
 function buildOgUrl(data: any, format: FormatType, theme: ThemeType, slideIndex?: number, bgImage?: string | null): string {
-  const baseData = { ...data };
-  let url = `/og/daily-card?format=${format}&theme=${theme}&data=${encodeURIComponent(JSON.stringify(baseData))}`;
+  if (!data) return '';
+  const minimalData = {
+    date: data.date,
+    dateShort: data.dateShort,
+    userName: data.userName,
+    habitsCompleted: data.habitsCompleted || 0,
+    habitsTotal: data.habitsTotal || 0,
+    tasksCompleted: data.tasksCompleted || 0,
+    tasksTotal: data.tasksTotal || 0,
+    focusScore: data.focusScore || 0,
+    topStreak: data.topStreak ? { name: data.topStreak.name, streak: data.topStreak.streak } : null,
+    mood: data.mood,
+    energy: data.energy,
+    achievements: Array.isArray(data.achievements) ? data.achievements.slice(0, 4) : [],
+    highlights: Array.isArray(data.highlights) ? data.highlights.slice(0, 2) : [],
+    completedHabitNames: Array.isArray(data.completedHabitNames) ? data.completedHabitNames.slice(0, 5) : [],
+    completedTaskTitles: Array.isArray(data.completedTaskTitles) ? data.completedTaskTitles.slice(0, 5) : [],
+    journalSnippet: data.journalSnippet ? String(data.journalSnippet).substring(0, 100) : null,
+    activeGoalsCount: data.activeGoalsCount || 0,
+    quote: data.quote || '',
+  };
+  let url = `/og/daily-card?format=${format}&theme=${theme}&data=${encodeURIComponent(JSON.stringify(minimalData))}`;
   if (format === 'carousel' && slideIndex !== undefined) {
     url += `&slide=${slideIndex}`;
   }
