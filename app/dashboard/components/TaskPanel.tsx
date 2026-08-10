@@ -257,17 +257,17 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
             <div
               key={task.id}
               onClick={() => onToggleTask(task.id, task.status)}
-              className={`flex items-center justify-between py-2.5 px-3 sm:p-3.5 rounded-lg sm:rounded-xl border transition-all duration-200 cursor-pointer group ${
+              className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2.5 px-3 sm:p-3.5 rounded-lg sm:rounded-xl border transition-all duration-200 cursor-pointer group ${
                 task.status === 'DONE'
                   ? 'bg-zinc-900/40 border-zinc-800/60 opacity-75'
                   : 'bg-zinc-900/80 border-zinc-800/80 hover:border-indigo-500/40 hover:bg-zinc-800/50 shadow-sm'
               }`}
             >
-              <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0 flex-1 pr-2">
+              <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
                 <button
                   type="button"
                   aria-label={`Toggle task ${task.title}`}
-                  className={`w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-md flex items-center justify-center transition-all duration-200 shrink-0 mt-0.5 sm:mt-0 ${
+                  className={`w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-md flex items-center justify-center transition-all duration-200 shrink-0 mt-0.5 ${
                     task.status === 'DONE'
                       ? 'bg-emerald-500 text-zinc-950 shadow-sm'
                       : 'border border-zinc-600 bg-zinc-800/60 group-hover:border-indigo-400'
@@ -276,63 +276,74 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
                   {task.status === 'DONE' && <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" />}
                 </button>
 
-                <span
-                  title={task.title}
-                  className={`text-xs font-semibold break-words whitespace-normal leading-snug ${
-                    task.status === 'DONE' ? 'line-through text-zinc-500 font-normal' : 'text-zinc-100'
-                  }`}
-                >
-                  {task.title}
-                </span>
+                <div className="space-y-1 min-w-0 flex-1">
+                  <span
+                    title={task.title}
+                    className={`text-xs font-semibold break-words whitespace-normal leading-snug block ${
+                      task.status === 'DONE' ? 'line-through text-zinc-500 font-normal' : 'text-zinc-100'
+                    }`}
+                  >
+                    {task.title}
+                  </span>
+
+                  {/* Sub-metadata Badges Row (Goal, Date, Time) */}
+                  {(task.goal || task.dueDate || task.dueTime) && (
+                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                      {task.goal && (
+                        <span
+                          title={task.goal.title}
+                          className="text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 max-w-[150px] truncate"
+                        >
+                          🌟 {task.goal.title}
+                        </span>
+                      )}
+                      {task.dueDate && (
+                        <span className="text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1">
+                          <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          <span>{new Date(task.dueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
+                        </span>
+                      )}
+                      {task.dueTime && (
+                        <span className="text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          <span>
+                            {typeof task.dueTime === 'string' && task.dueTime.includes(':')
+                              ? task.dueTime.substring(0, 5)
+                              : new Date(task.dueTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-start sm:self-center">
-                {task.goal && (
-                  <span
-                    title={task.goal.title}
-                    className="text-[9px] sm:text-[10px] font-medium px-1.5 sm:px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 max-w-[110px] sm:max-w-[160px] truncate"
-                  >
-                    🌟 {task.goal.title}
-                  </span>
-                )}
-                {task.dueDate && (
-                  <span className="text-[9px] sm:text-[10px] font-medium px-1.5 sm:px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    <span>{new Date(task.dueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
-                  </span>
-                )}
-                {task.dueTime && (
-                  <span className="text-[9px] sm:text-[10px] font-medium px-1.5 sm:px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    <span>
-                      {typeof task.dueTime === 'string' && task.dueTime.includes(':')
-                        ? task.dueTime.substring(0, 5)
-                        : new Date(task.dueTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                    </span>
-                  </span>
-                )}
+              {/* Priority & Action Buttons */}
+              <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-zinc-800/50 sm:border-transparent">
                 {renderPriorityBadge(task.priority)}
-                {onEditTask && (
+                <div className="flex items-center gap-1">
+                  {onEditTask && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditTask(task);
+                      }}
+                      title="Edit Task"
+                      className="p-1 hover:bg-indigo-500/10 text-zinc-400 hover:text-indigo-300 rounded-lg transition-all"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEditTask(task);
-                    }}
-                    title="Edit Task"
-                    className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-1 hover:bg-indigo-500/10 text-zinc-400 hover:text-indigo-300 rounded-lg transition-all"
+                    onClick={(e) => onDeleteTask(task.id, e)}
+                    title="Hapus Task"
+                    className="p-1 hover:bg-rose-500/10 text-zinc-400 hover:text-rose-400 rounded-lg transition-all"
                   >
-                    <Pencil className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                )}
-                <button
-                  type="button"
-                  onClick={(e) => onDeleteTask(task.id, e)}
-                  title="Hapus Task"
-                  className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 p-1 hover:bg-rose-500/10 text-zinc-400 hover:text-rose-400 rounded-lg transition-all"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                </div>
               </div>
             </div>
           ))}

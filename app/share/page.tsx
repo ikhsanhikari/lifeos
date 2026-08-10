@@ -137,7 +137,7 @@ async function mergeBgAndCardImages(bgUrl: string, cardUrl: string, width: numbe
     ctx.drawImage(cardImg, 0, 0, width, height);
   }
 
-  return new Promise((res) => canvas.toBlob((b) => res(b || new Blob([])), 'image/png'));
+  return new Promise((res) => canvas.toBlob((b) => res(b || new Blob([])), 'image/jpeg', 0.92));
 }
 
 export default function ShareCardPage() {

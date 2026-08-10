@@ -156,7 +156,7 @@ async function mergeBgAndCardImages(bgUrl: string, cardUrl: string, width: numbe
     ctx.drawImage(cardImg, 0, 0, width, height);
   }
 
-  return new Promise((res) => canvas.toBlob((b) => res(b || new Blob([])), 'image/png'));
+  return new Promise((res) => canvas.toBlob((b) => res(b || new Blob([])), 'image/jpeg', 0.92));
 }
 
 export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCardModalProps) {
@@ -185,7 +185,7 @@ export function ShareCardModal({ isOpen, onClose, cardData, isLoading }: ShareCa
   // Reset on close
   useEffect(() => {
     if (!isOpen) {
-      setSelectedFormat('square');
+      setSelectedFormat('story');
       setSelectedTheme('strava');
       setCustomBgUrl(null);
       setCopySuccess(false);

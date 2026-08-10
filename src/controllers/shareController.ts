@@ -263,7 +263,7 @@ export async function sendShareCardToTelegram(req: AuthenticatedRequest, res: Re
     }
 
     const userId = req.user.id;
-    const { format = 'square', theme = 'strava', slide = 0, bgImage, customImageBase64 } = req.body;
+    const { format = 'story', theme = 'strava', slide = 0, bgImage, customImageBase64 } = req.body;
 
     // Check if user has linked Telegram account
     const tgLink = await prisma.telegramLink.findUnique({
@@ -319,7 +319,16 @@ export async function sendShareCardToTelegram(req: AuthenticatedRequest, res: Re
       `\n⚡ _Dikirim via Web Dashboard Life OS_`;
 
     const chatIdStr = tgLink.telegramChatId.toString();
-    await bot.telegram.sendPhoto(chatIdStr, { source: imageBuffer }, { caption, parse_mode: 'Markdown' });
+    try {
+      await bot.telegram.sendPhoto(chatIdStr, { source: imageBuffer }, { caption, parse_mode: 'Markdown' });
+    } catch (photoErr: any) {
+      console.warn('sendPhoto failed, falling back to sendDocument:', photoErr.message);
+      await bot.telegram.sendDocument(
+        chatIdStr,
+        { source: imageBuffer, filename: `lifeos-story-${Date.now()}.jpg` },
+        { caption, parse_mode: 'Markdown' }
+      );
+    }
 
     res.json({
       success: true,
