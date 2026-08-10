@@ -63,25 +63,6 @@ export async function getUserDailyHabits(telegramChatId?: bigint | null): Promis
     orderBy: { sortOrder: 'asc' },
   });
 
-  // Auto-seed sample habits if user has no habits yet
-  if (habits.length === 0) {
-    console.log(`Creating default habits for user ${userId}...`);
-    await prisma.habit.createMany({
-      data: [
-        { userId, name: '🏋️‍♂️ Olahraga 30 Menit', sortOrder: 1 },
-        { userId, name: '💧 Minum Air 2 Liter', sortOrder: 2 },
-        { userId, name: '📖 Membaca Buku 15 Menit', sortOrder: 3 },
-        { userId, name: '🧘‍♂️ Meditasi 10 Menit', sortOrder: 4 },
-        { userId, name: '💻 Koding Project Life OS', sortOrder: 5 },
-      ],
-    });
-
-    habits = await prisma.habit.findMany({
-      where: { userId, isArchived: false },
-      orderBy: { sortOrder: 'asc' },
-    });
-  }
-
   // Get today's logs for these habits
   const today = getTodayDate();
   const habitIds = habits.map((h: any) => h.id);
