@@ -25,6 +25,7 @@ import {
   TelegramStatusData,
   UserAuthData,
 } from '../types';
+import { useTelegram } from './TelegramProvider';
 
 export type {
   AiStatusData,
@@ -109,6 +110,8 @@ export const useDashboard = () => {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
+  const { isTelegram, tgUser, haptic, authStatus } = useTelegram();
+
   const [currentUser, setCurrentUser] = useState<UserAuthData | null>(null);
   const [goals, setGoals] = useState<GoalData[]>([]);
   const [habits, setHabits] = useState<HabitData[]>([]);
@@ -278,7 +281,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, authStatus]);
 
   const handleOpenAiBreakdownModal = (goal: GoalData) => {
     setSelectedAiGoal(goal);
@@ -606,6 +609,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   };
 
   const toggleHabit = async (id: string) => {
+    haptic.success();
     setHabits((prev) =>
       prev.map((h) => (h.id === id ? { ...h, isDoneToday: !h.isDoneToday } : h))
     );
@@ -628,6 +632,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   };
 
   const toggleTaskStatus = async (taskId: string, currentStatus: string) => {
+    haptic.success();
     const nextStatus = currentStatus === 'DONE' ? 'TODO' : 'DONE';
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, status: nextStatus as any } : t))
@@ -814,6 +819,22 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
         <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-8">
           <main className="flex-1 p-3 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-3.5 sm:space-y-6">
+            {isTelegram && (
+              <div className="bg-indigo-950/40 border border-indigo-500/20 rounded-xl p-2.5 px-4 flex items-center justify-between text-xs text-indigo-300 backdrop-blur-md">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                  </span>
+                  <span className="font-semibold text-white">📱 Telegram Mini App Mode</span>
+                  <span className="text-indigo-400/80 text-[11px] hidden sm:inline">• Logged in as {tgUser?.first_name || currentUser?.name || 'Telegram User'}</span>
+                </div>
+                <span className="text-[10px] font-mono bg-indigo-900/50 text-indigo-300 px-2 py-0.5 rounded border border-indigo-700/40">
+                  ⚡ Auto-Synced
+                </span>
+              </div>
+            )}
+
             <TopBar
               currentUser={currentUser}
               onOpenAddGoalModal={() => setIsAddGoalModalOpen(true)}

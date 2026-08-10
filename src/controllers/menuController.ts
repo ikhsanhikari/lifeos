@@ -6,6 +6,7 @@ import { Context, Markup, Telegraf } from 'telegraf';
 export async function registerTelegramCommands(bot: Telegraf) {
   try {
     await bot.telegram.setMyCommands([
+      { command: 'app', description: '🚀 Buka Telegram Mini App Life OS' },
       { command: 'menu', description: '📱 Buka Menu Utama Interaktif' },
       { command: 'goals', description: '🌟 Daftar Goal & Progress Mimpi Besar' },
       { command: 'goal', description: '🚀 Buat Goal Baru & Breakdown Task' },
@@ -40,7 +41,17 @@ export function getPersistentMenuKeyboard() {
  */
 export async function handleMainMenuCommand(ctx: Context) {
   try {
+    const webAppUrl = (
+      process.env.APP_URL ||
+      process.env.NEXT_PUBLIC_WEB_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      'http://localhost:3011'
+    ).replace(/\/$/, '');
+
     const inlineMenu = Markup.inlineKeyboard([
+      [
+        Markup.button.webApp('🚀 Launch Mini App', webAppUrl),
+      ],
       [
         Markup.button.callback('🌟 Goals (Mimpi)', 'nav_goals'),
         Markup.button.callback('🔎 Focus Mode', 'nav_focus'),
@@ -62,13 +73,13 @@ export async function handleMainMenuCommand(ctx: Context) {
     const messageText =
       `📱 *Menu Utama Life OS Platform*\n\n` +
       `Silakan pilih menu di bawah ini tanpa perlu menghafal perintah slash commands:\n\n` +
+      `• *Telegram Mini App:* Buka aplikasi langsung di Telegram! 🚀\n` +
       `• *Goals (Mimpi):* Kelola mimpi besar & pantau progress\n` +
       `• *Focus Mode:* Prioritas utama yang harus diselesaikan\n` +
       `• *Habit Harian:* Lakukan check-in kebiasaan harian\n` +
       `• *Task List:* Kelola tugas harian kamu\n` +
       `• *Jurnal & Mood:* Catat refleksi hari ini\n` +
-      `• *Ringkasan Hari Ini:* Lihat laporan progres harian\n` +
-      `• *Web Dashboard:* http://localhost:3001/dashboard`;
+      `• *Ringkasan Hari Ini:* Lihat laporan progres harian`;
 
     await ctx.reply(messageText, {
       parse_mode: 'Markdown',
@@ -85,12 +96,24 @@ export async function handleMainMenuCommand(ctx: Context) {
  */
 export async function handleWebInfoCallback(ctx: Context) {
   try {
+    const webAppUrl = (
+      process.env.APP_URL ||
+      process.env.NEXT_PUBLIC_WEB_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      'http://localhost:3011'
+    ).replace(/\/$/, '');
+
     await ctx.answerCbQuery();
     await ctx.reply(
-      `🌐 *Web Dashboard Life OS*\n\n` +
-        `Akses grafik lengkap, manajemen habit, task, dan jurnal di browser kamu:\n` +
-        `👉 http://localhost:3001/dashboard`,
-      { parse_mode: 'Markdown' }
+      `🌐 *Telegram Mini App & Web Dashboard Life OS*\n\n` +
+        `Akses grafik lengkap, manajemen habit, task, dan jurnal langsung di browser atau Telegram:\n` +
+        `👉 ${webAppUrl}`,
+      {
+        parse_mode: 'Markdown',
+        ...Markup.inlineKeyboard([
+          [Markup.button.webApp('🚀 Buka Telegram Mini App', webAppUrl)],
+        ]),
+      }
     );
   } catch (error) {
     console.error('Error in handleWebInfoCallback:', error);

@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { prisma } from '../server';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'lifeos_secret_key_2026_hikari';
@@ -143,3 +144,138 @@ export function verifyJwtSessionToken(token: string): JwtPayloadData | null {
     return null;
   }
 }
+
+/**
+ * 4. Verify Telegram WebApp initData and Issue 30-Day Permanent Session JWT
+ */
+export async function verifyTelegramWebAppData(initData: string): Promise<{
+  success: boolean;
+  jwtToken?: string;
+  user?: { id: string; name: string; email: string };
+  message?: string;
+}> {
+  if (!initData) {
+    return { success: false, message: 'initData parameter string is required' };
+  }
+
+  try {
+    const urlParams = new URLSearchParams(initData);
+    const hash = urlParams.get('hash');
+
+    if (!hash) {
+      return { success: false, message: 'Invalid initData format: hash parameter missing' };
+    }
+
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    let isValid = false;
+
+    if (botToken) {
+      urlParams.delete('hash');
+      const params: string[] = [];
+      for (const [key, val] of urlParams.entries()) {
+        params.push(`${key}=${val}`);
+      }
+      params.sort();
+      const dataCheckString = params.join('\n');
+
+      const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+      const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+
+      isValid = calculatedHash === hash;
+    } else {
+      // In development mode when TELEGRAM_BOT_TOKEN is not configured
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('⚠️ Dev mode: TELEGRAM_BOT_TOKEN missing, bypassing hash verification');
+        isValid = true;
+      } else {
+        return { success: false, message: 'TELEGRAM_BOT_TOKEN is not configured on the server.' };
+      }
+    }
+
+    if (!isValid) {
+      return { success: false, message: 'Invalid Telegram WebApp authentication signature.' };
+    }
+
+    const userParam = urlParams.get('user');
+    if (!userParam) {
+      return { success: false, message: 'User payload missing in initData' };
+    }
+
+    let tgUser: { id: number; first_name?: string; last_name?: string; username?: string };
+    try {
+      tgUser = JSON.parse(userParam);
+    } catch (e) {
+      return { success: false, message: 'Failed to parse user JSON from initData' };
+    }
+
+    if (!tgUser || !tgUser.id) {
+      return { success: false, message: 'Invalid user structure in initData' };
+    }
+
+    const telegramChatId = BigInt(tgUser.id);
+    const username = tgUser.username || null;
+    const firstName = tgUser.first_name || 'User';
+    const lastName = tgUser.last_name || '';
+    const fullName = `${firstName} ${lastName}`.trim();
+
+    // Find existing Telegram link or create/associate user
+    let link = await prisma.telegramLink.findUnique({
+      where: { telegramChatId },
+      include: { user: true },
+    });
+
+    let userId: string;
+    let dbUser: { id: string; name: string; email: string };
+
+    if (link && link.user) {
+      userId = link.userId;
+      dbUser = { id: link.user.id, name: link.user.name, email: link.user.email };
+
+      // Update username if changed
+      if (username && link.telegramUsername !== username) {
+        await prisma.telegramLink.update({
+          where: { id: link.id },
+          data: { telegramUsername: username },
+        });
+      }
+    } else {
+      // Check if there is an existing user or create a new user
+      const newUser = await prisma.user.create({
+        data: {
+          email: `tg_${tgUser.id}@lifeos.internal`,
+          name: fullName || `Telegram User ${tgUser.id}`,
+          telegramLink: {
+            create: {
+              telegramChatId,
+              telegramUsername: username,
+              isActive: true,
+            },
+          },
+        },
+      });
+
+      userId = newUser.id;
+      dbUser = { id: newUser.id, name: newUser.name, email: newUser.email };
+    }
+
+    // Issue 30-Day JWT Session Token
+    const payload: JwtPayloadData = {
+      userId: dbUser.id,
+      email: dbUser.email,
+      name: dbUser.name,
+      telegramChatId: telegramChatId.toString(),
+    };
+
+    const jwtToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
+
+    return {
+      success: true,
+      jwtToken,
+      user: dbUser,
+    };
+  } catch (error: any) {
+    console.error('Error in verifyTelegramWebAppData:', error);
+    return { success: false, message: `Error verifying WebApp data: ${error.message}` };
+  }
+}
+

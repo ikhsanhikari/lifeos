@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { Telegraf } from 'telegraf';
+import { Telegraf, Markup } from 'telegraf';
 import { PrismaClient } from '@prisma/client';
 import {
   handleHabitsCommand,
@@ -58,6 +58,7 @@ import {
   generateMagicLinkToken,
   verifyMagicLinkToken,
   verifyJwtSessionToken,
+  verifyTelegramWebAppData,
 } from './services/authService';
 import {
   getUserGoals,
@@ -110,6 +111,29 @@ if (!botToken) {
 }
 
 export const bot = new Telegraf(botToken || 'DUMMY_TOKEN');
+
+// Configure Telegram Bot Chat Menu Button (Web App)
+const getWebAppUrl = () =>
+  (
+    process.env.APP_URL ||
+    process.env.NEXT_PUBLIC_WEB_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    'http://localhost:3011'
+  ).replace(/\/$/, '');
+
+if (botToken && botToken !== 'DUMMY_TOKEN') {
+  const url = getWebAppUrl();
+  bot.telegram
+    .setChatMenuButton({
+      menuButton: {
+        type: 'web_app',
+        text: '🚀 Launch App',
+        web_app: { url },
+      },
+    })
+    .then(() => console.log(`✅ Set Telegram Chat Menu Button to Mini App URL: ${url}`))
+    .catch((err) => console.warn('Could not set Telegram Chat Menu Button:', err.message));
+}
 
 // Telegram Bot Command: /start
 bot.command('start', async (ctx) => {
@@ -282,7 +306,30 @@ async function handleImportHabitsCommand(ctx: any) {
   }
 }
 
+// Handler untuk Telegram Mini App Direct Launch (/app)
+async function handleAppCommand(ctx: any) {
+  try {
+    const webAppUrl = getWebAppUrl();
+    await ctx.reply(
+      `🚀 *Life OS Telegram Mini App*\n\n` +
+      `Buka dashboard produktivitas interaktif kamu langsung di dalam Telegram! ✨\n\n` +
+      `• Auto Login Instant\n` +
+      `• Habit & Task Check-in\n` +
+      `• AI Daily Coach & Journal`,
+      {
+        parse_mode: 'Markdown',
+        ...Markup.inlineKeyboard([
+          [Markup.button.webApp('🚀 Buka Telegram Mini App', webAppUrl)],
+        ]),
+      }
+    );
+  } catch (error) {
+    console.error('Error handling /app command:', error);
+  }
+}
+
 // Telegram Bot Commands
+bot.command('app', handleAppCommand);
 bot.command('menu', handleMainMenuCommand);
 bot.command('login', handleLoginCommand);
 bot.command('goals', (ctx) => handleGoalsCommand(ctx));
@@ -516,6 +563,30 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // AUTH REST API ENDPOINTS
+app.post('/api/auth/telegram-webapp', async (req: Request, res: Response) => {
+  try {
+    const { initData } = req.body;
+    if (!initData) {
+      res.status(400).json({ success: false, message: 'initData string is required' });
+      return;
+    }
+
+    const result = await verifyTelegramWebAppData(initData);
+    if (!result.success) {
+      res.status(401).json({ success: false, message: result.message });
+      return;
+    }
+
+    res.json({
+      success: true,
+      token: result.jwtToken,
+      user: result.user,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.post('/api/auth/verify-magic-link', async (req: Request, res: Response) => {
   try {
     const { token } = req.body;
