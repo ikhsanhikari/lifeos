@@ -72,7 +72,7 @@ interface DashboardContextType {
   toggleHabit: (id: string) => Promise<void>;
   toggleTaskStatus: (taskId: string, currentStatus: string) => Promise<void>;
   handleDeleteTask: (taskId: string, e: React.MouseEvent) => Promise<void>;
-  handleAddNewTask: (title: string, priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW') => Promise<void>;
+  handleAddNewTask: (title: string, priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW', dueDate?: string, dueTime?: string) => Promise<void>;
   handleSaveDailyLog: (mood: number, energy: number, journal: string) => Promise<void>;
   handleFetchDailyCoachInsight: (journal: string, mood: number, energy: number) => Promise<{ insight: string; pattern: string; recommendation: string } | null>;
   handleOpenAiBreakdownModal: (goal: GoalData) => void;
@@ -94,7 +94,7 @@ interface DashboardContextType {
   handleOpenEditTaskModal: (task: TaskData) => void;
   handleUpdateGoalSubmit: (goalId: string, updated: { title: string; description: string; deadline: string; status: 'ACTIVE' | 'COMPLETED' | 'PAUSED' | 'ABANDONED'; color: string }) => Promise<void>;
   handleUpdateHabitSubmit: (habitId: string, updated: { name: string; description?: string; frequency: 'DAILY' | 'WEEKLY'; color: string; reminderTime?: string }) => Promise<void>;
-  handleUpdateTaskSubmit: (taskId: string, updated: { title: string; priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW'; status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'; goalId?: string | null }) => Promise<void>;
+  handleUpdateTaskSubmit: (taskId: string, updated: { title: string; priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW'; status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'; goalId?: string | null; dueDate?: string | null; dueTime?: string | null }) => Promise<void>;
 }
 
 const DashboardContext = createContext<DashboardContextType | null>(null);
@@ -655,13 +655,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const handleAddNewTask = async (
     title: string,
-    priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW'
+    priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW',
+    dueDate?: string,
+    dueTime?: string
   ) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-        body: JSON.stringify({ title, priority }),
+        body: JSON.stringify({ title, priority, dueDate, dueTime }),
       });
       const json = await res.json();
       if (json.success && json.task) {
@@ -734,7 +736,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const handleUpdateTaskSubmit = async (
     taskId: string,
-    updated: { title: string; priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW'; status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'; goalId?: string | null }
+    updated: { title: string; priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW'; status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'; goalId?: string | null; dueDate?: string | null; dueTime?: string | null }
   ) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {

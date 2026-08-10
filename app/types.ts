@@ -30,6 +30,7 @@ export interface TaskData {
   priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW';
   status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
   dueDate: string | null;
+  dueTime?: string | null;
   completedAt: string | null;
   createdAt: string;
   goalId?: string | null;

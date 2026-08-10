@@ -86,7 +86,8 @@ export async function createTask(data: {
   title: string;
   description?: string;
   priority?: TaskPriority;
-  dueDate?: Date;
+  dueDate?: Date | null;
+  dueTime?: Date | null;
   goalId?: string;
   userId: string;
 }): Promise<TaskWithDetails> {
@@ -96,6 +97,7 @@ export async function createTask(data: {
       description: data.description,
       priority: data.priority || 'MEDIUM',
       dueDate: data.dueDate,
+      dueTime: data.dueTime,
       goalId: data.goalId || null,
       userId: data.userId,
     },
@@ -139,6 +141,7 @@ export async function updateTask(
     status?: TaskStatus;
     goalId?: string | null;
     dueDate?: Date | null;
+    dueTime?: Date | null;
   }
 ): Promise<TaskWithDetails> {
   const updatedTask = await prisma.task.update({
@@ -153,6 +156,7 @@ export async function updateTask(
       }),
       ...(data.goalId !== undefined && { goalId: data.goalId }),
       ...(data.dueDate !== undefined && { dueDate: data.dueDate }),
+      ...(data.dueTime !== undefined && { dueTime: data.dueTime }),
     },
     include: {
       goal: {

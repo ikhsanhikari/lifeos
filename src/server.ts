@@ -1031,16 +1031,23 @@ app.post('/api/tasks', async (req: AuthenticatedRequest, res: Response) => {
       return;
     }
 
-    const { title, priority, dueDate, goalId } = req.body;
+    const { title, priority, dueDate, dueTime, goalId } = req.body;
     if (!title) {
       res.status(400).json({ success: false, message: 'title is required' });
       return;
+    }
+
+    let parsedDueTime: Date | undefined = undefined;
+    if (dueTime) {
+      const [h, m] = dueTime.split(':').map(Number);
+      parsedDueTime = new Date(Date.UTC(1970, 0, 1, h || 0, m || 0, 0));
     }
 
     const newTask = await createTask({
       title,
       priority,
       dueDate: dueDate ? new Date(dueDate) : undefined,
+      dueTime: parsedDueTime,
       goalId,
       userId: req.user.id,
     });
@@ -1058,7 +1065,18 @@ app.patch('/api/tasks/:id', async (req: AuthenticatedRequest, res: Response) => 
     }
 
     const taskId = Array.isArray(req.params.id) ? req.params.id[0] : (req.params.id as string);
-    const { title, description, priority, status, goalId, dueDate } = req.body;
+    const { title, description, priority, status, goalId, dueDate, dueTime } = req.body;
+
+    let parsedDueTime: Date | null | undefined = undefined;
+    if (dueTime !== undefined) {
+      if (dueTime === null || dueTime === '') {
+        parsedDueTime = null;
+      } else if (typeof dueTime === 'string') {
+        const [h, m] = dueTime.split(':').map(Number);
+        parsedDueTime = new Date(Date.UTC(1970, 0, 1, h || 0, m || 0, 0));
+      }
+    }
+
     const updatedTask = await updateTask(taskId, {
       title,
       description,
@@ -1066,6 +1084,7 @@ app.patch('/api/tasks/:id', async (req: AuthenticatedRequest, res: Response) => 
       status,
       goalId,
       dueDate: dueDate !== undefined ? (dueDate ? new Date(dueDate) : null) : undefined,
+      dueTime: parsedDueTime,
     });
     res.json({ success: true, task: updatedTask });
   } catch (error: any) {

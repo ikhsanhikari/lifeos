@@ -9,7 +9,7 @@ interface EditTaskModalProps {
   onClose: () => void;
   task: TaskData | null;
   goals: GoalData[];
-  onSubmit: (taskId: string, updated: { title: string; priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW'; status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'; goalId?: string | null }) => Promise<void>;
+  onSubmit: (taskId: string, updated: { title: string; priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW'; status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'; goalId?: string | null; dueDate?: string | null; dueTime?: string | null }) => Promise<void>;
 }
 
 export const EditTaskModal: React.FC<EditTaskModalProps> = ({
@@ -23,6 +23,8 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [priority, setPriority] = useState<'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW'>('MEDIUM');
   const [status, setStatus] = useState<'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'>('TODO');
   const [goalId, setGoalId] = useState<string>('none');
+  const [dueDate, setDueDate] = useState<string>('');
+  const [dueTime, setDueTime] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
@@ -31,6 +33,30 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
       setPriority(task.priority || 'MEDIUM');
       setStatus(task.status || 'TODO');
       setGoalId(task.goalId || 'none');
+
+      if (task.dueDate) {
+        try {
+          const d = new Date(task.dueDate);
+          setDueDate(d.toISOString().split('T')[0]);
+        } catch (e) {
+          setDueDate('');
+        }
+      } else {
+        setDueDate('');
+      }
+
+      if (task.dueTime) {
+        try {
+          const d = new Date(task.dueTime);
+          const hh = String(d.getUTCHours()).padStart(2, '0');
+          const mm = String(d.getUTCMinutes()).padStart(2, '0');
+          setDueTime(`${hh}:${mm}`);
+        } catch (e) {
+          setDueTime(task.dueTime || '');
+        }
+      } else {
+        setDueTime('');
+      }
     }
   }, [task, isOpen]);
 
@@ -47,6 +73,8 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
         priority,
         status,
         goalId: goalId === 'none' ? null : goalId,
+        dueDate: dueDate || null,
+        dueTime: dueTime || null,
       });
       onClose();
     } finally {
@@ -70,7 +98,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
           </div>
           <h3 className="text-lg font-bold text-zinc-100">Edit Task / Tugas</h3>
           <p className="text-xs text-zinc-400">
-            Perbarui judul, prioritas, status, atau alokasi goal dari tugas ini.
+            Perbarui judul, prioritas, status, tenggat waktu, atau alokasi goal dari tugas ini.
           </p>
         </div>
 
@@ -119,6 +147,32 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({
                 <option value="IN_PROGRESS">⏳ In Progress</option>
                 <option value="DONE">✅ Done (Selesai)</option>
               </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
+                Tanggal Tenggat (Opsional)
+              </label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
+                Jam Pengingat (Opsional)
+              </label>
+              <input
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500"
+              />
             </div>
           </div>
 

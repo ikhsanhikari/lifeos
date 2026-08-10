@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CheckSquare, Check, Trash2, Plus, CornerDownLeft, Search, Filter, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
+import { CheckSquare, Check, Trash2, Plus, CornerDownLeft, Search, Filter, ChevronLeft, ChevronRight, Pencil, Clock, Calendar } from 'lucide-react';
 
 export interface TaskData {
   id: string;
@@ -8,6 +8,7 @@ export interface TaskData {
   priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW';
   status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
   dueDate: string | null;
+  dueTime?: string | null;
   completedAt: string | null;
   createdAt: string;
   goalId?: string | null;
@@ -24,7 +25,7 @@ interface TaskPanelProps {
   onToggleTask: (id: string, status: string) => void;
   onDeleteTask: (id: string, e: React.MouseEvent) => void;
   onEditTask?: (task: TaskData) => void;
-  onAddTask: (title: string, priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW') => Promise<void>;
+  onAddTask: (title: string, priority: 'URGENT' | 'HIGH' | 'MEDIUM' | 'LOW', dueDate?: string, dueTime?: string) => Promise<void>;
   showTitle?: boolean;
 }
 
@@ -292,6 +293,22 @@ export const TaskPanel: React.FC<TaskPanelProps> = ({
                     className="text-[9px] sm:text-[10px] font-medium px-1.5 sm:px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 max-w-[110px] sm:max-w-[160px] truncate"
                   >
                     🌟 {task.goal.title}
+                  </span>
+                )}
+                {task.dueDate && (
+                  <span className="text-[9px] sm:text-[10px] font-medium px-1.5 sm:px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    <span>{new Date(task.dueDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
+                  </span>
+                )}
+                {task.dueTime && (
+                  <span className="text-[9px] sm:text-[10px] font-medium px-1.5 sm:px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>
+                      {typeof task.dueTime === 'string' && task.dueTime.includes(':')
+                        ? task.dueTime.substring(0, 5)
+                        : new Date(task.dueTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                    </span>
                   </span>
                 )}
                 {renderPriorityBadge(task.priority)}

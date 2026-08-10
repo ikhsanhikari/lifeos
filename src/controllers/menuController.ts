@@ -28,7 +28,15 @@ export async function registerTelegramCommands(bot: Telegraf) {
  * Return persistent Reply Keyboard (Menu Tombol di Bawah Layar Chat)
  */
 export function getPersistentMenuKeyboard() {
+  const webAppUrl = (
+    process.env.APP_URL ||
+    process.env.NEXT_PUBLIC_WEB_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    'http://localhost:3011'
+  ).replace(/\/$/, '');
+
   return Markup.keyboard([
+    [Markup.button.webApp('🚀 Buka Telegram Mini App', webAppUrl)],
     ['🌟 Goals (Mimpi)', '🔎 Focus Mode'],
     ['🎯 Habit Harian', '📋 Task List'],
     ['📖 Jurnal & Mood', '📊 Today Summary'],
