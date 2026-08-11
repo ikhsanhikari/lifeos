@@ -125,9 +125,9 @@ export async function sendPushNotificationToUser(
         await webpush.sendNotification(pushSubscription, notificationPayload);
         successCount++;
       } catch (err: any) {
-        // HTTP 410 (Gone) or 404 (Not Found) means the device unsubscribed or subscription expired
-        if (err.statusCode === 410 || err.statusCode === 404) {
-          console.log(`[PUSH] Cleaning up expired subscription endpoint: ${subRecord.endpoint.substring(0, 30)}...`);
+        // HTTP 410 (Gone), 404 (Not Found), 403 (Forbidden), or 401 (Unauthorized) means key mismatch or expired subscription
+        if (err.statusCode === 410 || err.statusCode === 404 || err.statusCode === 403 || err.statusCode === 401) {
+          console.log(`[PUSH] Cleaning up invalid/expired subscription endpoint (Status ${err.statusCode}): ${subRecord.endpoint.substring(0, 30)}...`);
           await removePushSubscription(subRecord.endpoint);
         } else {
           console.error(`[PUSH ERROR] Failed to send push to ${subRecord.endpoint.substring(0, 30)}... (Status ${err.statusCode}):`, err.message || err);
