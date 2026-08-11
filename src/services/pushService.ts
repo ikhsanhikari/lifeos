@@ -98,6 +98,7 @@ export async function sendPushNotificationToUser(
     });
 
     if (subscriptions.length === 0) {
+      console.log(`[PUSH] No active push subscriptions found for user ${userId}. Skipping Web Push.`);
       return 0;
     }
 
@@ -128,10 +129,12 @@ export async function sendPushNotificationToUser(
           console.log(`[PUSH] Cleaning up expired subscription endpoint: ${subRecord.endpoint.substring(0, 30)}...`);
           await removePushSubscription(subRecord.endpoint);
         } else {
-          console.error(`[PUSH ERROR] Failed to send push to ${subRecord.endpoint.substring(0, 30)}...:`, err.message || err);
+          console.error(`[PUSH ERROR] Failed to send push to ${subRecord.endpoint.substring(0, 30)}... (Status ${err.statusCode}):`, err.message || err);
         }
       }
     }
+
+    console.log(`[PUSH] 🌐 Dispatched Web Push to ${subscriptions.length} device(s) for user ${userId} (Success: ${successCount})`);
   } catch (error: any) {
     console.error('Error sending push notification to user:', error.message || error);
   }

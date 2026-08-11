@@ -16,6 +16,7 @@ import { AiGoalBreakdownModal } from '../dashboard/components/modals/AiGoalBreak
 import { AiSummaryModal, WeeklySummaryData } from '../dashboard/components/modals/AiSummaryModal';
 import { ShareCardModal } from '../dashboard/components/modals/ShareCardModal';
 import { ReminderSettingsModal, UserSettingsData } from '../dashboard/components/modals/ReminderSettingsModal';
+import { WebPushPromptBanner } from './WebPushPromptBanner';
 import {
   AiStatusData,
   HabitData,
@@ -939,6 +940,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           cardData={shareCardData}
           isLoading={isShareLoading}
         />
+
+        <WebPushPromptBanner />
       </div>
     </DashboardContext.Provider>
   );
