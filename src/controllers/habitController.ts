@@ -60,7 +60,10 @@ export async function getUserDailyHabits(telegramChatId?: bigint | null): Promis
 
   let habits = await prisma.habit.findMany({
     where: { userId, isArchived: false },
-    orderBy: { sortOrder: 'asc' },
+    orderBy: [
+      { reminderTime: { sort: 'asc', nulls: 'last' } },
+      { sortOrder: 'asc' },
+    ],
   });
 
   // Get today's logs for these habits

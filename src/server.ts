@@ -85,6 +85,7 @@ import { getShareCardData, sendShareCardToTelegram, fetchCardDataInternal } from
 import { handleGetUserSettings, handleUpdateUserSettings } from './controllers/settingsController';
 import { generateWeeklySummary, isAiGloballyEnabled, parseHabitsWithAi } from './services/aiService';
 import { authMiddleware, AuthenticatedRequest } from './middleware/authMiddleware';
+import { getVapidPublicKey, savePushSubscription, removePushSubscription, sendPushNotificationToUser } from './services/pushService';
 
 // Load environment variables
 dotenv.config();
@@ -1197,6 +1198,65 @@ app.post('/api/share/send-telegram', authMiddleware, sendShareCardToTelegram);
 // USER SETTINGS REST API ENDPOINTS
 app.get('/api/settings', authMiddleware, handleGetUserSettings);
 app.put('/api/settings', authMiddleware, handleUpdateUserSettings);
+
+// WEB PUSH NOTIFICATION API ENDPOINTS
+app.get('/api/notifications/vapid-key', (req: Request, res: Response) => {
+  res.json({ success: true, publicKey: getVapidPublicKey() });
+});
+
+app.post('/api/notifications/subscribe', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+    const { subscription } = req.body;
+    if (!subscription || !subscription.endpoint || !subscription.keys) {
+      res.status(400).json({ success: false, message: 'Invalid push subscription object' });
+      return;
+    }
+    const userAgent = req.headers['user-agent'];
+    await savePushSubscription(req.user.id, subscription, userAgent);
+    res.json({ success: true, message: 'Push subscription saved successfully' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/notifications/unsubscribe', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { endpoint } = req.body;
+    if (!endpoint) {
+      res.status(400).json({ success: false, message: 'Endpoint is required' });
+      return;
+    }
+    await removePushSubscription(endpoint);
+    res.json({ success: true, message: 'Unsubscribed successfully' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/notifications/test-push', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+    const count = await sendPushNotificationToUser(req.user.id, {
+      title: '🔔 Tes Web Push Life OS',
+      body: 'Hebat! Notifikasi browser Life OS berhasil aktif & siap mengirimkan pengingat.',
+      url: '/dashboard',
+    });
+    res.json({
+      success: true,
+      sentCount: count,
+      message: count > 0 ? 'Notifikasi tes berhasil terkirim! 🚀' : 'Belum ada browser yang terdaftar.',
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // TELEGRAM BOT COMMAND: /flex or /share
 bot.command(['flex', 'share'], async (ctx) => {

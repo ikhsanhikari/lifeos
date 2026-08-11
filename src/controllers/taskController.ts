@@ -71,6 +71,8 @@ export async function getUserTasks(telegramChatId?: bigint | null): Promise<{ us
     },
     orderBy: [
       { status: 'asc' },
+      { dueTime: { sort: 'asc', nulls: 'last' } },
+      { dueDate: { sort: 'asc', nulls: 'last' } },
       { priority: 'asc' },
       { createdAt: 'desc' },
     ],

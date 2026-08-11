@@ -36,10 +36,20 @@ export default function OverviewPage() {
   const pendingHabits = habits.filter((h) => !h.isDoneToday);
   const nextHabit = pendingHabits[0];
 
-  // Top priority task
+  // Top priority task (ordered by due time first, then priority)
   const pendingTasks = tasks
     .filter((t) => t.status !== 'DONE')
     .sort((a, b) => {
+      if (a.dueTime && !b.dueTime) return -1;
+      if (!a.dueTime && b.dueTime) return 1;
+      if (a.dueTime && b.dueTime && a.dueTime !== b.dueTime) {
+        return a.dueTime.localeCompare(b.dueTime);
+      }
+      if (a.dueDate && !b.dueDate) return -1;
+      if (!a.dueDate && b.dueDate) return 1;
+      if (a.dueDate && b.dueDate && a.dueDate !== b.dueDate) {
+        return a.dueDate.localeCompare(b.dueDate);
+      }
       const pOrder: Record<string, number> = { URGENT: 1, HIGH: 2, MEDIUM: 3, LOW: 4 };
       return (pOrder[a.priority] || 9) - (pOrder[b.priority] || 9);
     });

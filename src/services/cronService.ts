@@ -3,6 +3,7 @@ import { Telegraf } from 'telegraf';
 import { prisma } from '../server';
 import { getTodayDate } from '../controllers/habitController';
 import { getAnalyticsSummary } from '../controllers/analyticsController';
+import { sendPushNotificationToUser } from './pushService';
 
 /**
  * Get current time formatted as "HH:mm" in Asia/Jakarta (WIB) timezone
@@ -156,6 +157,11 @@ export async function sendMorningReminders(bot: Telegraf, targetHHMM?: string): 
         `_Ketik /focus untuk melihat fokus utama, atau /goals untuk melihat daftar mimpi kamu!_`;
 
       await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+      await sendPushNotificationToUser(link.userId, {
+        title: `☀️ Selamat Pagi, ${link.user.name}!`,
+        body: `Cek habit & tugas prioritas kamu hari ini di Life OS Web Dashboard.`,
+        url: '/dashboard',
+      });
       sentCount++;
       console.log(`[CRON ${getWibHHMM()} WIB] ☀️ Morning Reminder sent to ${link.user.name} (${chatId})`);
     }
@@ -276,6 +282,11 @@ export async function sendTimeSpecificReminders(bot: Telegraf, targetHHMM?: stri
           `_Ketik /habits atau /tasks untuk melakukan check-in!_`;
 
         await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+        await sendPushNotificationToUser(link.userId, {
+          title: `⏰ Waktunya Target Kamu (${formattedTimeHeader})`,
+          body: dueHabits.length > 0 ? `Habit: ${dueHabits[0].name}` : `Task: ${dueTasks[0]?.title}`,
+          url: dueHabits.length > 0 ? '/habits' : '/tasks',
+        });
         sentCount++;
         console.log(`[CRON ${getWibHHMM()} WIB] ⏰ Item Reminder (${formattedTimeHeader}) sent to ${link.user.name} (${chatId})`);
       }
@@ -334,6 +345,11 @@ export async function sendEveningRecapReminders(bot: Telegraf, targetHHMM?: stri
           `*Ketik /log sekarang untuk mencatat mood & energi kamu!*`;
 
         await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+        await sendPushNotificationToUser(link.userId, {
+          title: `🌙 Daily Journal & Mood Log`,
+          body: `Halo ${link.user.name}, yuk refleksikan hari ini dan isi jurnal harian kamu sejenak.`,
+          url: '/dashboard',
+        });
         sentCount++;
         console.log(`[CRON ${getWibHHMM()} WIB] 🌙 Evening Recap Reminder sent to ${link.user.name} (${chatId})`);
       }
@@ -394,6 +410,11 @@ export async function sendStreakAlertReminders(bot: Telegraf, targetHHMM?: strin
           `Jangan biarkan konsistensi kamu sia-sia! Ketik /habits untuk check-in sekarang. 🔥`;
 
         await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+        await sendPushNotificationToUser(link.userId, {
+          title: `🚨 Peringatan Habit Streak Night Alert!`,
+          body: `${endangeredStreaks.length} habit berisiko terputus streak-nya malam ini jika tidak di-checkin!`,
+          url: '/habits',
+        });
         sentCount++;
         console.log(`[CRON ${getWibHHMM()} WIB] 🚨 Streak Alert Reminder sent to ${link.user.name} (${chatId})`);
       }
@@ -526,6 +547,11 @@ export async function sendAutoFollowUpReminders(bot: Telegraf, targetHHMM?: stri
           `_Yuk selesaikan dan ketik /habits atau /tasks untuk melakukan check-in!_`;
 
         await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+        await sendPushNotificationToUser(link.userId, {
+          title: `🔔 Follow-Up Target Tertunda (+${delayHours} Jam)`,
+          body: `Kamu memiliki ${pendingFollowUpHabits.length + pendingFollowUpTasks.length} target tertunda. Yuk selesaikan sekarang!`,
+          url: '/dashboard',
+        });
         sentCount++;
         console.log(`[CRON ${getWibHHMM()} WIB] 🔔 Auto Follow-Up Reminder (+${delayHours}h) sent to ${link.user.name} (${chatId})`);
       }
