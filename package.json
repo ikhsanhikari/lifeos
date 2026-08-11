@@ -11,7 +11,8 @@
     "web:start": "next start -p 3011",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "generate-vapid": "npx web-push generate-vapid-keys"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
