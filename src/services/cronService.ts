@@ -161,6 +161,7 @@ export async function sendMorningReminders(bot: Telegraf, targetHHMM?: string): 
         title: `☀️ Selamat Pagi, ${link.user.name}!`,
         body: `Cek habit & tugas prioritas kamu hari ini di Life OS Web Dashboard.`,
         url: '/dashboard',
+        tag: `lifeos-morning-${Date.now()}`,
       });
       sentCount++;
       console.log(`[CRON ${getWibHHMM()} WIB] ☀️ Morning Reminder sent to ${link.user.name} (${chatId})`);
@@ -286,6 +287,7 @@ export async function sendTimeSpecificReminders(bot: Telegraf, targetHHMM?: stri
           title: `⏰ Waktunya Target Kamu (${formattedTimeHeader})`,
           body: dueHabits.length > 0 ? `Habit: ${dueHabits[0].name}` : `Task: ${dueTasks[0]?.title}`,
           url: dueHabits.length > 0 ? '/habits' : '/tasks',
+          tag: `lifeos-item-${formattedTimeHeader}-${Date.now()}`,
         });
         sentCount++;
         console.log(`[CRON ${getWibHHMM()} WIB] ⏰ Item Reminder (${formattedTimeHeader}) sent to ${link.user.name} (${chatId})`);
@@ -349,6 +351,7 @@ export async function sendEveningRecapReminders(bot: Telegraf, targetHHMM?: stri
           title: `🌙 Daily Journal & Mood Log`,
           body: `Halo ${link.user.name}, yuk refleksikan hari ini dan isi jurnal harian kamu sejenak.`,
           url: '/dashboard',
+          tag: `lifeos-evening-${Date.now()}`,
         });
         sentCount++;
         console.log(`[CRON ${getWibHHMM()} WIB] 🌙 Evening Recap Reminder sent to ${link.user.name} (${chatId})`);
@@ -414,6 +417,7 @@ export async function sendStreakAlertReminders(bot: Telegraf, targetHHMM?: strin
           title: `🚨 Peringatan Habit Streak Night Alert!`,
           body: `${endangeredStreaks.length} habit berisiko terputus streak-nya malam ini jika tidak di-checkin!`,
           url: '/habits',
+          tag: `lifeos-streak-${Date.now()}`,
         });
         sentCount++;
         console.log(`[CRON ${getWibHHMM()} WIB] 🚨 Streak Alert Reminder sent to ${link.user.name} (${chatId})`);
@@ -551,6 +555,7 @@ export async function sendAutoFollowUpReminders(bot: Telegraf, targetHHMM?: stri
           title: `🔔 Follow-Up Target Tertunda (+${delayHours} Jam)`,
           body: `Kamu memiliki ${pendingFollowUpHabits.length + pendingFollowUpTasks.length} target tertunda. Yuk selesaikan sekarang!`,
           url: '/dashboard',
+          tag: `lifeos-followup-${delayHours}h-${Date.now()}`,
         });
         sentCount++;
         console.log(`[CRON ${getWibHHMM()} WIB] 🔔 Auto Follow-Up Reminder (+${delayHours}h) sent to ${link.user.name} (${chatId})`);

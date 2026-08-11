@@ -108,7 +108,8 @@ export async function sendPushNotificationToUser(
       url: payload.url || '/dashboard',
       icon: payload.icon || '/icon-192x192.png',
       badge: payload.badge || '/badge-72x72.png',
-      tag: payload.tag || 'lifeos-reminder',
+      tag: payload.tag || `lifeos-reminder-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+      timestamp: Date.now(),
     });
 
     for (const subRecord of subscriptions) {

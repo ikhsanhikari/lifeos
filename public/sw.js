@@ -10,8 +10,9 @@ self.addEventListener('push', function (event) {
       body: data.body || 'Waktunya produktif hari ini!',
       icon: data.icon || '/icon-192x192.png',
       badge: data.badge || '/badge-72x72.png',
-      tag: data.tag || 'lifeos-push',
+      tag: data.tag || 'lifeos-push-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
       renotify: true,
+      timestamp: data.timestamp || Date.now(),
       data: {
         url: data.url || '/dashboard',
       },
