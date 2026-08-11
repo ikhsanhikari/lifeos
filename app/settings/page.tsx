@@ -12,10 +12,13 @@ import {
   Sliders, 
   AlertCircle, 
   RotateCcw,
-  Send
+  Send,
+  Globe,
+  Loader2
 } from 'lucide-react';
 import { useDashboard } from '../components/DashboardShell';
 import { Card } from '../components/ui/Card';
+import { useWebPush } from '../hooks/useWebPush';
 
 // Generating 10-minute interval options for time select dropdowns
 const TIME_OPTIONS: string[] = [];
@@ -48,6 +51,16 @@ export default function ReminderSettingsPage() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const {
+    isSupported: isWebPushSupported,
+    isSubscribed: isWebPushSubscribed,
+    isLoading: isPushLoading,
+    statusMessage: pushStatusMsg,
+    subscribe: subscribePush,
+    unsubscribe: unsubscribePush,
+    sendTestPush,
+  } = useWebPush();
 
   useEffect(() => {
     if (userSettings) {
@@ -142,7 +155,14 @@ export default function ReminderSettingsPage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Telegram Linking Warning / Status */}
-          {!telegramStatus.isLinked ? (
+          {telegramStatus.isLinked ? (
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span className="font-medium">
+                Telegram terhubung ({telegramStatus.telegramLink?.telegramUsername ? `@${telegramStatus.telegramLink.telegramUsername}` : 'Aktif'}). Bot siap mengirim notifikasi.
+              </span>
+            </div>
+          ) : (
             <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-start justify-between gap-3">
               <div className="flex items-start gap-2.5">
                 <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
@@ -162,14 +182,71 @@ export default function ReminderSettingsPage() {
                 <span>Hubungkan</span>
               </button>
             </div>
-          ) : (
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span className="font-medium">
-                Telegram terhubung ({telegramStatus.telegramLink?.telegramUsername ? `@${telegramStatus.telegramLink.telegramUsername}` : 'Aktif'}). Bot siap mengirim notifikasi.
-              </span>
-            </div>
           )}
+
+          {/* Web Push Browser Notification Status & Controls */}
+          <div className="p-4 rounded-xl bg-gradient-to-r from-violet-950/40 via-zinc-950 to-zinc-950 border border-violet-500/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                  <Globe className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-bold text-zinc-100">Notifikasi Web Push (Browser & HP)</p>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase ${
+                      isWebPushSubscribed ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-zinc-800 text-zinc-400'
+                    }`}>
+                      {isWebPushSubscribed ? 'Aktif' : 'Nonaktif'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400">Pop-up pengingat langsung di desktop / Android tanpa perlu buka app.</p>
+                </div>
+              </div>
+
+              {isWebPushSupported && (
+                <button
+                  type="button"
+                  onClick={isWebPushSubscribed ? unsubscribePush : subscribePush}
+                  disabled={isPushLoading}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm flex items-center gap-1.5 shrink-0 ${
+                    isWebPushSubscribed
+                      ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30'
+                      : 'bg-violet-600 hover:bg-violet-500 text-white shadow-violet-900/40'
+                  }`}
+                >
+                  {isPushLoading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : isWebPushSubscribed ? (
+                    'Matikan Web Push'
+                  ) : (
+                    'Aktifkan Web Push 🔔'
+                  )}
+                </button>
+              )}
+            </div>
+
+            {pushStatusMsg && (
+              <p className="text-[11px] font-medium text-violet-300 bg-violet-500/10 border border-violet-500/20 rounded-lg p-2 flex items-center justify-between">
+                <span>{pushStatusMsg}</span>
+              </p>
+            )}
+
+            {isWebPushSubscribed && (
+              <div className="pt-2 border-t border-zinc-800/60 flex items-center justify-between">
+                <span className="text-[11px] text-zinc-400">Uji pengiriman notifikasi ke browser ini:</span>
+                <button
+                  type="button"
+                  onClick={sendTestPush}
+                  disabled={isPushLoading}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-200 text-[11px] font-semibold flex items-center gap-1.5 border border-zinc-700 transition-colors shadow-sm"
+                >
+                  <Send className="w-3 h-3 text-sky-400" />
+                  <span>Kirim Tes Push 🚀</span>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Master Switch */}
           <div className="p-4 rounded-xl bg-zinc-950/80 border border-zinc-800 flex items-center justify-between">
