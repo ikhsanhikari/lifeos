@@ -206,6 +206,132 @@ export async function toggleHabitStatus(habitId: string) {
 }
 
 /**
+ * Helper core function untuk mencatat Habit yang di-SKIP dengan catatan (note)
+ */
+export async function skipHabitStatus(habitId: string, note?: string) {
+  const today = getTodayDate();
+
+  const habitLog = await prisma.habitLog.upsert({
+    where: {
+      habitId_date: {
+        habitId,
+        date: today,
+      },
+    },
+    create: {
+      habitId,
+      date: today,
+      status: 'SKIPPED',
+      note: note || null,
+    },
+    update: {
+      status: 'SKIPPED',
+      note: note || null,
+    },
+  });
+
+  return habitLog;
+}
+
+/**
+ * Action Handler saat user mengeklik tombol "✅ Selesai" pada pesan reminder per-habit
+ */
+export async function handleHabitDoneAction(ctx: Context, habitId: string) {
+  try {
+    const habit = await prisma.habit.findUnique({ where: { id: habitId } });
+    if (!habit) {
+      await ctx.answerCbQuery('❌ Habit tidak ditemukan.');
+      return;
+    }
+
+    await toggleHabitStatus(habitId);
+    await ctx.answerCbQuery(`✅ Habit "${habit.name}" ditandai Selesai!`);
+
+    const updatedMessage =
+      `✅ *HABIT SELESAI!* 🎯\n\n` +
+      `📌 *${habit.name}*\n` +
+      `🕒 Dicatat pada: ${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB\n` +
+      `🔥 *Streak:* ${(habit as any).streak || 1} Hari\n\n` +
+      `_Kerja bagus! Pertahankan konsistensi kamu!_ 💪`;
+
+    await ctx.editMessageText(updatedMessage, { parse_mode: 'Markdown' });
+  } catch (error) {
+    console.error('Error in handleHabitDoneAction:', error);
+    await ctx.answerCbQuery('❌ Gagal memproses check-in habit.');
+  }
+}
+
+/**
+ * Action Handler saat user mengeklik "⏭️ Skip (Catatan)" untuk memilih alasan skip
+ */
+export async function handleHabitSkipPromptAction(ctx: Context, habitId: string) {
+  try {
+    const habit = await prisma.habit.findUnique({ where: { id: habitId } });
+    if (!habit) {
+      await ctx.answerCbQuery('❌ Habit tidak ditemukan.');
+      return;
+    }
+
+    await ctx.answerCbQuery('Pilih atau ketik alasan skip...');
+
+    const promptMessage =
+      `⏭️ *LEWATI HABIT (${habit.name})*\n\n` +
+      `Pilih alasan di bawah ini atau klik *Tulis Catatan Kustom* untuk mengetik alasan:`;
+
+    const keyboard = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '🤒 Sakit', callback_data: `habit_skip_preset:${habit.id}:Sakit` },
+            { text: '💼 Sibuk', callback_data: `habit_skip_preset:${habit.id}:Sibuk` },
+            { text: '😴 Istirahat', callback_data: `habit_skip_preset:${habit.id}:Istirahat` },
+          ],
+          [
+            { text: '✍️ Tulis Catatan Kustom', callback_data: `habit_skip_custom:${habit.id}` },
+          ],
+        ],
+      },
+    };
+
+    await ctx.editMessageText(promptMessage, {
+      parse_mode: 'Markdown',
+      ...keyboard,
+    });
+  } catch (error) {
+    console.error('Error in handleHabitSkipPromptAction:', error);
+    await ctx.answerCbQuery('❌ Gagal menampilkan opsi skip.');
+  }
+}
+
+/**
+ * Action Handler saat user mengeklik salah satu preset skip (Sakit, Sibuk, Istirahat)
+ */
+export async function handleHabitSkipPresetAction(ctx: Context, habitId: string, presetNote: string) {
+  try {
+    const habit = await prisma.habit.findUnique({ where: { id: habitId } });
+    if (!habit) {
+      await ctx.answerCbQuery('❌ Habit tidak ditemukan.');
+      return;
+    }
+
+    await skipHabitStatus(habitId, presetNote);
+    await ctx.answerCbQuery(`⏭️ Habit "${habit.name}" dilewati.`);
+
+    const updatedMessage =
+      `⏭️ *HABIT DILEWATI*\n\n` +
+      `📌 *${habit.name}*\n` +
+      `📝 *Catatan:* _"${presetNote}"_\n` +
+      `🕒 Dicatat pada: ${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB\n\n` +
+      `_Habit ini tidak dihitung alpa dan streak kamu tetap terjaga!_ 👍`;
+
+    await ctx.editMessageText(updatedMessage, { parse_mode: 'Markdown' });
+  } catch (error) {
+    console.error('Error in handleHabitSkipPresetAction:', error);
+    await ctx.answerCbQuery('❌ Gagal melepaskan habit.');
+  }
+}
+
+/**
  * Action Handler saat user mengeklik tombol habit (Callback Query)
  */
 export async function handleHabitToggleCallback(ctx: Context) {

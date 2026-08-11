@@ -13,8 +13,10 @@ self.addEventListener('push', function (event) {
       tag: data.tag || 'lifeos-push-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
       renotify: true,
       timestamp: data.timestamp || Date.now(),
+      actions: data.actions || [],
       data: {
         url: data.url || '/dashboard',
+        habitId: data.habitId || null,
       },
     };
 

@@ -82,6 +82,8 @@ export interface PushPayload {
   icon?: string;
   badge?: string;
   tag?: string;
+  actions?: any[];
+  habitId?: string;
 }
 
 /**
@@ -110,6 +112,8 @@ export async function sendPushNotificationToUser(
       badge: payload.badge || '/badge-72x72.png',
       tag: payload.tag || `lifeos-reminder-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
       timestamp: Date.now(),
+      actions: payload.actions || [],
+      habitId: payload.habitId || null,
     });
 
     for (const subRecord of subscriptions) {

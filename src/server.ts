@@ -8,6 +8,10 @@ import {
   handleHabitToggleCallback,
   getUserDailyHabits,
   toggleHabitStatus,
+  skipHabitStatus,
+  handleHabitDoneAction,
+  handleHabitSkipPromptAction,
+  handleHabitSkipPresetAction,
   createHabit,
   deleteHabit,
   reorderHabits,
@@ -458,8 +462,35 @@ bot.action(/^goal_add_task_wizard:(.+)$/, async (ctx) => {
   );
 });
 
+const habitSkipCustomSessions = new Map<number, string>(); // chatId -> habitId
+
 bot.action(/^toggle_habit:(.+)$/, handleHabitToggleCallback);
 bot.action('refresh_habits', handleHabitToggleCallback);
+bot.action(/^habit_done:(.+)$/, (ctx) => {
+  const habitId = ctx.match[1];
+  return handleHabitDoneAction(ctx, habitId);
+});
+bot.action(/^habit_skip_prompt:(.+)$/, (ctx) => {
+  const habitId = ctx.match[1];
+  return handleHabitSkipPromptAction(ctx, habitId);
+});
+bot.action(/^habit_skip_preset:(.+):(.+)$/, (ctx) => {
+  const habitId = ctx.match[1];
+  const presetNote = ctx.match[2];
+  return handleHabitSkipPresetAction(ctx, habitId, presetNote);
+});
+bot.action(/^habit_skip_custom:(.+)$/, async (ctx) => {
+  const habitId = ctx.match[1];
+  if (ctx.chat) {
+    habitSkipCustomSessions.set(ctx.chat.id, habitId);
+  }
+  await ctx.answerCbQuery('Ketik catatan kustom...');
+  await ctx.reply('✍️ *Silakan balas pesan ini dengan mengetik alasan/catatan skip untuk habit ini:*', {
+    parse_mode: 'Markdown',
+    reply_markup: { force_reply: true },
+  });
+});
+
 bot.action(/^toggle_task:(.+)$/, handleTaskToggleCallback);
 bot.action('refresh_tasks', handleTaskToggleCallback);
 bot.action(/^nav_tasks_page:(.+)$/, handleTasksPageCallback);
@@ -474,6 +505,17 @@ bot.on('text', async (ctx, next) => {
   if (!ctx.chat) return next();
   const chatId = ctx.chat.id;
   const text = ctx.message.text.trim();
+
+  // Check Habit Skip Custom Note session
+  const habitSkipId = habitSkipCustomSessions.get(chatId);
+  if (habitSkipId) {
+    habitSkipCustomSessions.delete(chatId);
+    if (!text.startsWith('/')) {
+      await skipHabitStatus(habitSkipId, text);
+      await ctx.reply(`⏭️ Catatan skip berhasil disimpan: _"${text}"_`, { parse_mode: 'Markdown' });
+      return;
+    }
+  }
 
   // Check Daily Log Journal Text session
   const logSession = logWizardSessions.get(chatId);

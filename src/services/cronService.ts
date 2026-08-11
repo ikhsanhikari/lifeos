@@ -258,39 +258,74 @@ export async function sendTimeSpecificReminders(bot: Telegraf, targetHHMM?: stri
         return tMin > currentMin - 10 && tMin <= currentMin;
       });
 
-      if (dueHabits.length > 0 || dueTasks.length > 0) {
-        let habitSection = '';
-        if (dueHabits.length > 0) {
-          habitSection = `🎯 *Habits Waktunya Dikerjakan:* \n` +
-            dueHabits.map((h) => `• ${h.name}`).join('\n') + `\n\n`;
-        }
+      const formattedTimeHeader = `${currentHourStr}:${currentMinStr}`;
 
-        let taskSection = '';
-        if (dueTasks.length > 0) {
-          taskSection = `📋 *Task Waktunya Dikerjakan:* \n` +
-            dueTasks.map((t) => {
-              const goalTag = t.goal ? `_[Goal: ${t.goal.title}]_ ` : '';
-              return `• ${goalTag}${t.title}`;
-            }).join('\n') + `\n\n`;
-        }
+      // 1. Send per-habit individual reminders (1-by-1) with Done & Skip interactive buttons
+      for (const habit of dueHabits) {
+        const habitMessage =
+          `⏰ *PENGINGAT HABIT (${formattedTimeHeader})* 🎯\n\n` +
+          `Halo ${link.user.name}, waktunya mengerjakan habit:\n` +
+          `📌 *${habit.name}*\n` +
+          (habit.description ? `_(${habit.description})_\n` : '') +
+          `🔥 *Streak saat ini:* ${(habit as any).streak || 0} Hari\n\n` +
+          `Pilih tindakan di bawah untuk mencatat check-in:`;
 
-        const formattedTimeHeader = `${currentHourStr}:${currentMinStr}`;
-        const message =
-          `⏰ *PENGINGAT WAKTU TIBA (${formattedTimeHeader})* 🔔\n\n` +
-          `Halo ${link.user.name}! Waktunya menyelesaikan target kamu sekarang:\n\n` +
-          `${habitSection}` +
-          `${taskSection}` +
-          `_Ketik /habits atau /tasks untuk melakukan check-in!_`;
+        const keyboard = {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: '✅ Selesai', callback_data: `habit_done:${habit.id}` },
+                { text: '⏭️ Skip (Catatan)', callback_data: `habit_skip_prompt:${habit.id}` },
+              ],
+            ],
+          },
+        };
 
-        await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-        await sendPushNotificationToUser(link.userId, {
-          title: `⏰ Waktunya Target Kamu (${formattedTimeHeader})`,
-          body: dueHabits.length > 0 ? `Habit: ${dueHabits[0].name}` : `Task: ${dueTasks[0]?.title}`,
-          url: dueHabits.length > 0 ? '/habits' : '/tasks',
-          tag: `lifeos-item-${formattedTimeHeader}-${Date.now()}`,
+        await bot.telegram.sendMessage(chatId, habitMessage, {
+          parse_mode: 'Markdown',
+          ...keyboard,
         });
+
+        await sendPushNotificationToUser(link.userId, {
+          title: `🎯 ${habit.name} (${formattedTimeHeader})`,
+          body: `Waktunya habit ${habit.name}! 🔥 Streak: ${(habit as any).streak || 0} Hari.`,
+          url: '/habits',
+          tag: `lifeos-habit-${habit.id}-${Date.now()}`,
+          habitId: habit.id,
+          actions: [
+            { action: 'done', title: '✅ Selesai' },
+            { action: 'skip', title: '⏭️ Skip' },
+          ],
+        });
+
         sentCount++;
-        console.log(`[CRON ${getWibHHMM()} WIB] ⏰ Item Reminder (${formattedTimeHeader}) sent to ${link.user.name} (${chatId})`);
+        console.log(`[CRON ${getWibHHMM()} WIB] 🎯 Habit Reminder (${habit.name}) sent 1-by-1 to ${link.user.name} (${chatId})`);
+      }
+
+      // 2. Send due tasks reminder if any
+      if (dueTasks.length > 0) {
+        const taskSection = `📋 *Task Waktunya Dikerjakan:* \n` +
+          dueTasks.map((t) => {
+            const goalTag = t.goal ? `_[Goal: ${t.goal.title}]_ ` : '';
+            return `• ${goalTag}${t.title}`;
+          }).join('\n');
+
+        const taskMessage =
+          `⏰ *PENGINGAT TASK (${formattedTimeHeader})* 🔔\n\n` +
+          `Halo ${link.user.name}! Waktunya menyelesaikan tugas kamu:\n\n` +
+          `${taskSection}\n\n` +
+          `_Ketik /tasks untuk melakukan check-in!_`;
+
+        await bot.telegram.sendMessage(chatId, taskMessage, { parse_mode: 'Markdown' });
+        await sendPushNotificationToUser(link.userId, {
+          title: `📋 Waktunya Task Kamu (${formattedTimeHeader})`,
+          body: `Task: ${dueTasks[0]?.title}`,
+          url: '/tasks',
+          tag: `lifeos-tasks-${formattedTimeHeader}-${Date.now()}`,
+        });
+
+        sentCount++;
+        console.log(`[CRON ${getWibHHMM()} WIB] 📋 Task Reminder (${formattedTimeHeader}) sent to ${link.user.name} (${chatId})`);
       }
     }
   } catch (error: any) {
