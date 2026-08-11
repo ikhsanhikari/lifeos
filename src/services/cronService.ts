@@ -290,7 +290,7 @@ export async function sendTimeSpecificReminders(bot: Telegraf, targetHHMM?: stri
           title: `🎯 ${habit.name} (${formattedTimeHeader})`,
           body: `Waktunya habit ${habit.name}! 🔥 Streak: ${(habit as any).streak || 0} Hari.`,
           url: '/habits',
-          tag: `lifeos-habit-${habit.id}-${Date.now()}`,
+          tag: `lifeos-habit-${habit.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
           habitId: habit.id,
           actions: [
             { action: 'done', title: '✅ Selesai' },
@@ -300,6 +300,9 @@ export async function sendTimeSpecificReminders(bot: Telegraf, targetHHMM?: stri
 
         sentCount++;
         console.log(`[CRON ${getWibHHMM()} WIB] 🎯 Habit Reminder (${habit.name}) sent 1-by-1 to ${link.user.name} (${chatId})`);
+
+        // Small 500ms pacing delay between pushes to prevent OS notification throttling/burst suppression
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
       // 2. Send due tasks reminder if any
