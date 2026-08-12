@@ -4,10 +4,14 @@ import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.widget.Toast
+import com.lifeos.app.data.local.DataStoreManager
+import com.lifeos.app.data.remote.RetrofitInstance
 import com.lifeos.app.data.repository.LifeOSRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -28,6 +32,15 @@ class HabitActionReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                // Ensure JWT token is loaded into RetrofitInstance from DataStore in background
+                val dataStoreManager = DataStoreManager(context.applicationContext)
+                val token = dataStoreManager.authToken.firstOrNull()
+                if (!token.isNullOrEmpty()) {
+                    RetrofitInstance.authToken = token
+                } else {
+                    Log.e("HabitActionReceiver", "Auth token is missing in DataStore")
+                }
+
                 when (action) {
                     LifeOSNotificationManager.ACTION_DONE -> {
                         val result = repository.checkInHabit(habitId)
@@ -35,6 +48,7 @@ class HabitActionReceiver : BroadcastReceiver() {
                             if (result.isSuccess) {
                                 Toast.makeText(context, "✅ Habit '$habitName' Berhasil Di-checkin!", Toast.LENGTH_SHORT).show()
                             } else {
+                                Log.e("HabitActionReceiver", "Check-in failed: ${result.exceptionOrNull()?.message}")
                                 Toast.makeText(context, "❌ Gagal me-checkin habit", Toast.LENGTH_SHORT).show()
                             }
                         }
@@ -45,10 +59,16 @@ class HabitActionReceiver : BroadcastReceiver() {
                             if (result.isSuccess) {
                                 Toast.makeText(context, "⏭️ Habit '$habitName' Dilewati", Toast.LENGTH_SHORT).show()
                             } else {
+                                Log.e("HabitActionReceiver", "Skip failed: ${result.exceptionOrNull()?.message}")
                                 Toast.makeText(context, "❌ Gagal me-skip habit", Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
+                }
+            } catch (e: Exception) {
+                Log.e("HabitActionReceiver", "Error processing notification action", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "❌ Terjadi kesalahan: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             } finally {
                 pendingResult.finish()
