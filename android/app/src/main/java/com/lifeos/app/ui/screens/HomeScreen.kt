@@ -26,7 +26,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lifeos.app.R
@@ -200,8 +199,8 @@ fun AnimatedHeroFocusRingCard(focusScore: Int) {
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulseGlow")
     val glowScale by infiniteTransition.animateFloat(
-        initialValue = 0.96f,
-        targetValue = 1.04f,
+        initialValue = 0.95f,
+        targetValue = 1.05f,
         animationSpec = infiniteRepeatable(
             animation = tween(2200, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
@@ -210,8 +209,8 @@ fun AnimatedHeroFocusRingCard(focusScore: Int) {
     )
 
     val bobOffsetY by infiniteTransition.animateFloat(
-        initialValue = -6f,
-        targetValue = 6f,
+        initialValue = -5f,
+        targetValue = 5f,
         animationSpec = infiniteRepeatable(
             animation = tween(1800, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -221,86 +220,96 @@ fun AnimatedHeroFocusRingCard(focusScore: Int) {
 
     GlassmorphicCard(
         modifier = Modifier.fillMaxWidth(),
-        borderColor = PrimaryIndigo.copy(alpha = 0.6f)
+        borderColor = PrimaryIndigo.copy(alpha = 0.5f)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(16.dp)
         ) {
-            Text(
-                text = "SKOR FOKUS HARIAN",
-                style = MaterialTheme.typography.labelSmall,
-                color = PrimaryIndigo,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 1.5.sp
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(150.dp)
-                    .scale(glowScale)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Background Animated 3D Floating Orb
-                Image(
-                    painter = painterResource(id = R.drawable.orb_3d),
-                    contentDescription = "3D Glass Orb",
-                    modifier = Modifier
-                        .size(115.dp)
-                        .offset(y = bobOffsetY.dp)
-                        .clip(CircleShape)
-                )
-
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    drawCircle(
-                        color = Color.White.copy(alpha = 0.08f),
-                        style = Stroke(width = 12.dp.toPx())
+                // LEFT SIDE: Clean Bold Typography Metric & Progress Status
+                Column(modifier = Modifier.weight(1.2f)) {
+                    Text(
+                        text = "SKOR FOKUS HARIAN",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = PrimaryIndigo,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 1.2.sp
                     )
-                    drawArc(
-                        brush = Brush.sweepGradient(listOf(PrimaryIndigo, SecondaryViolet, AccentEmeraldLight, PrimaryIndigo)),
-                        startAngle = -90f,
-                        sweepAngle = 360f * animatedProgress,
-                        useCenter = false,
-                        style = Stroke(width = 12.dp.toPx(), cap = StrokeCap.Round)
-                    )
-                }
 
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(SurfaceDark.copy(alpha = 0.88f))
-                        .border(1.dp, PrimaryIndigo.copy(alpha = 0.6f), CircleShape)
-                        .padding(horizontal = 18.dp, vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "$focusScore%",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontSize = 42.sp,
+                        fontWeight = FontWeight.Black,
+                        color = TextWhite
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(AccentEmeraldLight.copy(alpha = 0.15f))
+                            .border(1.dp, AccentEmeraldLight.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
                         Text(
-                            text = "$focusScore%",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = TextWhite
-                        )
-                        Text(
-                            text = "Performa",
+                            text = "⚡ Performa Sangat Prima",
                             style = MaterialTheme.typography.labelSmall,
                             color = AccentEmeraldLight,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
+
+                // RIGHT SIDE: 3D Floating Glass Orb with Animated Circular Ring Gauge
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(115.dp)
+                        .scale(glowScale)
+                ) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        drawCircle(
+                            color = Color.White.copy(alpha = 0.08f),
+                            style = Stroke(width = 8.dp.toPx())
+                        )
+                        drawArc(
+                            brush = Brush.sweepGradient(listOf(PrimaryIndigo, SecondaryViolet, AccentEmeraldLight, PrimaryIndigo)),
+                            startAngle = -90f,
+                            sweepAngle = 360f * animatedProgress,
+                            useCenter = false,
+                            style = Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round)
+                        )
+                    }
+
+                    Image(
+                        painter = painterResource(id = R.drawable.orb_3d),
+                        contentDescription = "3D Glass Orb",
+                        modifier = Modifier
+                            .size(80.dp)
+                            .offset(y = bobOffsetY.dp)
+                            .clip(CircleShape)
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+            HorizontalDivider(color = GlassBorderDark)
+            Spacer(modifier = Modifier.height(10.dp))
 
             Text(
                 text = "Fokus dan ritme produktivitas kamu berada dalam kondisi sangat tinggi hari ini! ✨",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextMuted,
-                textAlign = TextAlign.Center
+                style = MaterialTheme.typography.bodySmall,
+                color = TextMuted
             )
         }
     }
