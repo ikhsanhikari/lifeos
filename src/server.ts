@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken';
 import { Telegraf, Markup } from 'telegraf';
 import { PrismaClient } from '@prisma/client';
 import {
@@ -229,6 +230,14 @@ bot.command('start', async (ctx) => {
   }
 });
 
+interface OtpRecord {
+  code: string;
+  chatId: bigint;
+  userId: string;
+  expiresAt: number;
+}
+const activeOtpCodes = new Map<string, OtpRecord>();
+
 // Handler untuk Telegram Magic Login Link (/login)
 async function handleLoginCommand(ctx: any) {
   try {
@@ -236,12 +245,31 @@ async function handleLoginCommand(ctx: any) {
     const chatId = BigInt(ctx.chat.id);
     const { magicLinkUrl, userName } = await generateMagicLinkToken(chatId);
 
+    // Generate 6-digit numeric OTP code (e.g. "849201")
+    const numericOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Find linked user ID
+    const link = await prisma.telegramLink.findUnique({
+      where: { telegramChatId: chatId },
+    });
+    const userId = link?.userId || '';
+
+    activeOtpCodes.set(numericOtp, {
+      code: numericOtp,
+      chatId,
+      userId,
+      expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
+    });
+
     const htmlMessage =
-      `🔑 <b>Magic Login Link Web Dashboard</b>\n\n` +
-      `Halo <b>${userName}</b>! Klik atau tap tautan di bawah ini untuk langsung masuk ke Web Dashboard tanpa password:\n\n` +
-      `🚀 <a href="${magicLinkUrl}"><b>👉 KLIK DI SINI UNTUK LOGIN INSTAN 👈</b></a>\n\n` +
-      `🔗 <i>Direct URL:</i> ${magicLinkUrl}\n\n` +
-      `⏳ <b>Catatan:</b> Link ini berlaku selama 15 menit. Begitu masuk, Anda akan tetap login permanen!`;
+      `🔑 <b>AKSES LOGIN LIFE OS</b>\n\n` +
+      `Halo <b>${userName}</b>! Berikut akses masuk kamu:\n\n` +
+      `📱 <b>Kode OTP Android (6-Digit):</b>\n` +
+      `<code>${numericOtp}</code>\n` +
+      `<i>(Masukkan kode 6-digit ini di aplikasi Android Life OS kamu)</i>\n\n` +
+      `🌐 <b>Magic Link Web Dashboard:</b>\n` +
+      `🚀 <a href="${magicLinkUrl}"><b>👉 KLIK DI SINI UNTUK LOGIN WEB 👈</b></a>\n\n` +
+      `⏳ <b>Catatan:</b> Kode OTP & Link berlaku selama 5-15 menit.`;
 
     await ctx.reply(htmlMessage, {
       parse_mode: 'HTML',
@@ -249,7 +277,7 @@ async function handleLoginCommand(ctx: any) {
     });
   } catch (error) {
     console.error('Error handling /login command:', error);
-    await ctx.reply('❌ Gagal membuat magic login link.');
+    await ctx.reply('❌ Gagal membuat kode login.');
   }
 }
 
@@ -607,6 +635,107 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // AUTH REST API ENDPOINTS
+app.post('/api/auth/dev-login', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    let user = await prisma.user.findFirst({
+      where: email ? { email } : undefined,
+    });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: email || 'user@lifeos.internal',
+          name: 'Ikhya (Life OS User)',
+        },
+      });
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, name: user.name },
+      process.env.JWT_SECRET || 'lifeos_secret_key_2026_hikari',
+      { expiresIn: '30d' }
+    );
+
+    res.json({
+      success: true,
+      token,
+      user: { id: user.id, name: user.name, email: user.email },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/auth/verify-otp', async (req: Request, res: Response) => {
+  try {
+    const { otpCode } = req.body;
+    if (!otpCode) {
+      res.status(400).json({ success: false, message: 'Kode OTP 6-digit harus diisi.' });
+      return;
+    }
+
+    const cleanCode = otpCode.toString().trim();
+    const record = activeOtpCodes.get(cleanCode);
+
+    if (!record) {
+      res.status(400).json({ success: false, message: 'Kode OTP tidak valid atau sudah kadaluwarsa. Silakan ketik /login di Telegram.' });
+      return;
+    }
+
+    if (Date.now() > record.expiresAt) {
+      activeOtpCodes.delete(cleanCode);
+      res.status(400).json({ success: false, message: 'Kode OTP sudah kadaluwarsa (berlaku 5 menit). Ketik /login di Telegram untuk kode baru.' });
+      return;
+    }
+
+    // Single-use OTP code
+    activeOtpCodes.delete(cleanCode);
+
+    // Resolve user
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: record.userId },
+          { telegramLink: { telegramChatId: record.chatId } },
+        ],
+      },
+    });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: `tg_${record.chatId}@lifeos.internal`,
+          name: `User ${record.chatId}`,
+          telegramLink: {
+            create: {
+              telegramChatId: record.chatId,
+              isActive: true,
+            },
+          },
+        },
+      });
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, name: user.name, telegramChatId: record.chatId.toString() },
+      process.env.JWT_SECRET || 'lifeos_secret_key_2026_hikari',
+      { expiresIn: '30d' }
+    );
+
+    console.log(`[AUTH] Successfully verified Telegram OTP ${cleanCode} for user ${user.name} (${user.id})`);
+
+    res.json({
+      success: true,
+      token,
+      user: { id: user.id, name: user.name, email: user.email },
+    });
+  } catch (error: any) {
+    console.error('Error verifying OTP code:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.post('/api/auth/telegram-webapp', async (req: Request, res: Response) => {
   try {
     const { initData } = req.body;
