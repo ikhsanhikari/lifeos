@@ -14,7 +14,8 @@ import com.lifeos.app.ui.viewmodel.DashboardViewModel
 
 fun LazyListScope.habitsScreenTabContent(
     habits: List<HabitDto>,
-    viewModel: DashboardViewModel
+    viewModel: DashboardViewModel,
+    onOpenSkipDialog: (HabitDto) -> Unit
 ) {
     item {
         Column {
@@ -38,7 +39,7 @@ fun LazyListScope.habitsScreenTabContent(
             HabitCardItem(
                 habit = habit,
                 onToggle = { viewModel.toggleHabit(habit.id) },
-                onSkip = { note -> viewModel.skipHabit(habit.id, note) }
+                onSkip = { onOpenSkipDialog(habit) }
             )
         }
     }

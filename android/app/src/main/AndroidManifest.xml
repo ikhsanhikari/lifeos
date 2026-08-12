@@ -10,9 +10,9 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@android:drawable/sym_def_app_icon"
+        android:icon="@drawable/ic_lifeos_logo"
         android:label="Life OS"
-        android:roundIcon="@android:drawable/sym_def_app_icon"
+        android:roundIcon="@drawable/ic_lifeos_logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.LifeOS"
         tools:targetApi="31">

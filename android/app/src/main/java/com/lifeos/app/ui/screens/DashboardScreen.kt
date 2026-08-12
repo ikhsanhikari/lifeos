@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.lifeos.app.data.model.HabitDto
 import com.lifeos.app.ui.components.*
 import com.lifeos.app.ui.theme.*
 import com.lifeos.app.ui.viewmodel.DashboardViewModel
@@ -29,6 +30,7 @@ fun DashboardScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     var taskFilter by remember { mutableStateOf("ALL") }
     var showCreateBottomSheet by remember { mutableStateOf(false) }
+    var selectedHabitForSkip by remember { mutableStateOf<HabitDto?>(null) }
 
     val habits = uiState.habits
     val tasks = uiState.tasks
@@ -93,8 +95,10 @@ fun DashboardScreen(
                 item { Spacer(modifier = Modifier.height(12.dp)) }
 
                 when (selectedTab) {
-                    0 -> homeScreenTabContent(userName, focusScore, habits, tasks, viewModel)
-                    1 -> habitsScreenTabContent(habits, viewModel)
+                    0 -> homeScreenTabContent(userName, focusScore, habits, tasks, onNavigateTab = { tab -> selectedTab = tab })
+                    1 -> habitsScreenTabContent(habits, viewModel) { habit ->
+                        selectedHabitForSkip = habit
+                    }
                     2 -> tasksScreenTabContent(tasks, filteredTasks, taskFilter, { taskFilter = it }, viewModel)
                     3 -> item {
                         JournalScreenContent(
@@ -129,6 +133,17 @@ fun DashboardScreen(
                     onDismiss = { showCreateBottomSheet = false }
                 )
             }
+        }
+
+        selectedHabitForSkip?.let { habitToSkip ->
+            SkipReasonDialog(
+                habitName = habitToSkip.name,
+                onDismiss = { selectedHabitForSkip = null },
+                onConfirmSkip = { note ->
+                    viewModel.skipHabit(habitToSkip.id, note)
+                    selectedHabitForSkip = null
+                }
+            )
         }
     }
 }
