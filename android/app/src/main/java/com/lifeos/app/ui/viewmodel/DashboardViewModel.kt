@@ -1,8 +1,10 @@
 package com.lifeos.app.ui.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.messaging.FirebaseMessaging
 import com.lifeos.app.data.local.DataStoreManager
 import com.lifeos.app.data.model.*
 import com.lifeos.app.data.remote.RetrofitInstance
@@ -34,12 +36,40 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     init {
+        registerFcmTokenOnLaunch()
         fetchDashboardData()
+    }
+
+    private fun registerFcmTokenOnLaunch() {
+        viewModelScope.launch {
+            try {
+                val token = dataStoreManager.authToken.firstOrNull()
+                if (!token.isNullOrEmpty()) {
+                    RetrofitInstance.authToken = token
+                    FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                        if (task.isSuccessful && task.result != null) {
+                            val fcmToken = task.result
+                            viewModelScope.launch {
+                                repository.registerFcmToken(fcmToken)
+                                Log.d("FCM_PUSH", "DashboardViewModel auto-registered FCM token: $fcmToken")
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("FCM_PUSH", "Error auto registering FCM token: ${e.message}")
+            }
+        }
     }
 
     fun fetchDashboardData() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+
+            val token = dataStoreManager.authToken.firstOrNull()
+            if (!token.isNullOrEmpty()) {
+                RetrofitInstance.authToken = token
+            }
 
             val name = dataStoreManager.userName.firstOrNull() ?: "User Life OS"
 

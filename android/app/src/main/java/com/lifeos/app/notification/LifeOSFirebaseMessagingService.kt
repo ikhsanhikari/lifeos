@@ -3,9 +3,11 @@ package com.lifeos.app.notification
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import com.lifeos.app.data.local.DataStoreManager
 import com.lifeos.app.data.remote.RetrofitInstance
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 class LifeOSFirebaseMessagingService : FirebaseMessagingService() {
@@ -37,8 +39,12 @@ class LifeOSFirebaseMessagingService : FirebaseMessagingService() {
     private fun registerFcmTokenToServer(fcmToken: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                if (!RetrofitInstance.authToken.isNullOrEmpty()) {
+                val dataStoreManager = DataStoreManager(applicationContext)
+                val token = dataStoreManager.authToken.firstOrNull()
+                if (!token.isNullOrEmpty()) {
+                    RetrofitInstance.authToken = token
                     RetrofitInstance.api.registerFcmToken(mapOf("fcmToken" to fcmToken))
+                    Log.d("FCM_PUSH", "Registered FCM Token to server: $fcmToken")
                 }
             } catch (e: Exception) {
                 Log.e("FCM_PUSH", "Failed to register FCM Token to server: ${e.message}")
