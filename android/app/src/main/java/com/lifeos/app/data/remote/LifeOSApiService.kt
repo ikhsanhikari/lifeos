@@ -12,6 +12,9 @@ interface LifeOSApiService {
     @GET("api/habits")
     suspend fun getHabits(): Response<HabitListResponse>
 
+    @POST("api/habits")
+    suspend fun createHabit(@Body body: Map<String, String>): Response<ApiResponse<HabitDto>>
+
     @POST("api/habits/check-in")
     suspend fun checkInHabit(@Body body: Map<String, String>): Response<ApiResponse<Unit>>
 
@@ -21,9 +24,15 @@ interface LifeOSApiService {
     @GET("api/tasks")
     suspend fun getTasks(): Response<TaskListResponse>
 
+    @POST("api/tasks")
+    suspend fun createTask(@Body body: Map<String, String>): Response<ApiResponse<TaskDto>>
+
     @POST("api/tasks/{id}/toggle")
     suspend fun toggleTask(@Path("id") taskId: String): Response<ApiResponse<Unit>>
 
     @GET("api/goals")
     suspend fun getGoals(): Response<GoalListResponse>
+
+    @POST("api/daily-logs")
+    suspend fun saveDailyLog(@Body body: Map<String, String>): Response<ApiResponse<Unit>>
 }

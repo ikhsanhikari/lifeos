@@ -26,7 +26,12 @@ class MainActivity : ComponentActivity() {
                     val loginState by loginViewModel.uiState.collectAsState()
 
                     if (loginState.isLoggedIn) {
-                        DashboardScreen()
+                        DashboardScreen(
+                            onLoggedOut = {
+                                finish()
+                                startActivity(intent)
+                            }
+                        )
                     } else {
                         LoginScreen(
                             viewModel = loginViewModel,

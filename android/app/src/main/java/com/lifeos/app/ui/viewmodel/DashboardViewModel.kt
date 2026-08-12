@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifeos.app.data.local.DataStoreManager
 import com.lifeos.app.data.model.*
+import com.lifeos.app.data.remote.RetrofitInstance
 import com.lifeos.app.data.repository.LifeOSRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,11 +16,13 @@ import kotlinx.coroutines.launch
 data class DashboardUiState(
     val isLoading: Boolean = true,
     val userName: String = "User Life OS",
+    val userEmail: String = "user@lifeos.internal",
     val focusScore: Int = 85,
     val habits: List<HabitDto> = emptyList(),
     val tasks: List<TaskDto> = emptyList(),
     val goals: List<GoalDto> = emptyList(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val actionSuccessMessage: String? = null
 )
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
@@ -64,6 +67,35 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    fun createNewHabit(name: String, reminderTime: String?, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            val result = repository.createHabit(name, reminderTime)
+            if (result.isSuccess) {
+                fetchDashboardData()
+                onComplete()
+            }
+        }
+    }
+
+    fun createNewTask(title: String, priority: String, dueTime: String?, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            val result = repository.createTask(title, priority, dueTime)
+            if (result.isSuccess) {
+                fetchDashboardData()
+                onComplete()
+            }
+        }
+    }
+
+    fun submitDailyLog(content: String, mood: String, energyLevel: Int, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            val result = repository.saveDailyLog(content, mood, energyLevel)
+            if (result.isSuccess) {
+                onComplete()
+            }
+        }
+    }
+
     fun toggleHabit(habitId: String) {
         viewModelScope.launch {
             val result = repository.checkInHabit(habitId)
@@ -88,6 +120,14 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             if (result.isSuccess) {
                 fetchDashboardData()
             }
+        }
+    }
+
+    fun performLogout(onLoggedOut: () -> Unit) {
+        viewModelScope.launch {
+            dataStoreManager.clearSession()
+            RetrofitInstance.authToken = null
+            onLoggedOut()
         }
     }
 }

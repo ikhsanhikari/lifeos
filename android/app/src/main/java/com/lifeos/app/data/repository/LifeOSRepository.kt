@@ -36,6 +36,21 @@ class LifeOSRepository {
         }
     }
 
+    suspend fun createHabit(name: String, reminderTime: String?): Result<Unit> {
+        return try {
+            val map = mutableMapOf("name" to name, "frequency" to "DAILY")
+            if (!reminderTime.isNullOrBlank()) map["reminderTime"] = reminderTime
+            val response = api.createHabit(map)
+            if (response.isSuccessful && response.body()?.success == true) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Gagal membuat habit"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun checkInHabit(habitId: String): Result<Unit> {
         return try {
             val response = api.checkInHabit(mapOf("habitId" to habitId))
@@ -76,6 +91,21 @@ class LifeOSRepository {
         }
     }
 
+    suspend fun createTask(title: String, priority: String, dueTime: String?): Result<Unit> {
+        return try {
+            val map = mutableMapOf("title" to title, "priority" to priority)
+            if (!dueTime.isNullOrBlank()) map["dueTime"] = dueTime
+            val response = api.createTask(map)
+            if (response.isSuccessful && response.body()?.success == true) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Gagal membuat task"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun toggleTask(taskId: String): Result<Unit> {
         return try {
             val response = api.toggleTask(taskId)
@@ -97,6 +127,24 @@ class LifeOSRepository {
                 Result.success(body.goals)
             } else {
                 Result.failure(Exception(body?.message ?: "Gagal memuat goal"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun saveDailyLog(content: String, mood: String, energyLevel: Int): Result<Unit> {
+        return try {
+            val map = mapOf(
+                "content" to content,
+                "mood" to mood,
+                "energyLevel" to energyLevel.toString()
+            )
+            val response = api.saveDailyLog(map)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Gagal menyimpan jurnal harian"))
             }
         } catch (e: Exception) {
             Result.failure(e)
