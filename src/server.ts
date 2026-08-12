@@ -886,7 +886,7 @@ app.get('/api/habits', async (req: AuthenticatedRequest, res: Response) => {
     }
 
     const chatId = req.user.telegramChatId ? BigInt(req.user.telegramChatId) : null;
-    const result = await getUserDailyHabits(chatId);
+    const result = await getUserDailyHabits(chatId, req.user.id);
     res.json({ success: true, ...result });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
@@ -1190,7 +1190,7 @@ app.get('/api/tasks', async (req: AuthenticatedRequest, res: Response) => {
     }
 
     const chatId = req.user.telegramChatId ? BigInt(req.user.telegramChatId) : null;
-    const result = await getUserTasks(chatId);
+    const result = await getUserTasks(chatId, req.user.id);
     res.json({ success: true, ...result });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

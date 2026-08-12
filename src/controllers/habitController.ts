@@ -25,11 +25,14 @@ export interface HabitWithStatus {
  * 1. Fungsi untuk mengambil daftar habit harian dari database berdasarkan Telegram Chat ID.
  * Mengembalikan list habit beserta status apakah sudah di-checkin hari ini.
  */
-export async function getUserDailyHabits(telegramChatId?: bigint | null): Promise<{
+export async function getUserDailyHabits(
+  telegramChatId?: bigint | null,
+  explicitUserId?: string | null
+): Promise<{
   userFound: boolean;
   habits: HabitWithStatus[];
 }> {
-  let userId: string | null = null;
+  let userId: string | null = explicitUserId || null;
 
   if (telegramChatId) {
     const telegramLink = await prisma.telegramLink.findUnique({

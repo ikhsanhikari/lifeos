@@ -22,27 +22,14 @@ class LifeOSRepository {
         }
     }
 
-    suspend fun autoDevLogin(): Boolean {
-        return try {
-            val response = api.login(mapOf("email" to "user@lifeos.internal"))
-            if (response.isSuccessful && response.body()?.success == true) {
-                RetrofitInstance.authToken = response.body()?.data?.id // token
-                true
-            } else {
-                false
-            }
-        } catch (e: Exception) {
-            false
-        }
-    }
-
     suspend fun getHabits(): Result<List<HabitDto>> {
         return try {
             val response = api.getHabits()
-            if (response.isSuccessful && response.body()?.success == true) {
-                Result.success(response.body()?.data ?: emptyList())
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true) {
+                Result.success(body.habits)
             } else {
-                Result.failure(Exception(response.body()?.message ?: "Gagal memuat habits"))
+                Result.failure(Exception(body?.message ?: "Gagal memuat habits"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -78,10 +65,11 @@ class LifeOSRepository {
     suspend fun getTasks(): Result<List<TaskDto>> {
         return try {
             val response = api.getTasks()
-            if (response.isSuccessful && response.body()?.success == true) {
-                Result.success(response.body()?.data ?: emptyList())
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true) {
+                Result.success(body.tasks)
             } else {
-                Result.failure(Exception(response.body()?.message ?: "Gagal memuat task"))
+                Result.failure(Exception(body?.message ?: "Gagal memuat task"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -104,10 +92,11 @@ class LifeOSRepository {
     suspend fun getGoals(): Result<List<GoalDto>> {
         return try {
             val response = api.getGoals()
-            if (response.isSuccessful && response.body()?.success == true) {
-                Result.success(response.body()?.data ?: emptyList())
+            val body = response.body()
+            if (response.isSuccessful && body?.success == true) {
+                Result.success(body.goals)
             } else {
-                Result.failure(Exception(response.body()?.message ?: "Gagal memuat goal"))
+                Result.failure(Exception(body?.message ?: "Gagal memuat goal"))
             }
         } catch (e: Exception) {
             Result.failure(e)

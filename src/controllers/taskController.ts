@@ -25,10 +25,11 @@ export interface TaskWithDetails {
   } | null;
 }
 
-/**
- * Helper to resolve user ID from Telegram Chat ID or fallback to default user
- */
-async function resolveUserId(telegramChatId?: bigint | null): Promise<string> {
+export async function resolveUserId(
+  telegramChatId?: bigint | null,
+  explicitUserId?: string | null
+): Promise<string> {
+  if (explicitUserId) return explicitUserId;
   if (telegramChatId) {
     const telegramLink = await prisma.telegramLink.findUnique({
       where: { telegramChatId },
@@ -56,8 +57,11 @@ async function resolveUserId(telegramChatId?: bigint | null): Promise<string> {
 /**
  * 1. Mengambil daftar task harian/aktif milik user
  */
-export async function getUserTasks(telegramChatId?: bigint | null): Promise<{ userFound: boolean; tasks: TaskWithDetails[] }> {
-  const userId = await resolveUserId(telegramChatId);
+export async function getUserTasks(
+  telegramChatId?: bigint | null,
+  explicitUserId?: string | null
+): Promise<{ userFound: boolean; tasks: TaskWithDetails[] }> {
+  const userId = await resolveUserId(telegramChatId, explicitUserId);
 
   const tasks = await prisma.task.findMany({
     where: {

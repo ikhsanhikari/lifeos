@@ -33,6 +33,13 @@ data class HabitDto(
 )
 
 @Serializable
+data class HabitListResponse(
+    val success: Boolean = false,
+    val habits: List<HabitDto> = emptyList(),
+    val message: String? = null
+)
+
+@Serializable
 data class TaskDto(
     val id: String,
     val title: String,
@@ -45,12 +52,26 @@ data class TaskDto(
 )
 
 @Serializable
+data class TaskListResponse(
+    val success: Boolean = false,
+    val tasks: List<TaskDto> = emptyList(),
+    val message: String? = null
+)
+
+@Serializable
 data class GoalDto(
     val id: String,
     val title: String,
     val description: String? = null,
     val progress: Int = 0,
     val color: String = "indigo"
+)
+
+@Serializable
+data class GoalListResponse(
+    val success: Boolean = false,
+    val goals: List<GoalDto> = emptyList(),
+    val message: String? = null
 )
 
 @Serializable

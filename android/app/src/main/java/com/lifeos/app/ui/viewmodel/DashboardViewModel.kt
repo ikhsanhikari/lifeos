@@ -1,17 +1,20 @@
 package com.lifeos.app.ui.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.lifeos.app.data.local.DataStoreManager
 import com.lifeos.app.data.model.*
 import com.lifeos.app.data.repository.LifeOSRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 data class DashboardUiState(
     val isLoading: Boolean = true,
-    val userName: String = "Ikhya",
+    val userName: String = "User Life OS",
     val focusScore: Int = 85,
     val habits: List<HabitDto> = emptyList(),
     val tasks: List<TaskDto> = emptyList(),
@@ -19,9 +22,10 @@ data class DashboardUiState(
     val errorMessage: String? = null
 )
 
-class DashboardViewModel(
-    private val repository: LifeOSRepository = LifeOSRepository()
-) : ViewModel() {
+class DashboardViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val repository = LifeOSRepository()
+    private val dataStoreManager = DataStoreManager(application)
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -34,8 +38,7 @@ class DashboardViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
-            // Perform dev login if token is missing
-            repository.autoDevLogin()
+            val name = dataStoreManager.userName.firstOrNull() ?: "User Life OS"
 
             val habitsResult = repository.getHabits()
             val tasksResult = repository.getTasks()
@@ -52,6 +55,7 @@ class DashboardViewModel(
 
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
+                userName = name,
                 focusScore = calculatedFocusScore,
                 habits = habits,
                 tasks = tasks,
@@ -64,7 +68,6 @@ class DashboardViewModel(
         viewModelScope.launch {
             val result = repository.checkInHabit(habitId)
             if (result.isSuccess) {
-                // Optimistically update or refetch
                 fetchDashboardData()
             }
         }

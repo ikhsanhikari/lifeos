@@ -9,11 +9,8 @@ interface LifeOSApiService {
     @POST("api/auth/verify-otp")
     suspend fun verifyOtp(@Body body: Map<String, String>): Response<AuthResponseDto>
 
-    @POST("api/auth/login")
-    suspend fun login(@Body body: Map<String, String>): Response<ApiResponse<UserDto>>
-
     @GET("api/habits")
-    suspend fun getHabits(): Response<ApiResponse<List<HabitDto>>>
+    suspend fun getHabits(): Response<HabitListResponse>
 
     @POST("api/habits/check-in")
     suspend fun checkInHabit(@Body body: Map<String, String>): Response<ApiResponse<Unit>>
@@ -22,11 +19,11 @@ interface LifeOSApiService {
     suspend fun skipHabit(@Body body: Map<String, String>): Response<ApiResponse<Unit>>
 
     @GET("api/tasks")
-    suspend fun getTasks(): Response<ApiResponse<List<TaskDto>>>
+    suspend fun getTasks(): Response<TaskListResponse>
 
     @POST("api/tasks/{id}/toggle")
     suspend fun toggleTask(@Path("id") taskId: String): Response<ApiResponse<Unit>>
 
     @GET("api/goals")
-    suspend fun getGoals(): Response<ApiResponse<List<GoalDto>>>
+    suspend fun getGoals(): Response<GoalListResponse>
 }
