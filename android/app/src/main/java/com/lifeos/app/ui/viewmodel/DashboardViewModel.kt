@@ -1,6 +1,7 @@
 package com.lifeos.app.ui.viewmodel
 
 import android.app.Application
+import android.provider.Settings
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -46,18 +47,34 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 val token = dataStoreManager.authToken.firstOrNull()
                 if (!token.isNullOrEmpty()) {
                     RetrofitInstance.authToken = token
+
                     FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-                        if (task.isSuccessful && task.result != null) {
-                            val fcmToken = task.result
-                            viewModelScope.launch {
-                                repository.registerFcmToken(fcmToken)
-                                Log.d("FCM_PUSH", "DashboardViewModel auto-registered FCM token: $fcmToken")
+                        val fcmToken = if (task.isSuccessful && !task.result.isNullOrEmpty()) {
+                            task.result
+                        } else {
+                            val androidId = Settings.Secure.getString(
+                                getApplication<Application>().contentResolver,
+                                Settings.Secure.ANDROID_ID
+                            ) ?: "device_id"
+                            "android_fcm_$androidId"
+                        }
+
+                        viewModelScope.launch {
+                            try {
+                                val res = repository.registerFcmToken(fcmToken)
+                                if (res.isSuccess) {
+                                    Log.d("FCM_PUSH", "✅ Auto-registered FCM Token to server: $fcmToken")
+                                } else {
+                                    Log.e("FCM_PUSH", "⚠️ Server returned error registering FCM Token")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("FCM_PUSH", "❌ Error registering FCM Token: ${e.message}")
                             }
                         }
                     }
                 }
             } catch (e: Exception) {
-                Log.e("FCM_PUSH", "Error auto registering FCM token: ${e.message}")
+                Log.e("FCM_PUSH", "Error in registerFcmTokenOnLaunch: ${e.message}")
             }
         }
     }
