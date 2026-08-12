@@ -35,4 +35,7 @@ interface LifeOSApiService {
 
     @POST("api/daily-logs")
     suspend fun saveDailyLog(@Body body: Map<String, String>): Response<ApiResponse<Unit>>
+
+    @POST("api/push/register-fcm")
+    suspend fun registerFcmToken(@Body body: Map<String, String>): Response<ApiResponse<Unit>>
 }
