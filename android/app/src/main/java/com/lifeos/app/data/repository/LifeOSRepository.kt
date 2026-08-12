@@ -150,4 +150,17 @@ class LifeOSRepository {
             Result.failure(e)
         }
     }
+
+    suspend fun registerFcmToken(fcmToken: String): Result<Unit> {
+        return try {
+            val response = api.registerFcmToken(mapOf("fcmToken" to fcmToken))
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Gagal mendaftarkan FCM token"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
