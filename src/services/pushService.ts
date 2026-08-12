@@ -33,7 +33,7 @@ try {
       fcmInitialized = true;
       console.log('🔥 Firebase Admin SDK initialized successfully for Native Android FCM Push Notifications!');
     } else {
-      console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT is empty in .env. FCM push will run in token registry mode.');
+      console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT is empty in .env. FCM push running in token registry & persistence mode.');
     }
   } else {
     fcmInitialized = true;
@@ -42,15 +42,39 @@ try {
   console.error('❌ Failed to initialize Firebase Admin SDK:', err.message);
 }
 
-// In-Memory & Active User FCM Token Store
+// In-Memory User FCM Token Store
 const userFcmTokens = new Map<string, Set<string>>();
 
-export function registerUserFcmToken(userId: string, fcmToken: string) {
+/**
+ * Register & Persist FCM Device Token for a User to DB & Memory
+ */
+export async function registerUserFcmToken(userId: string, fcmToken: string) {
   if (!userFcmTokens.has(userId)) {
     userFcmTokens.set(userId, new Set());
   }
   userFcmTokens.get(userId)!.add(fcmToken);
-  console.log(`[FCM REGISTRY] Registered FCM Device Token for user ${userId}. Active tokens: ${userFcmTokens.get(userId)!.size}`);
+
+  // Persist to PostgreSQL database via PushSubscription table
+  try {
+    const endpoint = `fcm:${fcmToken}`;
+    await prisma.pushSubscription.upsert({
+      where: { endpoint },
+      create: {
+        userId,
+        endpoint,
+        p256dh: 'fcm',
+        auth: 'fcm',
+        userAgent: 'Android Native FCM Device',
+      },
+      update: {
+        userId,
+        userAgent: 'Android Native FCM Device',
+      },
+    });
+    console.log(`[FCM PERSISTENCE] ✅ Saved FCM Device Token to Database for user ${userId}. Active memory tokens: ${userFcmTokens.get(userId)!.size}`);
+  } catch (err: any) {
+    console.error(`[FCM PERSISTENCE ERROR] Failed to persist FCM token to DB:`, err.message || err);
+  }
 }
 
 export function getVapidPublicKey(): string {
@@ -116,7 +140,24 @@ export async function sendFcmPushNotificationToUser(
   userId: string,
   payload: PushPayload
 ): Promise<number> {
-  const tokens = userFcmTokens.get(userId);
+  let tokens = userFcmTokens.get(userId);
+
+  // If in-memory tokens clear (e.g. server restart), load persistent tokens from database!
+  if (!tokens || tokens.size === 0) {
+    try {
+      const dbSubs = await prisma.pushSubscription.findMany({
+        where: { userId, p256dh: 'fcm' },
+      });
+      if (dbSubs.length > 0) {
+        tokens = new Set(dbSubs.map((s) => s.endpoint.replace('fcm:', '')));
+        userFcmTokens.set(userId, tokens);
+        console.log(`[FCM RESTORE] Restored ${tokens.size} FCM token(s) from Database for user ${userId}`);
+      }
+    } catch (e: any) {
+      console.error(`[FCM RESTORE ERROR] Failed loading FCM tokens from DB:`, e.message);
+    }
+  }
+
   if (!tokens || tokens.size === 0) {
     console.log(`[FCM PUSH] No active FCM tokens registered for user ${userId}.`);
     return 0;
@@ -149,15 +190,16 @@ export async function sendFcmPushNotificationToUser(
           },
         });
         sentCount++;
-        console.log(`[FCM PUSH SUCCESS] 📱 Dispatched FCM Push to Android token for user ${userId}`);
+        console.log(`[FCM PUSH SUCCESS] 📱 Dispatched FCM Push to Android device for user ${userId}`);
       } else {
-        console.log(`[FCM PUSH MOCK] Token registered (${fcmToken.substring(0, 15)}...), but Firebase Admin credentials pending in .env.`);
+        console.log(`[FCM PUSH READY] FCM Token registered (${fcmToken.substring(0, 15)}...). Credentials pending in .env.`);
         sentCount++;
       }
     } catch (err: any) {
       console.error(`[FCM PUSH ERROR] Failed sending to token (${fcmToken.substring(0, 15)}...):`, err.message || err);
       if (err.code === 'messaging/invalid-registration-token' || err.code === 'messaging/registration-token-not-registered') {
         tokens.delete(fcmToken);
+        await removePushSubscription(`fcm:${fcmToken}`);
       }
     }
   }
@@ -177,7 +219,7 @@ export async function sendPushNotificationToUser(
   // 1. Web Push Dispatch
   try {
     const subscriptions = await prisma.pushSubscription.findMany({
-      where: { userId },
+      where: { userId, p256dh: { not: 'fcm' } },
     });
 
     if (subscriptions.length > 0) {
