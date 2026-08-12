@@ -748,7 +748,7 @@ app.post('/api/push/register-fcm', async (req: AuthenticatedRequest, res: Respon
       return;
     }
 
-    registerUserFcmToken(req.user.id, fcmToken);
+    await registerUserFcmToken(req.user.id, fcmToken);
     console.log(`[FCM PUSH] Registered Android FCM device token for user ${req.user.name} (${req.user.id})`);
     res.json({ success: true, message: 'FCM Token registered successfully' });
   } catch (error: any) {
