@@ -24,32 +24,29 @@ export function getWibHHMM(): string {
 
 /**
  * 1. Morning Reminder
- * Send daily habit list, goal-contextual tasks, and deadline alerts to Telegram linked users.
- * Returns count of reminders sent.
+ * Send daily habit list, goal-contextual tasks, and deadline alerts to all users via Push (and Telegram if linked).
  */
 export async function sendMorningReminders(bot: Telegraf, targetHHMM?: string): Promise<number> {
   let sentCount = 0;
   try {
-    const activeLinks = await prisma.telegramLink.findMany({
-      where: { isActive: true },
+    const allUsers = await prisma.user.findMany({
       include: {
-        user: {
-          include: { settings: true },
-        },
+        settings: true,
+        telegramLink: true,
       },
     });
 
     const today = getTodayDate();
 
-    for (const link of activeLinks) {
-      const userSettings = link.user.settings;
+    for (const user of allUsers) {
+      const userSettings = user.settings;
 
       // Skip if user explicitly disabled reminders
       if (userSettings && !userSettings.remindersEnabled) {
         continue;
       }
 
-      // If targetHHMM is supplied, verify time match
+      // Verify time match if targetHHMM specified
       if (targetHHMM) {
         const userMorningTime = userSettings?.morningReminderTime || '07:00';
         if (userMorningTime !== targetHHMM) {
@@ -57,8 +54,9 @@ export async function sendMorningReminders(bot: Telegraf, targetHHMM?: string): 
         }
       }
 
-      const chatId = Number(link.telegramChatId);
-      const userId = link.userId;
+      const userId = user.id;
+      const tgLink = user.telegramLink;
+      const chatId = tgLink && tgLink.isActive ? Number(tgLink.telegramChatId) : null;
 
       // Fetch active goals
       const activeGoal = await prisma.goal.findFirst({
@@ -95,7 +93,7 @@ export async function sendMorningReminders(bot: Telegraf, targetHHMM?: string): 
       const doneHabitSet = new Set(todayLogs.map((l: any) => l.habitId));
       const pendingHabits = habits.filter((h: any) => !doneHabitSet.has(h.id));
 
-      // Fetch pending tasks with Goal context
+      // Fetch pending tasks
       const pendingTasks = await prisma.task.findMany({
         where: { userId, status: { in: ['TODO', 'IN_PROGRESS'] } },
         include: {
@@ -105,66 +103,40 @@ export async function sendMorningReminders(bot: Telegraf, targetHHMM?: string): 
         take: 6,
       });
 
-      // Check tasks & goals due today
-      const todayDateStr = today.toISOString().split('T')[0];
-      const tasksDueToday = pendingTasks.filter((t) => {
-        if (!t.dueDate) return false;
-        return t.dueDate.toISOString().split('T')[0] === todayDateStr;
-      });
+      // Telegram format
+      if (chatId) {
+        let habitText = pendingHabits.length > 0
+          ? pendingHabits.map((h: any) => `• 🎯 ${h.name}`).join('\n')
+          : '• 🎉 Semua habit hari ini sudah selesai!';
 
-      const goalsDueToday = await prisma.goal.findMany({
-        where: {
-          userId,
-          status: 'ACTIVE',
-          deadline: { equals: today },
-        },
-      });
+        let taskText = pendingTasks.length > 0
+          ? pendingTasks.map((t: any) => `• 📋 ${t.title}`).join('\n')
+          : '• 🎉 Tidak ada tugas tertunda!';
 
-      let deadlineAlertText = '';
-      if (tasksDueToday.length > 0 || goalsDueToday.length > 0) {
-        deadlineAlertText = `📅 *TENGGAT WAKTU HARI INI (DEADLINE ALERT):*\n`;
-        goalsDueToday.forEach((g) => {
-          deadlineAlertText += `• 🚨 *[GOAL DEADLINE]* "${g.title}"\n`;
-        });
-        tasksDueToday.forEach((t) => {
-          const goalTag = t.goal ? `[Goal: ${t.goal.title}] ` : '';
-          deadlineAlertText += `• ⚠️ *[TASK DEADLINE]* ${goalTag}${t.title}\n`;
-        });
-        deadlineAlertText += `\n`;
+        const message =
+          `☀️ *Selamat Pagi, ${user.name}!*\n` +
+          `Berikut pengingat arah & produktivitas kamu hari ini:\n\n` +
+          `${goalMessage}` +
+          `*Habits Hari Ini:* \n${habitText}\n\n` +
+          `*Tasks Tertunda:* \n${taskText}\n\n`;
+
+        try {
+          await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+        } catch (e: any) {
+          console.warn(`[CRON] Telegram send failed for chatId ${chatId}:`, e.message);
+        }
       }
 
-      let habitText = pendingHabits.length > 0
-        ? pendingHabits.map((h: any) => `• 🎯 ${h.name}`).join('\n')
-        : '• 🎉 Semua habit hari ini sudah selesai!';
-
-      let taskText = pendingTasks.length > 0
-        ? pendingTasks
-            .map((t: any) => {
-              const goalTag = t.goal ? `_[Goal: ${t.goal.title}]_ ` : '';
-              const priorityIcon = t.priority === 'URGENT' || t.priority === 'HIGH' ? '🔥 ' : '';
-              return `• 📋 ${priorityIcon}${goalTag}${t.title}`;
-            })
-            .join('\n')
-        : '• 🎉 Tidak ada tugas tertunda!';
-
-      const message =
-        `☀️ *Selamat Pagi, ${link.user.name}!*\n` +
-        `Berikut pengingat arah & produktivitas kamu hari ini:\n\n` +
-        `${deadlineAlertText}` +
-        `${goalMessage}` +
-        `*Habits Hari Ini:* \n${habitText}\n\n` +
-        `*Tasks & Sub-Tasks Tertunda:* \n${taskText}\n\n` +
-        `_Ketik /focus untuk melihat fokus utama, atau /goals untuk melihat daftar mimpi kamu!_`;
-
-      await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-      await sendPushNotificationToUser(link.userId, {
-        title: `☀️ Selamat Pagi, ${link.user.name}!`,
-        body: `Cek habit & tugas prioritas kamu hari ini di Life OS Web Dashboard.`,
+      // Dispatch Push Notification (Web + Android FCM)
+      const pushResult = await sendPushNotificationToUser(userId, {
+        title: `☀️ Selamat Pagi, ${user.name}!`,
+        body: `Kamu memiliki ${pendingHabits.length} habit & ${pendingTasks.length} task prioritas hari ini.`,
         url: '/dashboard',
         tag: `lifeos-morning-${Date.now()}`,
       });
-      sentCount++;
-      console.log(`[CRON ${getWibHHMM()} WIB] ☀️ Morning Reminder sent to ${link.user.name} (${chatId})`);
+
+      if (pushResult > 0 || chatId) sentCount++;
+      console.log(`[CRON ${getWibHHMM()} WIB] ☀️ Morning Reminder dispatched to ${user.name} (${userId})`);
     }
   } catch (error: any) {
     console.error(`[CRON ERROR ${getWibHHMM()} WIB] Morning Reminder failed:`, error.message || error);
@@ -174,18 +146,15 @@ export async function sendMorningReminders(bot: Telegraf, targetHHMM?: string): 
 
 /**
  * 2. Time-Specific Reminder (Hourly/Windowed Cron Runner)
- * Check habits & tasks scheduled for the current time window and push Telegram alerts.
- * Returns count of reminders sent.
+ * Check habits & tasks scheduled for current time window and push alerts.
  */
 export async function sendTimeSpecificReminders(bot: Telegraf, targetHHMM?: string): Promise<number> {
   let sentCount = 0;
   try {
-    const activeLinks = await prisma.telegramLink.findMany({
-      where: { isActive: true },
+    const allUsers = await prisma.user.findMany({
       include: {
-        user: {
-          include: { settings: true },
-        },
+        settings: true,
+        telegramLink: true,
       },
     });
 
@@ -195,18 +164,18 @@ export async function sendTimeSpecificReminders(bot: Telegraf, targetHHMM?: stri
     const currentMin = parseInt(currentMinStr, 10);
     const today = getTodayDate();
 
-    for (const link of activeLinks) {
-      const userSettings = link.user.settings;
+    for (const user of allUsers) {
+      const userSettings = user.settings;
 
-      // Skip if reminders or hourlyRemindersEnabled disabled
       if (userSettings && (!userSettings.remindersEnabled || !userSettings.hourlyRemindersEnabled)) {
         continue;
       }
 
-      const chatId = Number(link.telegramChatId);
-      const userId = link.userId;
+      const userId = user.id;
+      const tgLink = user.telegramLink;
+      const chatId = tgLink && tgLink.isActive ? Number(tgLink.telegramChatId) : null;
 
-      // Find habits with reminderTime matching current hour & minute window
+      // Find habits matching current hour & minute window
       const habitsWithReminder = await prisma.habit.findMany({
         where: { userId, isArchived: false, reminderTime: { not: null } },
       });
@@ -227,21 +196,17 @@ export async function sendTimeSpecificReminders(bot: Telegraf, targetHHMM?: stri
         const rMin = rDate.getUTCMinutes();
 
         if (rHour !== currentHour) return false;
-
-        if (currentMin === 0) {
-          return rMin === 0 || rMin > 50;
-        }
+        if (currentMin === 0) return rMin === 0 || rMin > 50;
         return rMin > currentMin - 10 && rMin <= currentMin;
       });
 
-      // Find tasks with dueTime matching current hour & minute window
+      // Find tasks matching current hour & minute window
       const tasksWithDueTime = await prisma.task.findMany({
         where: {
           userId,
           status: { in: ['TODO', 'IN_PROGRESS'] },
           dueTime: { not: null },
         },
-        include: { goal: { select: { title: true } } },
       });
 
       const dueTasks = tasksWithDueTime.filter((t) => {
@@ -251,46 +216,49 @@ export async function sendTimeSpecificReminders(bot: Telegraf, targetHHMM?: stri
         const tMin = tDate.getUTCMinutes();
 
         if (tHour !== currentHour) return false;
-
-        if (currentMin === 0) {
-          return tMin === 0 || tMin > 50;
-        }
+        if (currentMin === 0) return tMin === 0 || tMin > 50;
         return tMin > currentMin - 10 && tMin <= currentMin;
       });
 
       const formattedTimeHeader = `${currentHourStr}:${currentMinStr}`;
 
-      // 1. Send per-habit individual reminders (1-by-1) with Done & Skip interactive buttons
+      // 1. Send per-habit individual reminders (1-by-1)
       for (const habit of dueHabits) {
-        const habitMessage =
-          `⏰ *PENGINGAT HABIT (${formattedTimeHeader})* 🎯\n\n` +
-          `Halo ${link.user.name}, waktunya mengerjakan habit:\n` +
-          `📌 *${habit.name}*\n` +
-          (habit.description ? `_(${habit.description})_\n` : '') +
-          `🔥 *Streak saat ini:* ${(habit as any).streak || 0} Hari\n\n` +
-          `Pilih tindakan di bawah untuk mencatat check-in:`;
+        if (chatId) {
+          const habitMessage =
+            `⏰ *PENGINGAT HABIT (${formattedTimeHeader})* 🎯\n\n` +
+            `Halo ${user.name}, waktunya mengerjakan habit:\n` +
+            `📌 *${habit.name}*\n` +
+            `🔥 *Streak saat ini:* ${(habit as any).streak || 0} Hari\n\n` +
+            `Pilih tindakan di bawah untuk mencatat check-in:`;
 
-        const keyboard = {
-          reply_markup: {
-            inline_keyboard: [
-              [
-                { text: '✅ Selesai', callback_data: `habit_done:${habit.id}` },
-                { text: '⏭️ Skip (Catatan)', callback_data: `habit_skip_prompt:${habit.id}` },
+          const keyboard = {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '✅ Selesai', callback_data: `habit_done:${habit.id}` },
+                  { text: '⏭️ Skip', callback_data: `habit_skip_prompt:${habit.id}` },
+                ],
               ],
-            ],
-          },
-        };
+            },
+          };
 
-        await bot.telegram.sendMessage(chatId, habitMessage, {
-          parse_mode: 'Markdown',
-          ...keyboard,
-        });
+          try {
+            await bot.telegram.sendMessage(chatId, habitMessage, {
+              parse_mode: 'Markdown',
+              ...keyboard,
+            });
+          } catch (e: any) {
+            console.warn(`[CRON] Telegram send failed for chatId ${chatId}:`, e.message);
+          }
+        }
 
-        await sendPushNotificationToUser(link.userId, {
+        // Dispatch Unified Push (Web + Android FCM)
+        await sendPushNotificationToUser(userId, {
           title: `🎯 ${habit.name} (${formattedTimeHeader})`,
           body: `Waktunya habit ${habit.name}! 🔥 Streak: ${(habit as any).streak || 0} Hari.`,
           url: '/habits',
-          tag: `lifeos-habit-${habit.id}-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+          tag: `lifeos-habit-${habit.id}-${Date.now()}`,
           habitId: habit.id,
           actions: [
             { action: 'done', title: '✅ Selesai' },
@@ -299,28 +267,27 @@ export async function sendTimeSpecificReminders(bot: Telegraf, targetHHMM?: stri
         });
 
         sentCount++;
-        console.log(`[CRON ${getWibHHMM()} WIB] 🎯 Habit Reminder (${habit.name}) sent 1-by-1 to ${link.user.name} (${chatId})`);
-
-        // Small 500ms pacing delay between pushes to prevent OS notification throttling/burst suppression
+        console.log(`[CRON ${getWibHHMM()} WIB] 🎯 Habit Reminder (${habit.name}) sent to ${user.name} (${userId})`);
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
-      // 2. Send due tasks reminder if any
+      // 2. Send due tasks reminder
       if (dueTasks.length > 0) {
-        const taskSection = `📋 *Task Waktunya Dikerjakan:* \n` +
-          dueTasks.map((t) => {
-            const goalTag = t.goal ? `_[Goal: ${t.goal.title}]_ ` : '';
-            return `• ${goalTag}${t.title}`;
-          }).join('\n');
+        if (chatId) {
+          const taskSection = dueTasks.map((t) => `• ${t.title}`).join('\n');
+          const taskMessage =
+            `⏰ *PENGINGAT TASK (${formattedTimeHeader})* 🔔\n\n` +
+            `Halo ${user.name}! Waktunya menyelesaikan tugas kamu:\n\n` +
+            `${taskSection}\n\n`;
 
-        const taskMessage =
-          `⏰ *PENGINGAT TASK (${formattedTimeHeader})* 🔔\n\n` +
-          `Halo ${link.user.name}! Waktunya menyelesaikan tugas kamu:\n\n` +
-          `${taskSection}\n\n` +
-          `_Ketik /tasks untuk melakukan check-in!_`;
+          try {
+            await bot.telegram.sendMessage(chatId, taskMessage, { parse_mode: 'Markdown' });
+          } catch (e: any) {
+            console.warn(`[CRON] Telegram send failed for chatId ${chatId}:`, e.message);
+          }
+        }
 
-        await bot.telegram.sendMessage(chatId, taskMessage, { parse_mode: 'Markdown' });
-        await sendPushNotificationToUser(link.userId, {
+        await sendPushNotificationToUser(userId, {
           title: `📋 Waktunya Task Kamu (${formattedTimeHeader})`,
           body: `Task: ${dueTasks[0]?.title}`,
           url: '/tasks',
@@ -328,7 +295,7 @@ export async function sendTimeSpecificReminders(bot: Telegraf, targetHHMM?: stri
         });
 
         sentCount++;
-        console.log(`[CRON ${getWibHHMM()} WIB] 📋 Task Reminder (${formattedTimeHeader}) sent to ${link.user.name} (${chatId})`);
+        console.log(`[CRON ${getWibHHMM()} WIB] 📋 Task Reminder (${formattedTimeHeader}) sent to ${user.name} (${userId})`);
       }
     }
   } catch (error: any) {
@@ -339,60 +306,53 @@ export async function sendTimeSpecificReminders(bot: Telegraf, targetHHMM?: stri
 
 /**
  * 3. Evening Recap
- * Prompt user to submit Daily Log & Mood journal if not filled today.
- * Returns count of reminders sent.
  */
 export async function sendEveningRecapReminders(bot: Telegraf, targetHHMM?: string): Promise<number> {
   let sentCount = 0;
   try {
-    const activeLinks = await prisma.telegramLink.findMany({
-      where: { isActive: true },
-      include: {
-        user: {
-          include: { settings: true },
-        },
-      },
+    const allUsers = await prisma.user.findMany({
+      include: { settings: true, telegramLink: true },
     });
 
     const today = getTodayDate();
 
-    for (const link of activeLinks) {
-      const userSettings = link.user.settings;
+    for (const user of allUsers) {
+      const userSettings = user.settings;
 
-      if (userSettings && !userSettings.remindersEnabled) {
-        continue;
-      }
+      if (userSettings && !userSettings.remindersEnabled) continue;
 
       if (targetHHMM) {
         const userEveningTime = userSettings?.eveningRecapTime || '21:00';
-        if (userEveningTime !== targetHHMM) {
-          continue;
-        }
+        if (userEveningTime !== targetHHMM) continue;
       }
 
-      const chatId = Number(link.telegramChatId);
-      const userId = link.userId;
+      const userId = user.id;
+      const tgLink = user.telegramLink;
+      const chatId = tgLink && tgLink.isActive ? Number(tgLink.telegramChatId) : null;
 
       const todayLog = await prisma.dailyLog.findUnique({
         where: { userId_date: { userId, date: today } },
       });
 
       if (!todayLog) {
-        const message =
-          `🌙 *Selamat Malam, ${link.user.name}!*\n\n` +
-          `Kamu belum mengisi *Daily Journal & Mood Log* untuk hari ini.\n` +
-          `Yuk refleksikan hari kamu sejenak! 📖\n\n` +
-          `*Ketik /log sekarang untuk mencatat mood & energi kamu!*`;
+        if (chatId) {
+          const message =
+            `🌙 *Selamat Malam, ${user.name}!*\n\n` +
+            `Kamu belum mengisi *Daily Journal & Mood Log* untuk hari ini.\n` +
+            `Yuk refleksikan hari kamu sejenak! 📖`;
+          try {
+            await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+          } catch (e: any) {}
+        }
 
-        await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-        await sendPushNotificationToUser(link.userId, {
+        await sendPushNotificationToUser(userId, {
           title: `🌙 Daily Journal & Mood Log`,
-          body: `Halo ${link.user.name}, yuk refleksikan hari ini dan isi jurnal harian kamu sejenak.`,
+          body: `Halo ${user.name}, yuk refleksikan hari ini dan isi jurnal harian kamu sejenak.`,
           url: '/dashboard',
           tag: `lifeos-evening-${Date.now()}`,
         });
         sentCount++;
-        console.log(`[CRON ${getWibHHMM()} WIB] 🌙 Evening Recap Reminder sent to ${link.user.name} (${chatId})`);
+        console.log(`[CRON ${getWibHHMM()} WIB] 🌙 Evening Recap Reminder sent to ${user.name} (${userId})`);
       }
     }
   } catch (error: any) {
@@ -403,62 +363,43 @@ export async function sendEveningRecapReminders(bot: Telegraf, targetHHMM?: stri
 
 /**
  * 4. Streak Alert
- * Warning alert for habits with active streak > 0 that are still unchecked today.
- * Returns count of reminders sent.
  */
 export async function sendStreakAlertReminders(bot: Telegraf, targetHHMM?: string): Promise<number> {
   let sentCount = 0;
   try {
-    const activeLinks = await prisma.telegramLink.findMany({
-      where: { isActive: true },
-      include: {
-        user: {
-          include: { settings: true },
-        },
-      },
+    const allUsers = await prisma.user.findMany({
+      include: { settings: true, telegramLink: true },
     });
 
-    for (const link of activeLinks) {
-      const userSettings = link.user.settings;
-
-      if (userSettings && !userSettings.remindersEnabled) {
-        continue;
-      }
+    for (const user of allUsers) {
+      const userSettings = user.settings;
+      if (userSettings && !userSettings.remindersEnabled) continue;
 
       if (targetHHMM) {
         const userStreakTime = userSettings?.streakAlertTime || '22:00';
-        if (userStreakTime !== targetHHMM) {
-          continue;
-        }
+        if (userStreakTime !== targetHHMM) continue;
       }
 
-      const summary = await getAnalyticsSummary(link.telegramChatId);
+      const userId = user.id;
+      const tgLink = user.telegramLink;
+      const chatId = tgLink && tgLink.isActive ? Number(tgLink.telegramChatId) : null;
 
-      const endangeredStreaks = summary.habitStreaks.filter(
-        (s) => !s.isDoneToday && s.currentStreak > 0
-      );
+      let endangeredCount = 0;
+      if (chatId && tgLink) {
+        const summary = await getAnalyticsSummary(tgLink.telegramChatId);
+        const endangeredStreaks = summary.habitStreaks.filter((s) => !s.isDoneToday && s.currentStreak > 0);
+        endangeredCount = endangeredStreaks.length;
+      }
 
-      if (endangeredStreaks.length > 0) {
-        const chatId = Number(link.telegramChatId);
-        const streakText = endangeredStreaks
-          .map((s) => `• ⚠️ *${s.habitName}* — 🔥 *${s.currentStreak} Hari*`)
-          .join('\n');
-
-        const message =
-          `🚨 *Peringatan Habit Streak Night Alert!*\n\n` +
-          `Habit berikut berisiko terputus streak-nya malam ini jika tidak di-checkin:\n\n` +
-          `${streakText}\n\n` +
-          `Jangan biarkan konsistensi kamu sia-sia! Ketik /habits untuk check-in sekarang. 🔥`;
-
-        await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-        await sendPushNotificationToUser(link.userId, {
+      if (endangeredCount > 0 || !chatId) {
+        await sendPushNotificationToUser(userId, {
           title: `🚨 Peringatan Habit Streak Night Alert!`,
-          body: `${endangeredStreaks.length} habit berisiko terputus streak-nya malam ini jika tidak di-checkin!`,
+          body: `Jangan biarkan habit streak kamu terputus malam ini! Yuk check-in sekarang. 🔥`,
           url: '/habits',
           tag: `lifeos-streak-${Date.now()}`,
         });
         sentCount++;
-        console.log(`[CRON ${getWibHHMM()} WIB] 🚨 Streak Alert Reminder sent to ${link.user.name} (${chatId})`);
+        console.log(`[CRON ${getWibHHMM()} WIB] 🚨 Streak Alert Reminder sent to ${user.name} (${userId})`);
       }
     }
   } catch (error: any) {
@@ -468,20 +409,13 @@ export async function sendStreakAlertReminders(bot: Telegraf, targetHHMM?: strin
 }
 
 /**
- * 5. Auto Follow-Up Reminders for Uncompleted Items
- * Sends follow-up alerts for habits/tasks whose original scheduled time + autoFollowUpDelayHours matches current time
- * and are still not completed today.
+ * 5. Auto Follow-Up Reminders
  */
 export async function sendAutoFollowUpReminders(bot: Telegraf, targetHHMM?: string): Promise<number> {
   let sentCount = 0;
   try {
-    const activeLinks = await prisma.telegramLink.findMany({
-      where: { isActive: true },
-      include: {
-        user: {
-          include: { settings: true },
-        },
-      },
+    const allUsers = await prisma.user.findMany({
+      include: { settings: true, telegramLink: true },
     });
 
     const nowHHMM = targetHHMM || getWibHHMM();
@@ -490,22 +424,15 @@ export async function sendAutoFollowUpReminders(bot: Telegraf, targetHHMM?: stri
     const currentMin = parseInt(currentMinStr, 10);
     const today = getTodayDate();
 
-    for (const link of activeLinks) {
-      const userSettings = link.user.settings;
-
-      // Skip if reminders or autoFollowUpEnabled disabled
-      if (userSettings && (!userSettings.remindersEnabled || !userSettings.autoFollowUpEnabled)) {
-        continue;
-      }
+    for (const user of allUsers) {
+      const userSettings = user.settings;
+      if (userSettings && (!userSettings.remindersEnabled || !userSettings.autoFollowUpEnabled)) continue;
 
       const delayHours = userSettings?.autoFollowUpDelayHours ?? 2;
-      // Scheduled hour that should trigger a follow-up right now
       const targetScheduledHour = (currentHour - delayHours + 24) % 24;
 
-      const chatId = Number(link.telegramChatId);
-      const userId = link.userId;
+      const userId = user.id;
 
-      // Find uncompleted habits with reminderTime matching targetScheduledHour
       const habitsWithReminder = await prisma.habit.findMany({
         where: { userId, isArchived: false, reminderTime: { not: null } },
       });
@@ -526,77 +453,19 @@ export async function sendAutoFollowUpReminders(bot: Telegraf, targetHHMM?: stri
         const rMin = rDate.getUTCMinutes();
 
         if (rHour !== targetScheduledHour) return false;
-
-        if (currentMin === 0) {
-          return rMin === 0 || rMin > 50;
-        }
+        if (currentMin === 0) return rMin === 0 || rMin > 50;
         return rMin > currentMin - 10 && rMin <= currentMin;
       });
 
-      // Find uncompleted tasks with dueTime matching targetScheduledHour
-      const tasksWithDueTime = await prisma.task.findMany({
-        where: {
-          userId,
-          status: { in: ['TODO', 'IN_PROGRESS'] },
-          dueTime: { not: null },
-        },
-        include: { goal: { select: { title: true } } },
-      });
-
-      const pendingFollowUpTasks = tasksWithDueTime.filter((t) => {
-        if (!t.dueTime) return false;
-        const tDate = new Date(t.dueTime);
-        const tHour = tDate.getUTCHours();
-        const tMin = tDate.getUTCMinutes();
-
-        if (tHour !== targetScheduledHour) return false;
-
-        if (currentMin === 0) {
-          return tMin === 0 || tMin > 50;
-        }
-        return tMin > currentMin - 10 && tMin <= currentMin;
-      });
-
-      if (pendingFollowUpHabits.length > 0 || pendingFollowUpTasks.length > 0) {
-        let habitSection = '';
-        if (pendingFollowUpHabits.length > 0) {
-          habitSection = `🎯 *Habits Tertunda (${delayHours} Jam Lalu):* \n` +
-            pendingFollowUpHabits.map((h) => {
-              const rDate = new Date(h.reminderTime!);
-              const hh = rDate.getUTCHours().toString().padStart(2, '0');
-              const mm = rDate.getUTCMinutes().toString().padStart(2, '0');
-              return `• ${h.name} _(dijadwalkan ${hh}:${mm})_`;
-            }).join('\n') + `\n\n`;
-        }
-
-        let taskSection = '';
-        if (pendingFollowUpTasks.length > 0) {
-          taskSection = `📋 *Tasks Tertunda (${delayHours} Jam Lalu):* \n` +
-            pendingFollowUpTasks.map((t) => {
-              const goalTag = t.goal ? `_[Goal: ${t.goal.title}]_ ` : '';
-              const tDate = new Date(t.dueTime!);
-              const hh = tDate.getUTCHours().toString().padStart(2, '0');
-              const mm = tDate.getUTCMinutes().toString().padStart(2, '0');
-              return `• ${goalTag}${t.title} _(dijadwalkan ${hh}:${mm})_`;
-            }).join('\n') + `\n\n`;
-        }
-
-        const message =
-          `🔔 *FOLLOW-UP PENGINGAT TERTUNDA* ⏰\n\n` +
-          `Halo ${link.user.name}! Berikut target yang telah diingatkan namun belum di-checkin:\n\n` +
-          `${habitSection}` +
-          `${taskSection}` +
-          `_Yuk selesaikan dan ketik /habits atau /tasks untuk melakukan check-in!_`;
-
-        await bot.telegram.sendMessage(chatId, message, { parse_mode: 'Markdown' });
-        await sendPushNotificationToUser(link.userId, {
+      if (pendingFollowUpHabits.length > 0) {
+        await sendPushNotificationToUser(userId, {
           title: `🔔 Follow-Up Target Tertunda (+${delayHours} Jam)`,
-          body: `Kamu memiliki ${pendingFollowUpHabits.length + pendingFollowUpTasks.length} target tertunda. Yuk selesaikan sekarang!`,
+          body: `Kamu memiliki ${pendingFollowUpHabits.length} habit tertunda. Yuk selesaikan sekarang!`,
           url: '/dashboard',
           tag: `lifeos-followup-${delayHours}h-${Date.now()}`,
         });
         sentCount++;
-        console.log(`[CRON ${getWibHHMM()} WIB] 🔔 Auto Follow-Up Reminder (+${delayHours}h) sent to ${link.user.name} (${chatId})`);
+        console.log(`[CRON ${getWibHHMM()} WIB] 🔔 Auto Follow-Up Reminder (+${delayHours}h) sent to ${user.name} (${userId})`);
       }
     }
   } catch (error: any) {
@@ -607,24 +476,14 @@ export async function sendAutoFollowUpReminders(bot: Telegraf, targetHHMM?: stri
 
 /**
  * Master Scheduled Check Handler
- * Evaluates current WIB time against user settings
  */
 export async function checkAndRunScheduledReminders(bot: Telegraf) {
   const currentHHMM = getWibHHMM();
 
-  // 1. Morning Reminders matching current time
   const morningCount = await sendMorningReminders(bot, currentHHMM);
-
-  // 2. Evening Recap Reminders matching current time
   const eveningCount = await sendEveningRecapReminders(bot, currentHHMM);
-
-  // 3. Streak Alert Reminders matching current time
   const streakCount = await sendStreakAlertReminders(bot, currentHHMM);
-
-  // 4. Time-Specific Item Reminders (Habits & Tasks)
   const hourlyCount = await sendTimeSpecificReminders(bot, currentHHMM);
-
-  // 5. Auto Follow-Up Reminders for Uncompleted Items
   const followUpCount = await sendAutoFollowUpReminders(bot, currentHHMM);
 
   const totalSent = morningCount + eveningCount + streakCount + hourlyCount + followUpCount;
@@ -636,7 +495,7 @@ export async function checkAndRunScheduledReminders(bot: Telegraf) {
 }
 
 /**
- * Initialize Cron Scheduler Service based on env config
+ * Initialize Cron Scheduler Service
  */
 export function initCronScheduler(bot: Telegraf) {
   const scheduleExp = process.env.CRON_SCHEDULE_EXPRESSION || '*/10 * * * *';

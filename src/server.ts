@@ -90,7 +90,7 @@ import { getShareCardData, sendShareCardToTelegram, fetchCardDataInternal } from
 import { handleGetUserSettings, handleUpdateUserSettings } from './controllers/settingsController';
 import { generateWeeklySummary, isAiGloballyEnabled, parseHabitsWithAi } from './services/aiService';
 import { authMiddleware, AuthenticatedRequest } from './middleware/authMiddleware';
-import { getVapidPublicKey, savePushSubscription, removePushSubscription, sendPushNotificationToUser } from './services/pushService';
+import { getVapidPublicKey, savePushSubscription, removePushSubscription, sendPushNotificationToUser, registerUserFcmToken } from './services/pushService';
 
 // Load environment variables
 dotenv.config();
@@ -748,6 +748,7 @@ app.post('/api/push/register-fcm', async (req: AuthenticatedRequest, res: Respon
       return;
     }
 
+    registerUserFcmToken(req.user.id, fcmToken);
     console.log(`[FCM PUSH] Registered Android FCM device token for user ${req.user.name} (${req.user.id})`);
     res.json({ success: true, message: 'FCM Token registered successfully' });
   } catch (error: any) {
