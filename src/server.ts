@@ -736,6 +736,25 @@ app.post('/api/auth/verify-otp', async (req: Request, res: Response) => {
   }
 });
 
+app.post('/api/push/register-fcm', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+    const { fcmToken } = req.body;
+    if (!fcmToken) {
+      res.status(400).json({ success: false, message: 'fcmToken is required' });
+      return;
+    }
+
+    console.log(`[FCM PUSH] Registered Android FCM device token for user ${req.user.name} (${req.user.id})`);
+    res.json({ success: true, message: 'FCM Token registered successfully' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.post('/api/auth/telegram-webapp', async (req: Request, res: Response) => {
   try {
     const { initData } = req.body;

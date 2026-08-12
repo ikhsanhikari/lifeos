@@ -27,3 +27,11 @@ build
 .DS_Store
 Thumbs.db
 *.log
+
+# Android build outputs & local secrets
+.gradle/
+build/
+app/build/
+local.properties
+google-services.json
+

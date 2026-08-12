@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,9 +14,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lifeos.app.data.remote.RetrofitInstance
+import com.lifeos.app.notification.LifeOSNotificationManager
 import com.lifeos.app.ui.components.GlassmorphicCard
 import com.lifeos.app.ui.theme.*
 
@@ -25,6 +28,8 @@ fun SettingsProfileSectionContent(
     userEmail: String,
     onLogout: () -> Unit
 ) {
+    val context = LocalContext.current
+
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Column {
             Text(
@@ -108,8 +113,33 @@ fun SettingsProfileSectionContent(
                     Text(text = "JWT Session Active 🟢", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = AccentEmeraldLight)
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
+                // Test Notification Button
+                OutlinedButton(
+                    onClick = {
+                        LifeOSNotificationManager.showHabitNotification(
+                            context = context,
+                            notificationId = 9999,
+                            habitId = "test_habit_id",
+                            title = "Minum 2 Liter Air 💧",
+                            message = "Waktunya minum air putih! Tekan tombol [ ✅ Selesai ] untuk check-in langsung dari notifikasi."
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = ButtonDefaults.outlinedButtonBorder.copy(brush = Brush.horizontalGradient(listOf(PrimaryIndigo, SecondaryViolet)))
+                ) {
+                    Icon(Icons.Default.Notifications, contentDescription = "Test Notification", tint = PrimaryIndigo)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "🔔 Uji Notifikasi Interaktif HP", fontWeight = FontWeight.Bold, color = TextWhite)
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Logout Button
                 Button(
                     onClick = onLogout,
                     modifier = Modifier
