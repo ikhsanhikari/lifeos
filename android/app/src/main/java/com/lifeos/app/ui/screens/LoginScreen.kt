@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -107,7 +107,7 @@ fun LoginScreen(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Ketik /login di Telegram Bot kamu untuk mendapatkan 6-Digit Kode OTP.",
+                        text = "Ketik /login di Telegram Bot @RemindIkhsan_bot untuk mendapatkan 6-Digit Kode OTP.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextWhite,
                         textAlign = TextAlign.Center
@@ -116,15 +116,15 @@ fun LoginScreen(
 
                     OutlinedButton(
                         onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/HikariLifeOSBot"))
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/RemindIkhsan_bot"))
                             context.startActivity(intent)
                         },
                         shape = RoundedCornerShape(12.dp),
                         border = ButtonDefaults.outlinedButtonBorder.copy(brush = Brush.horizontalGradient(listOf(PrimaryIndigo, SecondaryViolet)))
                     ) {
-                        Icon(Icons.Default.Send, contentDescription = "Telegram", tint = PrimaryIndigo, modifier = Modifier.size(16.dp))
+                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Telegram", tint = PrimaryIndigo, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Buka Telegram Bot ✈️", color = TextWhite, style = MaterialTheme.typography.labelSmall)
+                        Text("Buka @RemindIkhsan_bot ✈️", color = TextWhite, style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }
