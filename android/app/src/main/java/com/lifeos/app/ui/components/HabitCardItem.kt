@@ -14,6 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -26,6 +28,8 @@ fun HabitCardItem(
     onToggle: () -> Unit,
     onSkip: (String?) -> Unit
 ) {
+    val haptics = LocalHapticFeedback.current
+
     GlassmorphicCard(
         modifier = Modifier.fillMaxWidth(),
         borderColor = if (habit.isDoneToday) AccentEmerald.copy(alpha = 0.5f) else GlassBorderDark
@@ -45,7 +49,10 @@ fun HabitCardItem(
                         .clip(CircleShape)
                         .background(if (habit.isDoneToday) AccentEmerald else SurfaceDark)
                         .border(1.dp, if (habit.isDoneToday) AccentEmeraldLight else GlassBorderDark, CircleShape)
-                        .clickable { onToggle() },
+                        .clickable {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onToggle()
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     if (habit.isDoneToday) {
@@ -89,7 +96,10 @@ fun HabitCardItem(
                 }
             }
 
-            IconButton(onClick = { onSkip("Istirahat") }) {
+            IconButton(onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                onSkip("Istirahat")
+            }) {
                 Icon(
                     imageVector = Icons.Default.MoreVert,
                     contentDescription = "Options",

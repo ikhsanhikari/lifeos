@@ -8,12 +8,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.lifeos.app.data.model.HabitDto
 import com.lifeos.app.ui.components.*
@@ -31,6 +36,17 @@ fun DashboardScreen(
     var taskFilter by remember { mutableStateOf("ALL") }
     var showCreateBottomSheet by remember { mutableStateOf(false) }
     var selectedHabitForSkip by remember { mutableStateOf<HabitDto?>(null) }
+
+    val haptics = LocalHapticFeedback.current
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    if (pullToRefreshState.isRefreshing) {
+        LaunchedEffect(true) {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            viewModel.fetchDashboardData()
+            pullToRefreshState.endRefresh()
+        }
+    }
 
     val habits = uiState.habits
     val tasks = uiState.tasks
@@ -52,12 +68,18 @@ fun DashboardScreen(
         bottomBar = {
             GlassmorphicBottomNavigation(
                 selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it }
+                onTabSelected = { tab ->
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    selectedTab = tab
+                }
             )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showCreateBottomSheet = true },
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    showCreateBottomSheet = true
+                },
                 containerColor = Color.Transparent,
                 shape = CircleShape,
                 modifier = Modifier
@@ -75,51 +97,71 @@ fun DashboardScreen(
             }
         }
     ) { paddingValues ->
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = PrimaryIndigo)
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item { Spacer(modifier = Modifier.height(12.dp)) }
-
-                when (selectedTab) {
-                    0 -> homeScreenTabContent(userName, focusScore, habits, tasks, onNavigateTab = { tab -> selectedTab = tab })
-                    1 -> habitsScreenTabContent(habits, viewModel) { habit ->
-                        selectedHabitForSkip = habit
-                    }
-                    2 -> tasksScreenTabContent(tasks, filteredTasks, taskFilter, { taskFilter = it }, viewModel)
-                    3 -> item {
-                        JournalScreenContent(
-                            onSubmitLog = { content, mood, energy ->
-                                viewModel.submitDailyLog(content, mood, energy) {
-                                    viewModel.fetchDashboardData()
-                                }
-                            }
-                        )
-                    }
-                    4 -> item {
-                        SettingsProfileSectionContent(
-                            userName = userName,
-                            userEmail = uiState.userEmail,
-                            onLogout = { viewModel.performLogout(onLoggedOut) }
-                        )
-                    }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(pullToRefreshState.nestedScrollConnection)
+        ) {
+            if (uiState.isLoading && !pullToRefreshState.isRefreshing) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = PrimaryIndigo)
                 }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item { Spacer(modifier = Modifier.height(12.dp)) }
 
-                item { Spacer(modifier = Modifier.height(24.dp)) }
+                    when (selectedTab) {
+                        0 -> homeScreenTabContent(userName, focusScore, habits, tasks, onNavigateTab = { tab ->
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            selectedTab = tab
+                        })
+                        1 -> habitsScreenTabContent(habits, viewModel) { habit ->
+                            selectedHabitForSkip = habit
+                        }
+                        2 -> tasksScreenTabContent(tasks, filteredTasks, taskFilter, { filter ->
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            taskFilter = filter
+                        }, viewModel)
+                        3 -> item {
+                            JournalScreenContent(
+                                onSubmitLog = { content, mood, energy ->
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    viewModel.submitDailyLog(content, mood, energy) {
+                                        viewModel.fetchDashboardData()
+                                    }
+                                }
+                            )
+                        }
+                        4 -> item {
+                            SettingsProfileSectionContent(
+                                userName = userName,
+                                userEmail = uiState.userEmail,
+                                onLogout = { viewModel.performLogout(onLoggedOut) }
+                            )
+                        }
+                    }
+
+                    item { Spacer(modifier = Modifier.height(24.dp)) }
+                }
             }
+
+            PullToRefreshContainer(
+                state = pullToRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                containerColor = SurfaceDark,
+                contentColor = PrimaryIndigo
+            )
         }
 
         if (showCreateBottomSheet) {
@@ -140,6 +182,7 @@ fun DashboardScreen(
                 habitName = habitToSkip.name,
                 onDismiss = { selectedHabitForSkip = null },
                 onConfirmSkip = { note ->
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     viewModel.skipHabit(habitToSkip.id, note)
                     selectedHabitForSkip = null
                 }

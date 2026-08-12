@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -27,6 +29,7 @@ fun TaskCardItem(
     task: TaskDto,
     onToggle: () -> Unit = {}
 ) {
+    val haptics = LocalHapticFeedback.current
     val isDone = task.status == "DONE" || task.status == "COMPLETED"
     val (priorityColor, priorityBg) = when (task.priority) {
         "URGENT" -> Pair(AccentRose, PriorityUrgentBg)
@@ -48,7 +51,10 @@ fun TaskCardItem(
                     .clip(CircleShape)
                     .background(if (isDone) AccentEmerald else SurfaceDark)
                     .border(1.dp, if (isDone) AccentEmeraldLight else GlassBorderDark, CircleShape)
-                    .clickable { onToggle() },
+                    .clickable {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onToggle()
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 if (isDone) {

@@ -269,19 +269,28 @@ fun AnimatedHeroFocusRingCard(focusScore: Int) {
                     )
                 }
 
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "$focusScore%",
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = TextWhite
-                    )
-                    Text(
-                        text = "Performa",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextWhite.copy(alpha = 0.85f),
-                        fontWeight = FontWeight.Bold
-                    )
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(SurfaceDark.copy(alpha = 0.88f))
+                        .border(1.dp, PrimaryIndigo.copy(alpha = 0.6f), CircleShape)
+                        .padding(horizontal = 18.dp, vertical = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "$focusScore%",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = TextWhite
+                        )
+                        Text(
+                            text = "Performa",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = AccentEmeraldLight,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
